@@ -32,7 +32,7 @@ Every native prop passes through four files that must stay in sync. Adding or ch
 
 1. **Codegen spec** — `src/LiteTextViewNativeComponent.ts`. The `NativeProps` interface here is the source of truth; codegen turns it into the C++/Kotlin interfaces the native code implements. `codegenNativeComponent('LiteTextView')` is the native component name.
 2. **JS wrapper** — `src/LiteText.native.tsx` (native) and `src/LiteText.tsx` (web/fallback, uses `<Text>`). Metro picks `.native.tsx` on device. `src/index.tsx` re-exports from `./LiteText`.
-3. **iOS** — `ios/LiteTextView.mm` (+ `.h`). A `RCTViewComponentView` subclass hosting a `UILabel`; props are applied in `updateProps:` by diffing `oldViewProps`/`newViewProps`.
+3. **iOS** — `ios/LiteTextView.mm` (+ `.h`). A `RCTViewComponentView` subclass hosting a `UILabel`; props are applied in `updateProps:` by diffing `oldViewProps`/`newViewProps`. (Intrinsic sizing adds two more iOS files — see the measurement section below.)
 4. **Android** — `android/src/main/java/com/litetext/`: `LiteTextView.kt` (the `TextView` subclass), `LiteTextViewManager.kt` (`@ReactProp` setters implementing the codegen `...ManagerInterface`), `LiteTextPackage.kt` (registration).
 
 Note the naming split: the **public JS API is `LiteText`**, but the **native component / codegen spec is `LiteTextView`** (config in `package.json` → `codegenConfig`, name `LiteTextViewSpec`).
@@ -47,8 +47,19 @@ Note the naming split: the **public JS API is `LiteText`**, but the **native com
 - **Native code changes require a full rebuild** (`yarn example ios|android`). Metro reload / Fast Refresh only picks up JS. A stale native build is the first thing to suspect when a native change "does nothing".
 - **Android `TextView` needs a manual measure pass.** RN's Fabric layout assigns the view's frame directly and never calls Android's `onMeasure`, where `TextView` builds the text `Layout` it draws — so text won't render. `LiteTextView.kt` works around this by re-running `measure`+`layout` inside an overridden `requestLayout()`. Keep this.
 - **Do not run `./gradlew clean`** in `example/android`. It re-runs CMake configure against the library's generated codegen dir before regenerating it, and fails. To force a clean native build instead delete the build caches by hand — `example/android/app/.cxx`, `example/android/app/build`, and `android/build` — then run `yarn example android` (the build regenerates codegen).
-- **No intrinsic sizing yet.** The view has no measure function, so text is clipped to the explicit `width`/`height` you give it via `style`. A large `fontSize` in a small box will be cut off.
 - Text color is hardcoded to black on both platforms (Android's theme default is gray) so the two platforms match; it is not yet theme-aware or exposed as a prop.
+
+## Intrinsic sizing (autosizing from the native text)
+
+In Fabric, layout runs in C++ on the shadow thread — the mounted view can never push its size back into Yoga. Intrinsic sizing is therefore done on a **custom `ShadowNode` + `ComponentDescriptor`**, not on the view. Codegen only emits non-measuring `ConcreteViewShadowNode`/`ConcreteComponentDescriptor` aliases, so we hand-write our own and override the registration.
+
+**iOS (implemented).** Three pieces in `ios/`:
+- `LiteTextShadowNode.h/.mm` — subclasses `ConcreteViewShadowNode` (reusing the generated `LiteTextViewComponentName`, but named differently to avoid clashing with the generated `LiteTextViewShadowNode` alias). It sets `LeafYogaNode + MeasurableYogaNode` in `BaseTraits()` — the `MeasurableYogaNode` trait is what makes Yoga call the measure fn — and overrides `measureContent`, which reads the props (`getConcreteProps()`), measures the string with `-[NSString boundingRectWithSize:...]` (same CoreText engine as the `UILabel`, thread-safe off-main), and returns the size `clamp`ed to Yoga's `LayoutConstraints`.
+- `LiteTextComponentDescriptor.h` — `ConcreteComponentDescriptor<LiteTextShadowNode>`. Because the shadow node reuses `LiteTextViewComponentName`, its handle/name match the generated descriptor, so registering it overrides the default.
+- `LiteTextView.mm` — `+componentDescriptorProvider` returns `concreteComponentDescriptorProvider<LiteTextComponentDescriptor>()` instead of the generated one, and no longer imports the generated `ComponentDescriptors.h`.
+- Gotcha: `measureContent` accesses `LayoutConstraints` members, so `.mm` must `#include <react/renderer/core/LayoutConstraints.h>` (the generated shadow-node headers only forward-declare it). New `ios/*.mm` files are only compiled after a `pod install` re-scans the podspec glob.
+
+**Android (not yet done).** Same mechanism, but Android has **no pure-Kotlin measure path** and this project currently ships **no C++/CMake/JNI**. It requires standing up a JNI target: a C++ `ShadowNode` + `ComponentDescriptor` + a `MeasurementsManager` that calls back over JNI into `FabricUIManager.measure(...)` (the `AndroidSwitch` pattern), serializing `text`/`fontSize` into the `ReadableMap` props arg, plus a Kotlin `ViewManager.measure()` override that measures an off-screen `TextView` (or reuses `TextLayoutManager.measureText`/`StaticLayout`). Until then Android still relies on the `requestLayout()` re-measure hack and explicit `width`/`height`.
 
 ## Example app
 

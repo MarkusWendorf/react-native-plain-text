@@ -1,9 +1,9 @@
 #import "LiteTextView.h"
 
-#import <react/renderer/components/LiteTextViewSpec/ComponentDescriptors.h>
 #import <react/renderer/components/LiteTextViewSpec/Props.h>
 #import <react/renderer/components/LiteTextViewSpec/RCTComponentViewHelpers.h>
 
+#import "LiteTextComponentDescriptor.h"
 #import "RCTFabricComponentsPlugins.h"
 
 using namespace facebook::react;
@@ -14,7 +14,7 @@ using namespace facebook::react;
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
 {
-    return concreteComponentDescriptorProvider<LiteTextViewComponentDescriptor>();
+    return concreteComponentDescriptorProvider<LiteTextComponentDescriptor>();
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
