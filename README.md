@@ -12,14 +12,25 @@ npm install react-native-lite-text
 
 ## Usage
 
-
-```js
-import { LiteTextView } from "react-native-lite-text";
+```jsx
+import { LiteText } from "react-native-lite-text";
 
 // ...
 
-<LiteTextView color="tomato" />
+<LiteText style={{ fontSize: 16 }}>Hello from LiteText 👋</LiteText>
 ```
+
+`LiteText` renders static text using the platform's native text widget
+(`UILabel` on iOS, `TextView` on Android).
+
+### Props
+
+| Prop       | Type                  | Description                                                             |
+| ---------- | --------------------- | ----------------------------------------------------------------------- |
+| `children` | `string`              | The text to display.                                                    |
+| `style`    | `StyleProp<TextStyle>`| `fontSize` sets the font size; remaining layout styles apply as usual.  |
+
+> **Note:** This is an early package. Currently only `fontSize` (via `style`) and the text content are supported, and the view does not yet size itself to its content — give it an explicit `width`/`height` via `style`.
 
 
 ## Contributing
