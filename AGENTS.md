@@ -8,6 +8,10 @@ A React Native library exposing a `LiteText` component: a lightweight static-tex
 
 It is a Yarn (v4, workspaces) monorepo: the library lives in the root, and `example/` is an Expo dev-client app used to run and test changes. Do not use `npm`.
 
+## React Native sources
+
+The full React Native source tree is checked out as a shallow git submodule at `references/react-native` (github.com/facebook/react-native). Use it to look up native implementation details, codegen internals, `CodegenTypes`, `RCTViewComponentView`, Fabric layout, and RN's own `<Text>`/`UILabel`/`TextView` handling instead of guessing. It is reference-only — never edit it. Run `git submodule update --init --depth 1 references/react-native` to populate it if missing.
+
 ## Commands
 
 Run from the repo root:
