@@ -1,10 +1,10 @@
 import { View, StyleSheet } from 'react-native';
-import { LiteTextView } from 'react-native-lite-text';
+import { LiteText } from 'react-native-lite-text';
 
 export default function App() {
   return (
     <View style={styles.container}>
-      <LiteTextView color="#32a852" style={styles.box} />
+      <LiteText style={styles.text}>Hello from LiteText 👋</LiteText>
     </View>
   );
 }
@@ -15,9 +15,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  box: {
-    width: 60,
-    height: 60,
-    marginVertical: 20,
+  text: {
+    width: 240,
+    height: 40,
   },
 });

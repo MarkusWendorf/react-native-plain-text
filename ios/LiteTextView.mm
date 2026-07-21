@@ -1,7 +1,5 @@
 #import "LiteTextView.h"
 
-#import <React/RCTConversions.h>
-
 #import <react/renderer/components/LiteTextViewSpec/ComponentDescriptors.h>
 #import <react/renderer/components/LiteTextViewSpec/Props.h>
 #import <react/renderer/components/LiteTextViewSpec/RCTComponentViewHelpers.h>
@@ -11,7 +9,7 @@
 using namespace facebook::react;
 
 @implementation LiteTextView {
-    UIView * _view;
+    UILabel * _label;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -25,9 +23,10 @@ using namespace facebook::react;
     static const auto defaultProps = std::make_shared<const LiteTextViewProps>();
     _props = defaultProps;
 
-    _view = [[UIView alloc] init];
+    _label = [[UILabel alloc] init];
+    _label.numberOfLines = 0;
 
-    self.contentView = _view;
+    self.contentView = _label;
   }
 
   return self;
@@ -38,8 +37,8 @@ using namespace facebook::react;
     const auto &oldViewProps = *std::static_pointer_cast<LiteTextViewProps const>(_props);
     const auto &newViewProps = *std::static_pointer_cast<LiteTextViewProps const>(props);
 
-    if (oldViewProps.color != newViewProps.color) {
-        [_view setBackgroundColor: RCTUIColorFromSharedColor(newViewProps.color)];
+    if (oldViewProps.text != newViewProps.text) {
+        _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
     }
 
     [super updateProps:props oldProps:oldProps];

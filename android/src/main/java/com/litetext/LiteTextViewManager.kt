@@ -1,6 +1,5 @@
 package com.litetext
 
-import android.graphics.Color
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -30,9 +29,9 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     return LiteTextView(context)
   }
 
-  @ReactProp(name = "color")
-  override fun setColor(view: LiteTextView?, color: Int?) {
-    view?.setBackgroundColor(color ?: Color.TRANSPARENT)
+  @ReactProp(name = "text")
+  override fun setText(view: LiteTextView?, text: String?) {
+    view?.text = text
   }
 
   companion object {
