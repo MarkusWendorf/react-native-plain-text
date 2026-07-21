@@ -25,6 +25,7 @@ using namespace facebook::react;
 
     _label = [[UILabel alloc] init];
     _label.numberOfLines = 0;
+    _label.textColor = [UIColor blackColor];
 
     self.contentView = _label;
   }
@@ -39,6 +40,10 @@ using namespace facebook::react;
 
     if (oldViewProps.text != newViewProps.text) {
         _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
+    }
+
+    if (oldViewProps.fontSize != newViewProps.fontSize) {
+        _label.font = [UIFont systemFontOfSize:newViewProps.fontSize];
     }
 
     [super updateProps:props oldProps:oldProps];

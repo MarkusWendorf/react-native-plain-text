@@ -1,6 +1,7 @@
 package com.litetext
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.widget.TextView
 
@@ -12,6 +13,12 @@ class LiteTextView : TextView {
     attrs,
     defStyleAttr
   )
+
+  init {
+    // Default to black so text color matches iOS's UILabel default. The theme's
+    // default TextView color is a gray, which would differ across platforms.
+    setTextColor(Color.BLACK)
+  }
 
   // React Native's Fabric layout system assigns this view's frame directly and
   // never triggers Android's normal measure/layout pass. TextView builds the

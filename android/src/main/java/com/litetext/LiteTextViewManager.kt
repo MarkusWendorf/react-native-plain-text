@@ -34,6 +34,13 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     view?.text = text
   }
 
+  // TextView.textSize uses SP units, which matches React Native's default of
+  // scaling font sizes with the user's accessibility font settings.
+  @ReactProp(name = "fontSize")
+  override fun setFontSize(view: LiteTextView?, fontSize: Float) {
+    view?.textSize = fontSize
+  }
+
   companion object {
     const val NAME = "LiteTextView"
   }
