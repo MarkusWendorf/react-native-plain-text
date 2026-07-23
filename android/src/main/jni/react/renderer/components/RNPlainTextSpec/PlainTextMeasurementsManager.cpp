@@ -1,4 +1,4 @@
-#include "LiteTextMeasurementsManager.h"
+#include "PlainTextMeasurementsManager.h"
 
 #include <fbjni/fbjni.h>
 #include <folly/dynamic.h>
@@ -9,9 +9,9 @@ using namespace facebook::jni;
 
 namespace facebook::react {
 
-Size LiteTextMeasurementsManager::measure(
+Size PlainTextMeasurementsManager::measure(
     SurfaceId surfaceId,
-    const RNLiteTextProps &props,
+    const RNPlainTextProps &props,
     LayoutConstraints layoutConstraints) const {
   const jni::global_ref<jobject> &fabricUIManager =
       contextContainer_->at<jni::global_ref<jobject>>("FabricUIManager");
@@ -32,7 +32,7 @@ Size LiteTextMeasurementsManager::measure(
   auto minimumSize = layoutConstraints.minimumSize;
   auto maximumSize = layoutConstraints.maximumSize;
 
-  local_ref<JString> componentName = make_jstring("RNLiteText");
+  local_ref<JString> componentName = make_jstring("RNPlainText");
 
   // The generic FabricUIManager.measure path takes props as a ReadableMap; the
   // Kotlin ViewManager.measure reads "text"/"fontSize" back out to size an

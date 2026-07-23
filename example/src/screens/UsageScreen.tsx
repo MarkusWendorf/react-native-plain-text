@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import type { ParamListBase } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { LiteText } from 'react-native-lite-text';
+import { PlainText } from 'react-native-plain-text';
 
 type Props = NativeStackScreenProps<ParamListBase>;
 
@@ -125,7 +125,7 @@ export default function UsageScreen({ navigation }: Props) {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View style={styles.section}>
-      <LiteText style={styles.sectionHeader}>{title}</LiteText>
+      <PlainText style={styles.sectionHeader}>{title}</PlainText>
       {children}
     </View>
   );
@@ -145,7 +145,7 @@ function TextItem({
   return (
     <View style={[styles.row, containerStyle]}>
       {/* No explicit height: the native text measures its own size. */}
-      <LiteText style={style}>{children}</LiteText>
+      <PlainText style={style}>{children}</PlainText>
       {showText && <Text style={[style, styles.overlay]}>{children}</Text>}
     </View>
   );
@@ -168,13 +168,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
   },
   row: {
-    // Sized to the LiteText; the overlay Text is absolutely positioned to
+    // Sized to the PlainText; the overlay Text is absolutely positioned to
     // fill this same box, so the two share a top-left origin.
     alignSelf: 'flex-start',
     alignItems: 'flex-start',
     backgroundColor: '#d0d0d0',
   },
-  // Used for demos whose LiteText itself has an explicit width: the row
+  // Used for demos whose PlainText itself has an explicit width: the row
   // should stretch to match instead of shrink-wrapping.
   wideRow: {
     alignSelf: 'stretch',
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     left: 0,
     opacity: 0.5,
     pointerEvents: 'none',
-    // Transparent so the LiteText underneath stays visible for comparison.
+    // Transparent so the PlainText underneath stays visible for comparison.
     backgroundColor: '#ff000020',
     color: 'red',
   },

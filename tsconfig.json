@@ -2,12 +2,12 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-lite-text": ["./src/index"]
+      "react-native-plain-text": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "customConditions": [
-      "react-native-lite-text-source",
+      "react-native-plain-text-source",
       "react-native-strict-api"
     ],
     "esModuleInterop": true,

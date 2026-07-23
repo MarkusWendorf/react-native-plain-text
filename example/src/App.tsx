@@ -14,7 +14,7 @@ const UsageStackNav = createNativeStackNavigator();
 function UsageStack() {
   return (
     <UsageStackNav.Navigator>
-      <UsageStackNav.Screen name="LiteText" component={UsageScreen} />
+      <UsageStackNav.Screen name="PlainText" component={UsageScreen} />
     </UsageStackNav.Navigator>
   );
 }

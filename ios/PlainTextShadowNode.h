@@ -1,17 +1,17 @@
 #pragma once
 
-#include <react/renderer/components/RNLiteTextSpec/EventEmitters.h>
-#include <react/renderer/components/RNLiteTextSpec/Props.h>
-#include <react/renderer/components/RNLiteTextSpec/ShadowNodes.h>
-#include <react/renderer/components/RNLiteTextSpec/States.h>
+#include <react/renderer/components/RNPlainTextSpec/EventEmitters.h>
+#include <react/renderer/components/RNPlainTextSpec/Props.h>
+#include <react/renderer/components/RNPlainTextSpec/ShadowNodes.h>
+#include <react/renderer/components/RNPlainTextSpec/States.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 
 namespace facebook::react {
 
 /*
- * Custom `ShadowNode` for <RNLiteText> that measures its own intrinsic size.
+ * Custom `ShadowNode` for <RNPlainText> that measures its own intrinsic size.
  *
- * The codegen-generated `RNLiteTextShadowNode` (in ShadowNodes.h) is a plain
+ * The codegen-generated `RNPlainTextShadowNode` (in ShadowNodes.h) is a plain
  * `ConcreteViewShadowNode` alias with no measure function, so Yoga clips the
  * text to whatever width/height the style specifies. This subclass opts into
  * measurement by setting the `MeasurableYogaNode` trait and overriding
@@ -19,15 +19,15 @@ namespace facebook::react {
  * size as the node's dimensions.
  *
  * The class is named differently from the generated alias to avoid a
- * redefinition clash. It reuses the generated `RNLiteTextComponentName` so
+ * redefinition clash. It reuses the generated `RNPlainTextComponentName` so
  * its component handle/name match the default, letting our ComponentDescriptor
  * override the generated one in the provider registry.
  */
-class LiteTextShadowNode final : public ConcreteViewShadowNode<
-                                     RNLiteTextComponentName,
-                                     RNLiteTextProps,
-                                     RNLiteTextEventEmitter,
-                                     RNLiteTextState> {
+class PlainTextShadowNode final : public ConcreteViewShadowNode<
+                                     RNPlainTextComponentName,
+                                     RNPlainTextProps,
+                                     RNPlainTextEventEmitter,
+                                     RNPlainTextState> {
  public:
   using ConcreteViewShadowNode::ConcreteViewShadowNode;
 

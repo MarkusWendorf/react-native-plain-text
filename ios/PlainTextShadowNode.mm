@@ -1,4 +1,4 @@
-#import "LiteTextShadowNode.h"
+#import "PlainTextShadowNode.h"
 
 #import <react/renderer/core/LayoutConstraints.h>
 
@@ -7,7 +7,7 @@
 
 namespace facebook::react {
 
-Size LiteTextShadowNode::measureContent(
+Size PlainTextShadowNode::measureContent(
     const LayoutContext & /*layoutContext*/,
     const LayoutConstraints &layoutConstraints) const {
   const auto &props = getConcreteProps();
@@ -17,7 +17,7 @@ Size LiteTextShadowNode::measureContent(
     text = @"";
   }
 
-  // Mirrors RNLiteTextFontFromProps in RNLiteText.mm, so the measured size
+  // Mirrors RNPlainTextFontFromProps in RNPlainText.mm, so the measured size
   // matches what the mounted UILabel will render.
   static NSDictionary<NSString *, NSNumber *> *weights = @{
       @"normal" : @(UIFontWeightRegular),
@@ -35,7 +35,7 @@ Size LiteTextShadowNode::measureContent(
   NSString *fontWeightKey = [NSString stringWithUTF8String:props.fontWeight.c_str()];
   NSNumber *weightNumber = weights[fontWeightKey];
   UIFontWeight weight = weightNumber != nil ? (UIFontWeight)weightNumber.doubleValue : UIFontWeightRegular;
-  BOOL italic = props.fontStyle == RNLiteTextFontStyle::Italic;
+  BOOL italic = props.fontStyle == RNPlainTextFontStyle::Italic;
 
   UIFont *font;
   if (!props.fontFamily.empty()) {

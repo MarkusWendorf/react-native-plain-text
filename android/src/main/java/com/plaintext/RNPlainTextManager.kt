@@ -1,4 +1,4 @@
-package com.litetext
+package com.plaintext
 
 import android.content.Context
 import android.view.View
@@ -9,21 +9,21 @@ import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
-import com.facebook.react.viewmanagers.RNLiteTextManagerInterface
-import com.facebook.react.viewmanagers.RNLiteTextManagerDelegate
+import com.facebook.react.viewmanagers.RNPlainTextManagerInterface
+import com.facebook.react.viewmanagers.RNPlainTextManagerDelegate
 import com.facebook.yoga.YogaMeasureMode
 import com.facebook.yoga.YogaMeasureOutput
 
-@ReactModule(name = RNLiteTextManager.NAME)
-class RNLiteTextManager : SimpleViewManager<RNLiteText>(),
-  RNLiteTextManagerInterface<RNLiteText> {
-  private val mDelegate: ViewManagerDelegate<RNLiteText>
+@ReactModule(name = RNPlainTextManager.NAME)
+class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
+  RNPlainTextManagerInterface<RNPlainText> {
+  private val mDelegate: ViewManagerDelegate<RNPlainText>
 
   init {
-    mDelegate = RNLiteTextManagerDelegate(this)
+    mDelegate = RNPlainTextManagerDelegate(this)
   }
 
-  override fun getDelegate(): ViewManagerDelegate<RNLiteText>? {
+  override fun getDelegate(): ViewManagerDelegate<RNPlainText>? {
     return mDelegate
   }
 
@@ -31,43 +31,43 @@ class RNLiteTextManager : SimpleViewManager<RNLiteText>(),
     return NAME
   }
 
-  public override fun createViewInstance(context: ThemedReactContext): RNLiteText {
-    return RNLiteText(context)
+  public override fun createViewInstance(context: ThemedReactContext): RNPlainText {
+    return RNPlainText(context)
   }
 
   @ReactProp(name = "text")
-  override fun setText(view: RNLiteText?, text: String?) {
+  override fun setText(view: RNPlainText?, text: String?) {
     view?.text = text
   }
 
   // TextView.textSize uses SP units, which matches React Native's default of
   // scaling font sizes with the user's accessibility font settings.
   @ReactProp(name = "fontSize")
-  override fun setFontSize(view: RNLiteText?, fontSize: Float) {
+  override fun setFontSize(view: RNPlainText?, fontSize: Float) {
     view?.setFontSizeSp(fontSize)
   }
 
   @ReactProp(name = "fontFamily")
-  override fun setFontFamily(view: RNLiteText?, fontFamily: String?) {
+  override fun setFontFamily(view: RNPlainText?, fontFamily: String?) {
     view?.setFontFamily(fontFamily)
   }
 
   @ReactProp(name = "fontWeight")
-  override fun setFontWeight(view: RNLiteText?, fontWeight: String?) {
+  override fun setFontWeight(view: RNPlainText?, fontWeight: String?) {
     view?.setFontWeight(fontWeight)
   }
 
   @ReactProp(name = "fontStyle")
-  override fun setFontStyle(view: RNLiteText?, fontStyle: String?) {
+  override fun setFontStyle(view: RNPlainText?, fontStyle: String?) {
     view?.setFontStyle(fontStyle)
   }
 
   @ReactProp(name = "textAlign")
-  override fun setTextAlign(view: RNLiteText?, textAlign: String?) {
+  override fun setTextAlign(view: RNPlainText?, textAlign: String?) {
     view?.setTextAlign(textAlign)
   }
 
-  // Called from C++ (LiteTextMeasurementsManager, via FabricUIManager.measure)
+  // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure)
   // on the Fabric layout thread to compute the view's intrinsic size. Fabric
   // never runs Android's normal onMeasure for our view, so this is where the
   // text is actually measured. `props` carries the "text"/"fontSize" serialized
@@ -83,7 +83,7 @@ class RNLiteTextManager : SimpleViewManager<RNLiteText>(),
     heightMode: YogaMeasureMode,
     attachmentsPositions: FloatArray?
   ): Long {
-    val view = RNLiteText(context)
+    val view = RNPlainText(context)
     view.text = props?.getString("text") ?: ""
     // fontSize is in SP, matching the setFontSize prop setter above.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
@@ -118,6 +118,6 @@ class RNLiteTextManager : SimpleViewManager<RNLiteText>(),
   }
 
   companion object {
-    const val NAME = "RNLiteText"
+    const val NAME = "RNPlainText"
   }
 }

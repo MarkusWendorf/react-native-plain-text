@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMemoryFootprint } from 'react-native-memory-footprint';
-import { LiteText } from 'react-native-lite-text';
+import { PlainText } from 'react-native-plain-text';
 
 const COUNT = 1000;
 
@@ -26,7 +26,7 @@ const FONT_SIZES = [
 // (GC timing, TextView layout) so it needs a longer settle window than iOS.
 const SETTLE_MS = Platform.select({ android: 2000, default: 500 });
 
-type Kind = 'lite' | 'text';
+type Kind = 'plain' | 'text';
 
 type Stats = {
   memBefore: number;
@@ -38,9 +38,9 @@ type Stats = {
 
 export default function PerformanceScreen() {
   const insets = useSafeAreaInsets();
-  const [liteCount, setLiteCount] = useState(0);
+  const [plainCount, setPlainCount] = useState(0);
   const [textCount, setTextCount] = useState(0);
-  const [liteStats, setLiteStats] = useState<Stats | null>(null);
+  const [plainStats, setPlainStats] = useState<Stats | null>(null);
   const [textStats, setTextStats] = useState<Stats | null>(null);
   const [fontSize, setFontSize] = useState<number>(56);
 
@@ -59,8 +59,8 @@ export default function PerformanceScreen() {
     const memBefore = getMemoryFootprint();
     const startTime = performance.now();
     pending.current = { kind, memBefore, startTime };
-    if (kind === 'lite') {
-      setLiteCount(COUNT);
+    if (kind === 'plain') {
+      setPlainCount(COUNT);
     } else {
       setTextCount(COUNT);
     }
@@ -85,15 +85,15 @@ export default function PerformanceScreen() {
         perViewBytes: totalBytes / COUNT,
         timeMs,
       };
-      if (m.kind === 'lite') {
-        setLiteStats(stats);
+      if (m.kind === 'plain') {
+        setPlainStats(stats);
       } else {
         setTextStats(stats);
       }
     }, SETTLE_MS);
 
     return () => clearTimeout(timer);
-  }, [liteCount, textCount]);
+  }, [plainCount, textCount]);
 
   return (
     <ScrollView
@@ -126,10 +126,10 @@ export default function PerformanceScreen() {
       </View>
 
       <Button
-        title={`Add ${COUNT} LiteText`}
-        onPress={() => startMeasure('lite')}
+        title={`Add ${COUNT} PlainText`}
+        onPress={() => startMeasure('plain')}
       />
-      <StatsRow label="LiteText" stats={liteStats} />
+      <StatsRow label="PlainText" stats={plainStats} />
 
       <Button
         title={`Add ${COUNT} Text`}
@@ -137,10 +137,10 @@ export default function PerformanceScreen() {
       />
       <StatsRow label="Text" stats={textStats} />
 
-      {Array.from({ length: liteCount }, (_, n) => (
-        <LiteText key={n} style={[styles.listItem, { fontSize }]}>
+      {Array.from({ length: plainCount }, (_, n) => (
+        <PlainText key={n} style={[styles.listItem, { fontSize }]}>
           {`List Item ${n + 1}`}
-        </LiteText>
+        </PlainText>
       ))}
 
       {Array.from({ length: textCount }, (_, n) => (

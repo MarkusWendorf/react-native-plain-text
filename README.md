@@ -1,19 +1,19 @@
-# react-native-lite-text
+# react-native-plain-text
 
-A lighter-weight `<Text>` for React Native. `LiteText` renders straight to
+A lighter-weight `<Text>` for React Native. `PlainText` renders straight to
 the platform's native text widget (`UILabel` on iOS, `TextView` on Android)
 instead of going through RN's own text layout pipeline, so it uses less
 memory and renders faster. The tradeoff: no nested or mixed-style text, just
 a single string with one style (see [Compatibility](#compatibility)). That
 covers the large majority of real-world `<Text>` usage (body copy, labels,
-list and feed content), making `LiteText` a drop-in-*shaped* swap for
+list and feed content), making `PlainText` a drop-in-*shaped* swap for
 perf-conscious apps and design systems alike. It's an early, evolving
 library, and feedback drives what gets built next.
 
 Early measurements with the example app's Performance tab (rough,
 self-measured, take as directional):
 
-| Text size | `LiteText` | RN `Text` |
+| Text size | `PlainText` | RN `Text` |
 | --- | --- | --- |
 | iOS, small | 28 KB | 56 KB |
 | iOS, regular | 43 KB | 83 KB |
@@ -24,23 +24,23 @@ self-measured, take as directional):
 
 
 ```sh
-npm install react-native-lite-text
+npm install react-native-plain-text
 ```
 
 
 ## Usage
 
 ```jsx
-import { LiteText } from "react-native-lite-text";
+import { PlainText } from "react-native-plain-text";
 
 // ...
 
-<LiteText style={{ fontSize: 16 }}>Hello from LiteText 👋</LiteText>
+<PlainText style={{ fontSize: 16 }}>Hello from PlainText 👋</PlainText>
 ```
 
 ### Compatibility
 
-`LiteText` is a drop-in-*shaped* replacement for RN's `<Text>`, but it's an early package and only supports a subset of `<Text>`'s props and styles so far. The tables below track what works today versus what's still on the roadmap.
+`PlainText` is a drop-in-*shaped* replacement for RN's `<Text>`, but it's an early package and only supports a subset of `<Text>`'s props and styles so far. The tables below track what works today versus what's still on the roadmap.
 
 Legend: ✅ supported · 🔜 planned, not yet available
 
@@ -87,7 +87,7 @@ Legend: ✅ supported · 🔜 planned, not yet available
 
 > Want a prop or style bumped up the list? Open an issue — real-world usage drives what gets built next.
 
-> **Sizing:** `LiteText` measures and sizes itself to its content automatically (no need to set an explicit `width`/`height`), matching how RN's `<Text>` behaves.
+> **Sizing:** `PlainText` measures and sizes itself to its content automatically (no need to set an explicit `width`/`height`), matching how RN's `<Text>` behaves.
 
 
 ## Contributing

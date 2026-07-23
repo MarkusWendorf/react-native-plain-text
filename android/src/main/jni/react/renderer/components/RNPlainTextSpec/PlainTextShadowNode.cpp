@@ -1,20 +1,20 @@
-#include "LiteTextShadowNode.h"
+#include "PlainTextShadowNode.h"
 
 #include <react/renderer/core/LayoutContext.h>
 
 namespace facebook::react {
 
-// Note: `RNLiteTextComponentName` is defined by the generated ShadowNodes.cpp
-// (as "RNLiteText"); we reuse that symbol rather than redefining it so our
+// Note: `RNPlainTextComponentName` is defined by the generated ShadowNodes.cpp
+// (as "RNPlainText"); we reuse that symbol rather than redefining it so our
 // component handle matches the generated one.
 
-void LiteTextShadowNode::setLiteTextMeasurementsManager(
-    const std::shared_ptr<LiteTextMeasurementsManager> &measurementsManager) {
+void PlainTextShadowNode::setPlainTextMeasurementsManager(
+    const std::shared_ptr<PlainTextMeasurementsManager> &measurementsManager) {
   ensureUnsealed();
   measurementsManager_ = measurementsManager;
 }
 
-Size LiteTextShadowNode::measureContent(
+Size PlainTextShadowNode::measureContent(
     const LayoutContext & /*layoutContext*/,
     const LayoutConstraints &layoutConstraints) const {
   return measurementsManager_->measure(

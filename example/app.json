@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LiteText Example",
-    "slug": "react-native-lite-text-example",
+    "name": "PlainText Example",
+    "slug": "react-native-plain-text-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "litetext.example"
+      "bundleIdentifier": "plaintext.example"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +22,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "litetext.example"
+      "package": "plaintext.example"
     },
     "web": {
       "favicon": "./assets/favicon.png"

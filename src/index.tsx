@@ -1,2 +1,2 @@
-export { LiteText } from './LiteText';
-export type { LiteTextProps } from './LiteText';
+export { PlainText } from './PlainText';
+export type { PlainTextProps } from './PlainText';

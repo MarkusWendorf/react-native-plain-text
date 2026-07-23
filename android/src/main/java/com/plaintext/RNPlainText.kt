@@ -1,4 +1,4 @@
-package com.litetext
+package com.plaintext
 
 import android.content.Context
 import android.graphics.Color
@@ -18,8 +18,8 @@ import kotlin.math.ceil
 // what RN's own <Text> is backed by (ReactTextView extends AppCompatTextView).
 // AppCompatTextView's compat font/paint resolution shifts glyph metrics
 // slightly from a raw TextView; using a different base class than <Text>
-// made LiteText's rendering drift out of alignment with it.
-class RNLiteText : AppCompatTextView {
+// made PlainText's rendering drift out of alignment with it.
+class RNPlainText : AppCompatTextView {
   constructor(context: Context) : super(context)
   constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
   constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(

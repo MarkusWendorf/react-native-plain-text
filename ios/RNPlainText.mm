@@ -1,17 +1,17 @@
-#import "RNLiteText.h"
+#import "RNPlainText.h"
 
-#import <react/renderer/components/RNLiteTextSpec/Props.h>
-#import <react/renderer/components/RNLiteTextSpec/RCTComponentViewHelpers.h>
+#import <react/renderer/components/RNPlainTextSpec/Props.h>
+#import <react/renderer/components/RNPlainTextSpec/RCTComponentViewHelpers.h>
 
-#import "LiteTextComponentDescriptor.h"
+#import "PlainTextComponentDescriptor.h"
 #import "RCTFabricComponentsPlugins.h"
 
 using namespace facebook::react;
 
 // Mirrors RCTFont.mm's core weight map (RCTConvert RCTFontWeight): the named
 // aliases beyond "normal"/"bold" (e.g. "ultralight", "condensed") are dropped
-// since codegen can't type fontWeight as an enum (see LiteTextViewNativeComponent.ts).
-static UIFontWeight RNLiteTextFontWeightFromProp(const std::string &fontWeight)
+// since codegen can't type fontWeight as an enum (see PlainTextViewNativeComponent.ts).
+static UIFontWeight RNPlainTextFontWeightFromProp(const std::string &fontWeight)
 {
     static NSDictionary<NSString *, NSNumber *> *weights = @{
         @"normal" : @(UIFontWeightRegular),
@@ -31,10 +31,10 @@ static UIFontWeight RNLiteTextFontWeightFromProp(const std::string &fontWeight)
     return weight != nil ? (UIFontWeight)weight.doubleValue : UIFontWeightRegular;
 }
 
-static UIFont *RNLiteTextFontFromProps(const RNLiteTextProps &props)
+static UIFont *RNPlainTextFontFromProps(const RNPlainTextProps &props)
 {
-    UIFontWeight weight = RNLiteTextFontWeightFromProp(props.fontWeight);
-    BOOL italic = props.fontStyle == RNLiteTextFontStyle::Italic;
+    UIFontWeight weight = RNPlainTextFontWeightFromProp(props.fontWeight);
+    BOOL italic = props.fontStyle == RNPlainTextFontStyle::Italic;
 
     UIFont *font;
     if (!props.fontFamily.empty()) {
@@ -57,35 +57,35 @@ static UIFont *RNLiteTextFontFromProps(const RNLiteTextProps &props)
     return font;
 }
 
-static NSTextAlignment RNLiteTextAlignmentFromProp(RNLiteTextTextAlign textAlign)
+static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAlign)
 {
     switch (textAlign) {
-        case RNLiteTextTextAlign::Left:
+        case RNPlainTextTextAlign::Left:
             return NSTextAlignmentLeft;
-        case RNLiteTextTextAlign::Right:
+        case RNPlainTextTextAlign::Right:
             return NSTextAlignmentRight;
-        case RNLiteTextTextAlign::Center:
+        case RNPlainTextTextAlign::Center:
             return NSTextAlignmentCenter;
-        case RNLiteTextTextAlign::Justify:
+        case RNPlainTextTextAlign::Justify:
             return NSTextAlignmentJustified;
-        case RNLiteTextTextAlign::Auto:
+        case RNPlainTextTextAlign::Auto:
             return NSTextAlignmentNatural;
     }
 }
 
-@implementation RNLiteText {
+@implementation RNPlainText {
     UILabel * _label;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
 {
-    return concreteComponentDescriptorProvider<LiteTextComponentDescriptor>();
+    return concreteComponentDescriptorProvider<PlainTextComponentDescriptor>();
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<const RNLiteTextProps>();
+    static const auto defaultProps = std::make_shared<const RNPlainTextProps>();
     _props = defaultProps;
 
     _label = [[UILabel alloc] init];
@@ -106,8 +106,8 @@ static NSTextAlignment RNLiteTextAlignmentFromProp(RNLiteTextTextAlign textAlign
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
-    const auto &oldViewProps = *std::static_pointer_cast<RNLiteTextProps const>(_props);
-    const auto &newViewProps = *std::static_pointer_cast<RNLiteTextProps const>(props);
+    const auto &oldViewProps = *std::static_pointer_cast<RNPlainTextProps const>(_props);
+    const auto &newViewProps = *std::static_pointer_cast<RNPlainTextProps const>(props);
 
     if (oldViewProps.text != newViewProps.text) {
         _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
@@ -117,11 +117,11 @@ static NSTextAlignment RNLiteTextAlignmentFromProp(RNLiteTextTextAlign textAlign
         oldViewProps.fontFamily != newViewProps.fontFamily ||
         oldViewProps.fontWeight != newViewProps.fontWeight ||
         oldViewProps.fontStyle != newViewProps.fontStyle) {
-        _label.font = RNLiteTextFontFromProps(newViewProps);
+        _label.font = RNPlainTextFontFromProps(newViewProps);
     }
 
     if (oldViewProps.textAlign != newViewProps.textAlign) {
-        _label.textAlignment = RNLiteTextAlignmentFromProp(newViewProps.textAlign);
+        _label.textAlignment = RNPlainTextAlignmentFromProp(newViewProps.textAlign);
     }
 
     [super updateProps:props oldProps:oldProps];

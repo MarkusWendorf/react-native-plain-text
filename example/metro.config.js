@@ -13,7 +13,7 @@ const root = path.resolve(__dirname, '..');
 const config = withMetroConfig(getDefaultConfig(__dirname), {
   root,
   dirname: __dirname,
-  conditions: ['react-native-lite-text-source'],
+  conditions: ['react-native-plain-text-source'],
 });
 
 module.exports = config;
