@@ -8,6 +8,22 @@
 
 using namespace facebook::react;
 
+static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign)
+{
+    switch (textAlign) {
+        case LiteTextViewTextAlign::Left:
+            return NSTextAlignmentLeft;
+        case LiteTextViewTextAlign::Right:
+            return NSTextAlignmentRight;
+        case LiteTextViewTextAlign::Center:
+            return NSTextAlignmentCenter;
+        case LiteTextViewTextAlign::Justify:
+            return NSTextAlignmentJustified;
+        case LiteTextViewTextAlign::Auto:
+            return NSTextAlignmentNatural;
+    }
+}
+
 @implementation LiteTextView {
     UILabel * _label;
 }
@@ -50,6 +66,10 @@ using namespace facebook::react;
 
     if (oldViewProps.fontSize != newViewProps.fontSize) {
         _label.font = [UIFont systemFontOfSize:newViewProps.fontSize];
+    }
+
+    if (oldViewProps.textAlign != newViewProps.textAlign) {
+        _label.textAlignment = LiteTextAlignmentFromProp(newViewProps.textAlign);
     }
 
     [super updateProps:props oldProps:oldProps];

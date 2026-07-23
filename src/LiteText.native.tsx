@@ -7,14 +7,16 @@ export type LiteTextProps = {
 };
 
 export function LiteText({ children, style }: LiteTextProps) {
-  // fontSize is a text-style prop, so it doesn't flow through the native
-  // ViewProps. Pull it out of the flattened style and pass it explicitly.
-  const { fontSize, ...viewStyle } = StyleSheet.flatten(style) ?? {};
+  // fontSize/textAlign are text-style props, so they don't flow through the
+  // native ViewProps. Pull them out of the flattened style and pass them
+  // explicitly.
+  const { fontSize, textAlign, ...viewStyle } = StyleSheet.flatten(style) ?? {};
 
   return (
     <LiteTextViewNativeComponent
       text={children}
       fontSize={fontSize}
+      textAlign={textAlign}
       style={viewStyle}
     />
   );

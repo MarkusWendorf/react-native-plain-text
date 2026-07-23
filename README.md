@@ -39,7 +39,7 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | `fontFamily` | 🔜 | |
 | `lineHeight` | 🔜 | |
 | `fontStyle` | 🔜 | `'normal' \| 'italic'` |
-| `textAlign` | 🔜 | |
+| `textAlign` | ✅ | |
 | `textDecorationLine` | 🔜 | |
 | `letterSpacing` | 🔜 | |
 | `textTransform` | 🔜 | |

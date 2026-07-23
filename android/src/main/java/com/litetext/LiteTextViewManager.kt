@@ -47,6 +47,11 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     view?.setFontSizeSp(fontSize)
   }
 
+  @ReactProp(name = "textAlign")
+  override fun setTextAlign(view: LiteTextView?, textAlign: String?) {
+    view?.setTextAlign(textAlign)
+  }
+
   // Called from C++ (LiteTextMeasurementsManager, via FabricUIManager.measure)
   // on the Fabric layout thread to compute the view's intrinsic size. Fabric
   // never runs Android's normal onMeasure for our view, so this is where the

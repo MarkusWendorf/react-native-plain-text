@@ -2,9 +2,11 @@ package com.litetext
 
 import android.content.Context
 import android.graphics.Color
+import android.os.Build
 import android.text.Layout
 import android.util.AttributeSet
 import android.util.TypedValue
+import android.view.Gravity
 import androidx.appcompat.widget.AppCompatTextView
 import com.facebook.react.uimanager.PixelUtil
 import kotlin.math.ceil
@@ -49,6 +51,29 @@ class LiteTextView : AppCompatTextView {
   // drift over a multiline block. Match RN's conversion exactly.
   fun setFontSizeSp(sp: Float) {
     setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
+  }
+
+  // Mirrors RN's <Text> (TextAttributeProps#getTextAlign): textAlign maps onto
+  // Gravity rather than View.TEXT_ALIGNMENT_*, and "start"/"left"/"right"/"end"
+  // are resolved against the view's layout direction so they match <Text> in
+  // RTL locales too. "justify" alone is just left-aligned Gravity — actual
+  // justification is a separate Layout.justificationMode (API 26+, see below).
+  fun setTextAlign(textAlign: String?) {
+    val isRTL = layoutDirection == LAYOUT_DIRECTION_RTL
+    gravity = when (textAlign) {
+      "justify" -> Gravity.LEFT
+      "auto", null -> Gravity.NO_GRAVITY
+      "left" -> if (isRTL) Gravity.RIGHT else Gravity.LEFT
+      "right" -> if (isRTL) Gravity.LEFT else Gravity.RIGHT
+      "center" -> Gravity.CENTER_HORIZONTAL
+      else -> Gravity.NO_GRAVITY
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      justificationMode =
+        if (textAlign == "justify") Layout.JUSTIFICATION_MODE_INTER_WORD
+        else Layout.JUSTIFICATION_MODE_NONE
+    }
   }
 
   // React Native's Fabric layout system assigns this view's frame directly and

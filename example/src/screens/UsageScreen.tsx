@@ -95,6 +95,26 @@ const styles = StyleSheet.create({
     width: 240,
     fontSize: 18,
   },
+  alignLeft: {
+    width: 240,
+    fontSize: 18,
+    textAlign: 'left',
+  },
+  alignCenter: {
+    width: 240,
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  alignRight: {
+    width: 240,
+    fontSize: 18,
+    textAlign: 'right',
+  },
+  alignJustify: {
+    width: 240,
+    fontSize: 18,
+    textAlign: 'justify',
+  },
 });
 
 // A LiteText paired, on demand, with a regular RN <Text> drawn directly on
@@ -108,5 +128,25 @@ const CASES: { key: string; text: string; style: StyleProp<TextStyle> }[] = [
     key: 'multiline',
     text: 'This is a longer piece of text that should wrap onto multiple lines and size its height automatically.',
     style: styles.multiline,
+  },
+  {
+    key: 'alignLeft',
+    text: 'This text is left-aligned within a wider fixed-width box.',
+    style: styles.alignLeft,
+  },
+  {
+    key: 'alignCenter',
+    text: 'This text is center-aligned within a wider fixed-width box.',
+    style: styles.alignCenter,
+  },
+  {
+    key: 'alignRight',
+    text: 'This text is right-aligned within a wider fixed-width box.',
+    style: styles.alignRight,
+  },
+  {
+    key: 'alignJustify',
+    text: 'This text is justify-aligned within a wider fixed-width box so every line but the last stretches to fill it.',
+    style: styles.alignJustify,
   },
 ];
