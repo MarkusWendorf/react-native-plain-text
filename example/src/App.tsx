@@ -33,7 +33,7 @@ export default function App() {
       <NavigationContainer>
         <Tab.Navigator screenOptions={{ headerShown: false }}>
           <Tab.Screen
-            name="Usage"
+            name="Features"
             component={UsageStack}
             options={{ tabBarIcon: usageIcon }}
           />

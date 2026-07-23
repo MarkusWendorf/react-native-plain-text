@@ -42,6 +42,14 @@ Note the naming split: the **public JS API is `LiteText`**, but the **native com
 - **Text-style props (e.g. `fontSize`) are NOT part of RN `ViewProps`**, so they don't flow through the native view's `style` automatically. The pattern (see `LiteText.native.tsx`): accept a `TextStyle` `style`, `StyleSheet.flatten` it, destructure the text-style keys out, pass them as **explicit codegen props**, and forward the remaining layout styles as `style`.
 - Codegen types come from the **`CodegenTypes` namespace exported by `react-native`** (e.g. `CodegenTypes.WithDefault<CodegenTypes.Float, 14>`). Do **not** import from `react-native/Libraries/Types/CodegenTypes` — this project uses the strict API (`customConditions` in `tsconfig.json`), which blocks `react-native/Libraries/*` subpaths.
 
+## Feature implementation policy
+
+Unless told otherwise, any request to implement a new feature (e.g. a new prop) implies all three of the following:
+
+- **API parity with RN `Text`**: match the shape/semantics of the equivalent prop or behavior on React Native's own `<Text>` component, rather than inventing a new API.
+- **Both platforms**: implement it for iOS and Android — not one platform first "for now". See the four-layer prop flow above for what touching both platforms means in practice.
+- **Example coverage**: add a dedicated section for it on the Features tab (`example/src/screens/UsageScreen.tsx`) so it's visible and testable in the example app.
+
 ## Native gotchas (learned the hard way)
 
 - **Native code changes require a full rebuild** (`yarn example ios|android`). Metro reload / Fast Refresh only picks up JS. A stale native build is the first thing to suspect when a native change "does nothing".
