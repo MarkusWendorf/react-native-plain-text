@@ -23,14 +23,56 @@ import { LiteText } from "react-native-lite-text";
 `LiteText` renders static text using the platform's native text widget
 (`UILabel` on iOS, `TextView` on Android).
 
-### Props
+### Compatibility
 
-| Prop       | Type                  | Description                                                             |
-| ---------- | --------------------- | ----------------------------------------------------------------------- |
-| `children` | `string`              | The text to display.                                                    |
-| `style`    | `StyleProp<TextStyle>`| `fontSize` sets the font size; remaining layout styles apply as usual.  |
+`LiteText` is a drop-in-*shaped* replacement for RN's `<Text>`, but it's an early package and only supports a subset of `<Text>`'s props and styles so far. The tables below track what works today versus what's still on the roadmap.
 
-> **Note:** This is an early package. Currently only `fontSize` (via `style`) and the text content are supported, and the view does not yet size itself to its content — give it an explicit `width`/`height` via `style`.
+Legend: ✅ supported · 🔜 planned, not yet available
+
+#### Style props (via `style={{ ... }}`)
+
+| Style | Status | Notes |
+| --- | :---: | --- |
+| `fontSize` | ✅ | |
+| `color` | 🔜 | |
+| `fontWeight` | 🔜 | |
+| `fontFamily` | 🔜 | |
+| `lineHeight` | 🔜 | |
+| `fontStyle` | 🔜 | `'normal' \| 'italic'` |
+| `textAlign` | 🔜 | |
+| `textDecorationLine` | 🔜 | |
+| `letterSpacing` | 🔜 | |
+| `textTransform` | 🔜 | |
+| `textAlignVertical` | 🔜 | Android only |
+| `verticalAlign` | 🔜 | |
+| `textDecorationColor` | 🔜 | |
+| `textDecorationStyle` | 🔜 | |
+| `textShadowColor` / `textShadowOffset` / `textShadowRadius` | 🔜 | |
+| `fontVariant` | 🔜 | |
+| `writingDirection` | 🔜 | |
+| `userSelect` | 🔜 | |
+| `includeFontPadding` | 🔜 | Android only |
+| All other `ViewStyle` props (`width`, `height`, `margin`, `padding`, `backgroundColor`, `opacity`, etc.) | ✅ | Forwarded to the native view as-is. |
+
+#### Component props
+
+| Prop | Status | Notes |
+| --- | :---: | --- |
+| `children` | ✅ | Plain `string` only — no nested `<Text>`/styled fragments. |
+| `numberOfLines` | 🔜 | |
+| `ellipsizeMode` | 🔜 | |
+| `onPress` / `onLongPress` | 🔜 | |
+| `selectable` | 🔜 | |
+| `allowFontScaling` / `maxFontSizeMultiplier` | 🔜 | |
+| `adjustsFontSizeToFit` / `minimumFontScale` | 🔜 | |
+| `testID` / `accessibilityRole` / other accessibility props | 🔜 | |
+| `onTextLayout` | 🔜 | |
+| `selectionColor` (Android) / `suppressHighlighting` (iOS) | 🔜 | |
+| `dataDetectorType` (Android) | 🔜 | |
+
+> Want a prop or style bumped up the list? Open an issue — real-world usage drives what gets built next.
+
+> **Sizing:** `LiteText` measures and sizes itself to its content automatically (no need to set an explicit `width`/`height`), matching how RN's `<Text>` behaves.
 
 
 ## Contributing
