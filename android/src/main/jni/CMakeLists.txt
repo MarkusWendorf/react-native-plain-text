@@ -2,10 +2,10 @@
 # library's react-native.config.js via `cmakeListsPath`. It replaces the default
 # generated CMakeLists (android/build/generated/source/codegen/jni/CMakeLists.txt).
 #
-# Purpose: build a `react_codegen_LiteTextViewSpec` target that compiles the
+# Purpose: build a `react_codegen_RNLiteTextSpec` target that compiles the
 # generated codegen sources *plus* our hand-written measuring ShadowNode /
 # ComponentDescriptor / MeasurementsManager, and arranges the include path so
-# that `<react/renderer/components/LiteTextViewSpec/ComponentDescriptors.h>`
+# that `<react/renderer/components/RNLiteTextSpec/ComponentDescriptors.h>`
 # resolves to our override (which registers the measuring descriptor) rather
 # than the generated non-measuring one. This is how Android intrinsic sizing is
 # wired in without requiring any C++/CMake changes in the consuming app.
@@ -22,13 +22,13 @@ get_filename_component(
 
 file(GLOB generated_SRCS CONFIGURE_DEPENDS
   "${GENERATED_DIR}/*.cpp"
-  "${GENERATED_DIR}/react/renderer/components/LiteTextViewSpec/*.cpp")
+  "${GENERATED_DIR}/react/renderer/components/RNLiteTextSpec/*.cpp")
 
 file(GLOB custom_SRCS CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/react/renderer/components/LiteTextViewSpec/*.cpp")
+  "${CMAKE_CURRENT_SOURCE_DIR}/react/renderer/components/RNLiteTextSpec/*.cpp")
 
 add_library(
-  react_codegen_LiteTextViewSpec
+  react_codegen_RNLiteTextSpec
   OBJECT
   ${generated_SRCS}
   ${custom_SRCS}
@@ -38,18 +38,18 @@ add_library(
 # ComponentDescriptors.h shadows the generated header of the same path. The
 # generated dir still provides Props.h/ShadowNodes.h/EventEmitters.h/etc.
 target_include_directories(
-  react_codegen_LiteTextViewSpec
+  react_codegen_RNLiteTextSpec
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${GENERATED_DIR}
-  ${GENERATED_DIR}/react/renderer/components/LiteTextViewSpec
+  ${GENERATED_DIR}/react/renderer/components/RNLiteTextSpec
 )
 
 target_link_libraries(
-  react_codegen_LiteTextViewSpec
+  react_codegen_RNLiteTextSpec
   fbjni
   jsi
   reactnative
 )
 
-target_compile_reactnative_options(react_codegen_LiteTextViewSpec PRIVATE)
+target_compile_reactnative_options(react_codegen_RNLiteTextSpec PRIVATE)

@@ -109,7 +109,7 @@
     ]
   },
   "codegenConfig": {
-    "name": "LiteTextViewSpec",
+    "name": "RNLiteTextSpec",
     "type": "all",
     "jsSrcsDir": "src",
     "android": {
@@ -117,8 +117,8 @@
     },
     "ios": {
       "components": {
-        "LiteTextView": {
-          "className": "LiteTextView"
+        "RNLiteText": {
+          "className": "RNLiteText"
         }
       }
     }

@@ -4,8 +4,8 @@
 
 namespace facebook::react {
 
-// Note: `LiteTextViewComponentName` is defined by the generated ShadowNodes.cpp
-// (as "LiteTextView"); we reuse that symbol rather than redefining it so our
+// Note: `RNLiteTextComponentName` is defined by the generated ShadowNodes.cpp
+// (as "RNLiteText"); we reuse that symbol rather than redefining it so our
 // component handle matches the generated one.
 
 void LiteTextShadowNode::setLiteTextMeasurementsManager(

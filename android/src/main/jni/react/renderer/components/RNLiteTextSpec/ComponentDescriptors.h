@@ -1,17 +1,17 @@
 /*
  * Override for the codegen-generated
- * `react/renderer/components/LiteTextViewSpec/ComponentDescriptors.h`.
+ * `react/renderer/components/RNLiteTextSpec/ComponentDescriptors.h`.
  *
  * Autolinking generates a registration that does:
- *   #include <react/renderer/components/LiteTextViewSpec/ComponentDescriptors.h>
+ *   #include <react/renderer/components/RNLiteTextSpec/ComponentDescriptors.h>
  *   providerRegistry->add(
- *       concreteComponentDescriptorProvider<LiteTextViewComponentDescriptor>());
+ *       concreteComponentDescriptorProvider<RNLiteTextComponentDescriptor>());
  *
- * The generated header defines `LiteTextViewComponentDescriptor` as a plain
- * (non-measuring) `ConcreteComponentDescriptor<LiteTextViewShadowNode>`. Our
+ * The generated header defines `RNLiteTextComponentDescriptor` as a plain
+ * (non-measuring) `ConcreteComponentDescriptor<RNLiteTextShadowNode>`. Our
  * custom JNI CMakeLists puts this directory ahead of the generated one on the
  * include path, so this file shadows the generated header and `Concrete...
- * Provider<LiteTextViewComponentDescriptor>()` instead registers our measuring
+ * Provider<RNLiteTextComponentDescriptor>()` instead registers our measuring
  * descriptor — without the app or autolinking needing any changes.
  *
  * See android/src/main/jni/CMakeLists.txt and react-native.config.js.
@@ -26,10 +26,10 @@
 
 namespace facebook::react {
 
-class LiteTextViewComponentDescriptor final
+class RNLiteTextComponentDescriptor final
     : public ConcreteComponentDescriptor<LiteTextShadowNode> {
  public:
-  LiteTextViewComponentDescriptor(const ComponentDescriptorParameters &parameters)
+  RNLiteTextComponentDescriptor(const ComponentDescriptorParameters &parameters)
       : ConcreteComponentDescriptor(parameters),
         measurementsManager_(
             std::make_shared<LiteTextMeasurementsManager>(contextContainer_)) {}

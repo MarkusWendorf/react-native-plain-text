@@ -11,7 +11,7 @@ namespace facebook::react {
 
 Size LiteTextMeasurementsManager::measure(
     SurfaceId surfaceId,
-    const LiteTextViewProps &props,
+    const RNLiteTextProps &props,
     LayoutConstraints layoutConstraints) const {
   const jni::global_ref<jobject> &fabricUIManager =
       contextContainer_->at<jni::global_ref<jobject>>("FabricUIManager");
@@ -32,7 +32,7 @@ Size LiteTextMeasurementsManager::measure(
   auto minimumSize = layoutConstraints.minimumSize;
   auto maximumSize = layoutConstraints.maximumSize;
 
-  local_ref<JString> componentName = make_jstring("LiteTextView");
+  local_ref<JString> componentName = make_jstring("RNLiteText");
 
   // The generic FabricUIManager.measure path takes props as a ReadableMap; the
   // Kotlin ViewManager.measure reads "text"/"fontSize" back out to size an

@@ -1,7 +1,7 @@
-#import "LiteTextView.h"
+#import "RNLiteText.h"
 
-#import <react/renderer/components/LiteTextViewSpec/Props.h>
-#import <react/renderer/components/LiteTextViewSpec/RCTComponentViewHelpers.h>
+#import <react/renderer/components/RNLiteTextSpec/Props.h>
+#import <react/renderer/components/RNLiteTextSpec/RCTComponentViewHelpers.h>
 
 #import "LiteTextComponentDescriptor.h"
 #import "RCTFabricComponentsPlugins.h"
@@ -11,7 +11,7 @@ using namespace facebook::react;
 // Mirrors RCTFont.mm's core weight map (RCTConvert RCTFontWeight): the named
 // aliases beyond "normal"/"bold" (e.g. "ultralight", "condensed") are dropped
 // since codegen can't type fontWeight as an enum (see LiteTextViewNativeComponent.ts).
-static UIFontWeight LiteTextFontWeightFromProp(const std::string &fontWeight)
+static UIFontWeight RNLiteTextFontWeightFromProp(const std::string &fontWeight)
 {
     static NSDictionary<NSString *, NSNumber *> *weights = @{
         @"normal" : @(UIFontWeightRegular),
@@ -31,10 +31,10 @@ static UIFontWeight LiteTextFontWeightFromProp(const std::string &fontWeight)
     return weight != nil ? (UIFontWeight)weight.doubleValue : UIFontWeightRegular;
 }
 
-static UIFont *LiteTextFontFromProps(const LiteTextViewProps &props)
+static UIFont *RNLiteTextFontFromProps(const RNLiteTextProps &props)
 {
-    UIFontWeight weight = LiteTextFontWeightFromProp(props.fontWeight);
-    BOOL italic = props.fontStyle == LiteTextViewFontStyle::Italic;
+    UIFontWeight weight = RNLiteTextFontWeightFromProp(props.fontWeight);
+    BOOL italic = props.fontStyle == RNLiteTextFontStyle::Italic;
 
     UIFont *font;
     if (!props.fontFamily.empty()) {
@@ -57,23 +57,23 @@ static UIFont *LiteTextFontFromProps(const LiteTextViewProps &props)
     return font;
 }
 
-static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign)
+static NSTextAlignment RNLiteTextAlignmentFromProp(RNLiteTextTextAlign textAlign)
 {
     switch (textAlign) {
-        case LiteTextViewTextAlign::Left:
+        case RNLiteTextTextAlign::Left:
             return NSTextAlignmentLeft;
-        case LiteTextViewTextAlign::Right:
+        case RNLiteTextTextAlign::Right:
             return NSTextAlignmentRight;
-        case LiteTextViewTextAlign::Center:
+        case RNLiteTextTextAlign::Center:
             return NSTextAlignmentCenter;
-        case LiteTextViewTextAlign::Justify:
+        case RNLiteTextTextAlign::Justify:
             return NSTextAlignmentJustified;
-        case LiteTextViewTextAlign::Auto:
+        case RNLiteTextTextAlign::Auto:
             return NSTextAlignmentNatural;
     }
 }
 
-@implementation LiteTextView {
+@implementation RNLiteText {
     UILabel * _label;
 }
 
@@ -85,7 +85,7 @@ static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<const LiteTextViewProps>();
+    static const auto defaultProps = std::make_shared<const RNLiteTextProps>();
     _props = defaultProps;
 
     _label = [[UILabel alloc] init];
@@ -106,8 +106,8 @@ static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
-    const auto &oldViewProps = *std::static_pointer_cast<LiteTextViewProps const>(_props);
-    const auto &newViewProps = *std::static_pointer_cast<LiteTextViewProps const>(props);
+    const auto &oldViewProps = *std::static_pointer_cast<RNLiteTextProps const>(_props);
+    const auto &newViewProps = *std::static_pointer_cast<RNLiteTextProps const>(props);
 
     if (oldViewProps.text != newViewProps.text) {
         _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
@@ -117,11 +117,11 @@ static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign
         oldViewProps.fontFamily != newViewProps.fontFamily ||
         oldViewProps.fontWeight != newViewProps.fontWeight ||
         oldViewProps.fontStyle != newViewProps.fontStyle) {
-        _label.font = LiteTextFontFromProps(newViewProps);
+        _label.font = RNLiteTextFontFromProps(newViewProps);
     }
 
     if (oldViewProps.textAlign != newViewProps.textAlign) {
-        _label.textAlignment = LiteTextAlignmentFromProp(newViewProps.textAlign);
+        _label.textAlignment = RNLiteTextAlignmentFromProp(newViewProps.textAlign);
     }
 
     [super updateProps:props oldProps:oldProps];

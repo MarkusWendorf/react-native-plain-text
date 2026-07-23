@@ -1,8 +1,8 @@
 /*
- * Custom `ShadowNode` for <LiteTextView> that measures its own intrinsic size.
+ * Custom `ShadowNode` for <RNLiteText> that measures its own intrinsic size.
  *
  * Mirrors the iOS `LiteTextShadowNode`: the codegen-generated
- * `LiteTextViewShadowNode` (in ShadowNodes.h) is a plain `ConcreteViewShadowNode`
+ * `RNLiteTextShadowNode` (in ShadowNodes.h) is a plain `ConcreteViewShadowNode`
  * with no measure function, so Yoga clips text to the styled width/height. This
  * subclass opts into measurement by setting the `MeasurableYogaNode` trait and
  * overriding `measureContent`.
@@ -11,10 +11,10 @@
  * pure-C++ text measurement, so the work is delegated to a
  * `LiteTextMeasurementsManager` that hops over JNI into the platform TextView.
  *
- * The class is named differently from the generated `LiteTextViewShadowNode`
+ * The class is named differently from the generated `RNLiteTextShadowNode`
  * alias to avoid a redefinition clash, but reuses the generated
- * `LiteTextViewComponentName` so its component handle matches the default —
- * letting our `LiteTextViewComponentDescriptor` override the generated one in
+ * `RNLiteTextComponentName` so its component handle matches the default —
+ * letting our `RNLiteTextComponentDescriptor` override the generated one in
  * the provider registry.
  */
 
@@ -22,19 +22,19 @@
 
 #include "LiteTextMeasurementsManager.h"
 
-#include <react/renderer/components/LiteTextViewSpec/EventEmitters.h>
-#include <react/renderer/components/LiteTextViewSpec/Props.h>
-#include <react/renderer/components/LiteTextViewSpec/ShadowNodes.h>
-#include <react/renderer/components/LiteTextViewSpec/States.h>
+#include <react/renderer/components/RNLiteTextSpec/EventEmitters.h>
+#include <react/renderer/components/RNLiteTextSpec/Props.h>
+#include <react/renderer/components/RNLiteTextSpec/ShadowNodes.h>
+#include <react/renderer/components/RNLiteTextSpec/States.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 
 namespace facebook::react {
 
 class LiteTextShadowNode final : public ConcreteViewShadowNode<
-                                     LiteTextViewComponentName,
-                                     LiteTextViewProps,
-                                     LiteTextViewEventEmitter,
-                                     LiteTextViewState> {
+                                     RNLiteTextComponentName,
+                                     RNLiteTextProps,
+                                     RNLiteTextEventEmitter,
+                                     RNLiteTextState> {
  public:
   using ConcreteViewShadowNode::ConcreteViewShadowNode;
 

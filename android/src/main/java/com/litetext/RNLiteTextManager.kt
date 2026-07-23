@@ -9,21 +9,21 @@ import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
-import com.facebook.react.viewmanagers.LiteTextViewManagerInterface
-import com.facebook.react.viewmanagers.LiteTextViewManagerDelegate
+import com.facebook.react.viewmanagers.RNLiteTextManagerInterface
+import com.facebook.react.viewmanagers.RNLiteTextManagerDelegate
 import com.facebook.yoga.YogaMeasureMode
 import com.facebook.yoga.YogaMeasureOutput
 
-@ReactModule(name = LiteTextViewManager.NAME)
-class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
-  LiteTextViewManagerInterface<LiteTextView> {
-  private val mDelegate: ViewManagerDelegate<LiteTextView>
+@ReactModule(name = RNLiteTextManager.NAME)
+class RNLiteTextManager : SimpleViewManager<RNLiteText>(),
+  RNLiteTextManagerInterface<RNLiteText> {
+  private val mDelegate: ViewManagerDelegate<RNLiteText>
 
   init {
-    mDelegate = LiteTextViewManagerDelegate(this)
+    mDelegate = RNLiteTextManagerDelegate(this)
   }
 
-  override fun getDelegate(): ViewManagerDelegate<LiteTextView>? {
+  override fun getDelegate(): ViewManagerDelegate<RNLiteText>? {
     return mDelegate
   }
 
@@ -31,39 +31,39 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     return NAME
   }
 
-  public override fun createViewInstance(context: ThemedReactContext): LiteTextView {
-    return LiteTextView(context)
+  public override fun createViewInstance(context: ThemedReactContext): RNLiteText {
+    return RNLiteText(context)
   }
 
   @ReactProp(name = "text")
-  override fun setText(view: LiteTextView?, text: String?) {
+  override fun setText(view: RNLiteText?, text: String?) {
     view?.text = text
   }
 
   // TextView.textSize uses SP units, which matches React Native's default of
   // scaling font sizes with the user's accessibility font settings.
   @ReactProp(name = "fontSize")
-  override fun setFontSize(view: LiteTextView?, fontSize: Float) {
+  override fun setFontSize(view: RNLiteText?, fontSize: Float) {
     view?.setFontSizeSp(fontSize)
   }
 
   @ReactProp(name = "fontFamily")
-  override fun setFontFamily(view: LiteTextView?, fontFamily: String?) {
+  override fun setFontFamily(view: RNLiteText?, fontFamily: String?) {
     view?.setFontFamily(fontFamily)
   }
 
   @ReactProp(name = "fontWeight")
-  override fun setFontWeight(view: LiteTextView?, fontWeight: String?) {
+  override fun setFontWeight(view: RNLiteText?, fontWeight: String?) {
     view?.setFontWeight(fontWeight)
   }
 
   @ReactProp(name = "fontStyle")
-  override fun setFontStyle(view: LiteTextView?, fontStyle: String?) {
+  override fun setFontStyle(view: RNLiteText?, fontStyle: String?) {
     view?.setFontStyle(fontStyle)
   }
 
   @ReactProp(name = "textAlign")
-  override fun setTextAlign(view: LiteTextView?, textAlign: String?) {
+  override fun setTextAlign(view: RNLiteText?, textAlign: String?) {
     view?.setTextAlign(textAlign)
   }
 
@@ -83,7 +83,7 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     heightMode: YogaMeasureMode,
     attachmentsPositions: FloatArray?
   ): Long {
-    val view = LiteTextView(context)
+    val view = RNLiteText(context)
     view.text = props?.getString("text") ?: ""
     // fontSize is in SP, matching the setFontSize prop setter above.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
@@ -118,6 +118,6 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
   }
 
   companion object {
-    const val NAME = "LiteTextView"
+    const val NAME = "RNLiteText"
   }
 }

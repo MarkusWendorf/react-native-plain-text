@@ -7,9 +7,9 @@
 namespace facebook::react {
 
 /*
- * `ComponentDescriptor` for <LiteTextView>, built on our measuring
+ * `ComponentDescriptor` for <RNLiteText>, built on our measuring
  * `LiteTextShadowNode` instead of the codegen-generated shadow node.
- * `LiteTextView.mm` registers this (via `componentDescriptorProvider`) in place
+ * `RNLiteText.mm` registers this (via `componentDescriptorProvider`) in place
  * of the generated descriptor, which is what gives the component its measure fn.
  */
 using LiteTextComponentDescriptor =

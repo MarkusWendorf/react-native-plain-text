@@ -21,4 +21,4 @@ export interface NativeProps extends ViewProps {
   >;
 }
 
-export default codegenNativeComponent<NativeProps>('LiteTextView');
+export default codegenNativeComponent<NativeProps>('RNLiteText');

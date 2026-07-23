@@ -17,7 +17,7 @@ Size LiteTextShadowNode::measureContent(
     text = @"";
   }
 
-  // Mirrors LiteTextFontFromProps in LiteTextView.mm, so the measured size
+  // Mirrors RNLiteTextFontFromProps in RNLiteText.mm, so the measured size
   // matches what the mounted UILabel will render.
   static NSDictionary<NSString *, NSNumber *> *weights = @{
       @"normal" : @(UIFontWeightRegular),
@@ -35,7 +35,7 @@ Size LiteTextShadowNode::measureContent(
   NSString *fontWeightKey = [NSString stringWithUTF8String:props.fontWeight.c_str()];
   NSNumber *weightNumber = weights[fontWeightKey];
   UIFontWeight weight = weightNumber != nil ? (UIFontWeight)weightNumber.doubleValue : UIFontWeightRegular;
-  BOOL italic = props.fontStyle == LiteTextViewFontStyle::Italic;
+  BOOL italic = props.fontStyle == RNLiteTextFontStyle::Italic;
 
   UIFont *font;
   if (!props.fontFamily.empty()) {
