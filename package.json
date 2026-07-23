@@ -1,7 +1,7 @@
 {
   "name": "react-native-lite-text",
   "version": "0.1.0",
-  "description": "Fast and Lightweight static text package for React Native",
+  "description": "A lighter, faster native <Text> replacement for React Native",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {

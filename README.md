@@ -1,6 +1,24 @@
 # react-native-lite-text
 
-Fast and Lightweight static text package for React Native
+A lighter-weight `<Text>` for React Native. `LiteText` renders straight to
+the platform's native text widget (`UILabel` on iOS, `TextView` on Android)
+instead of going through RN's own text layout pipeline, so it uses less
+memory and renders faster. The tradeoff: no nested or mixed-style text, just
+a single string with one style (see [Compatibility](#compatibility)). That
+covers the large majority of real-world `<Text>` usage (body copy, labels,
+list and feed content), making `LiteText` a drop-in-*shaped* swap for
+perf-conscious apps and design systems alike. It's an early, evolving
+library, and feedback drives what gets built next.
+
+Early measurements with the example app's Performance tab (rough,
+self-measured, take as directional):
+
+| Text size | `LiteText` | RN `Text` |
+| --- | --- | --- |
+| iOS, small | 28 KB | 56 KB |
+| iOS, regular | 43 KB | 83 KB |
+| iOS, large | 154 KB | 405 KB |
+| Android, typical instance | 38 KB | 51 KB |
 
 ## Installation
 
@@ -19,9 +37,6 @@ import { LiteText } from "react-native-lite-text";
 
 <LiteText style={{ fontSize: 16 }}>Hello from LiteText 👋</LiteText>
 ```
-
-`LiteText` renders static text using the platform's native text widget
-(`UILabel` on iOS, `TextView` on Android).
 
 ### Compatibility
 
