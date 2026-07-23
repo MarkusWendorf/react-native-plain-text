@@ -18,6 +18,11 @@ class LiteTextView : TextView {
     // Default to black so text color matches iOS's UILabel default. The theme's
     // default TextView color is a gray, which would differ across platforms.
     setTextColor(Color.BLACK)
+    // Seed textSize to the codegen fontSize default (14sp). Fabric only calls
+    // setFontSize when the prop differs from that default, so a view using the
+    // default would otherwise keep the theme's TextView size and mismatch the
+    // 14sp the shadow node measures with — truncating the text.
+    textSize = 14f
   }
 
   // React Native's Fabric layout system assigns this view's frame directly and

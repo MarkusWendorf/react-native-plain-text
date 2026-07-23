@@ -26,6 +26,12 @@ using namespace facebook::react;
     _label = [[UILabel alloc] init];
     _label.numberOfLines = 0;
     _label.textColor = [UIColor blackColor];
+    // Seed the label's font from the prop defaults so the diff in updateProps
+    // (which compares against defaultProps on first mount) is valid. Without
+    // this, a view whose fontSize equals the default is never applied and the
+    // label keeps UILabel's built-in 17pt — larger than the measured size, so
+    // the text truncates.
+    _label.font = [UIFont systemFontOfSize:defaultProps->fontSize];
 
     self.contentView = _label;
   }
