@@ -10,8 +10,14 @@ export function PlainText({ children, style }: PlainTextProps) {
   // fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style props,
   // so they don't flow through the native ViewProps. Pull them out of the
   // flattened style and pass them explicitly.
-  const { fontSize, fontFamily, fontWeight, fontStyle, textAlign, ...viewStyle } =
-    StyleSheet.flatten(style) ?? {};
+  const {
+    fontSize,
+    fontFamily,
+    fontWeight,
+    fontStyle,
+    textAlign,
+    ...viewStyle
+  } = StyleSheet.flatten(style) ?? {};
 
   return (
     <PlainTextViewNativeComponent
