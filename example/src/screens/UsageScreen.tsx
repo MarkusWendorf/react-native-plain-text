@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState, type ReactNode } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -7,6 +7,7 @@ import {
   View,
   type StyleProp,
   type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 import type { ParamListBase } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -37,14 +38,86 @@ export default function UsageScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      {CASES.map(({ key, text, style }) => (
-        <View key={key} style={styles.row}>
-          {/* No explicit height: the native text measures its own size. */}
-          <LiteText style={style}>{text}</LiteText>
-          {showText && <Text style={[style, styles.overlay]}>{text}</Text>}
-        </View>
-      ))}
+      <Section title="Font Size">
+        {FONT_SIZES.map((fontSize) => (
+          <TextItem
+            key={fontSize}
+            showText={showText}
+            style={{ fontSize }}
+          >{`${fontSize}pt font size`}</TextItem>
+        ))}
+      </Section>
+      <Section title="Multiline">
+        <TextItem
+          showText={showText}
+          style={styles.multiline}
+          containerStyle={styles.wideRow}
+        >
+          This is a longer piece of text that should wrap onto multiple lines
+          and size its height automatically.
+        </TextItem>
+      </Section>
+      <Section title="Text Align">
+        <TextItem
+          showText={showText}
+          style={styles.alignLeft}
+          containerStyle={styles.wideRow}
+        >
+          This text is left-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={styles.alignCenter}
+          containerStyle={styles.wideRow}
+        >
+          This text is center-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={styles.alignRight}
+          containerStyle={styles.wideRow}
+        >
+          This text is right-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={styles.alignJustify}
+          containerStyle={styles.wideRow}
+        >
+          This text is justify-aligned within a wider fixed-width box so every
+          line but the last stretches to fill it.
+        </TextItem>
+      </Section>
     </ScrollView>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <LiteText style={styles.sectionHeader}>{title}</LiteText>
+      {children}
+    </View>
+  );
+}
+
+function TextItem({
+  style,
+  containerStyle,
+  showText,
+  children,
+}: {
+  style?: StyleProp<TextStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
+  showText: boolean;
+  children: string;
+}) {
+  return (
+    <View style={[styles.row, containerStyle]}>
+      {/* No explicit height: the native text measures its own size. */}
+      <LiteText style={style}>{children}</LiteText>
+      {showText && <Text style={[style, styles.overlay]}>{children}</Text>}
+    </View>
   );
 }
 
@@ -54,15 +127,27 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    alignItems: 'center',
     paddingVertical: 24,
-    gap: 16,
+    paddingHorizontal: 20,
+    gap: 28,
+  },
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    fontSize: 22,
   },
   row: {
     // Sized to the LiteText; the overlay Text is absolutely positioned to
     // fill this same box, so the two share a top-left origin.
+    alignSelf: 'flex-start',
     alignItems: 'flex-start',
     backgroundColor: '#d0d0d0',
+  },
+  // Used for demos whose LiteText itself has an explicit width: the row
+  // should stretch to match instead of shrink-wrapping.
+  wideRow: {
+    alignSelf: 'stretch',
   },
   overlay: {
     position: 'absolute',
@@ -82,71 +167,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007aff',
   },
-  large: {
-    fontSize: 40,
-  },
-  regular: {
-    fontSize: 20,
-  },
-  small: {
-    fontSize: 12,
-  },
   multiline: {
-    width: 240,
+    width: '100%',
     fontSize: 18,
   },
   alignLeft: {
-    width: 240,
+    width: '100%',
     fontSize: 18,
     textAlign: 'left',
   },
   alignCenter: {
-    width: 240,
+    width: '100%',
     fontSize: 18,
     textAlign: 'center',
   },
   alignRight: {
-    width: 240,
+    width: '100%',
     fontSize: 18,
     textAlign: 'right',
   },
   alignJustify: {
-    width: 240,
+    width: '100%',
     fontSize: 18,
     textAlign: 'justify',
   },
 });
 
-// A LiteText paired, on demand, with a regular RN <Text> drawn directly on
-// top of it at 50% opacity. Anything that doesn't line up (baseline, line
-// height, wrapping, glyph position) shows up immediately as a "ghost".
-const CASES: { key: string; text: string; style: StyleProp<TextStyle> }[] = [
-  { key: 'large', text: 'Large text', style: styles.large },
-  { key: 'regular', text: 'Regular text', style: styles.regular },
-  { key: 'small', text: 'Small text', style: styles.small },
-  {
-    key: 'multiline',
-    text: 'This is a longer piece of text that should wrap onto multiple lines and size its height automatically.',
-    style: styles.multiline,
-  },
-  {
-    key: 'alignLeft',
-    text: 'This text is left-aligned within a wider fixed-width box.',
-    style: styles.alignLeft,
-  },
-  {
-    key: 'alignCenter',
-    text: 'This text is center-aligned within a wider fixed-width box.',
-    style: styles.alignCenter,
-  },
-  {
-    key: 'alignRight',
-    text: 'This text is right-aligned within a wider fixed-width box.',
-    style: styles.alignRight,
-  },
-  {
-    key: 'alignJustify',
-    text: 'This text is justify-aligned within a wider fixed-width box so every line but the last stretches to fill it.',
-    style: styles.alignJustify,
-  },
-];
+const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
