@@ -8,16 +8,53 @@
 
 using namespace facebook::react;
 
+// Mirrors RCTFont.mm's core weight map (RCTConvert RCTFontWeight): the named
+// aliases beyond "normal"/"bold" (e.g. "ultralight", "condensed") are dropped
+// since codegen can't type fontWeight as an enum (see LiteTextViewNativeComponent.ts).
+static UIFontWeight LiteTextFontWeightFromProp(const std::string &fontWeight)
+{
+    static NSDictionary<NSString *, NSNumber *> *weights = @{
+        @"normal" : @(UIFontWeightRegular),
+        @"bold" : @(UIFontWeightBold),
+        @"100" : @(UIFontWeightUltraLight),
+        @"200" : @(UIFontWeightThin),
+        @"300" : @(UIFontWeightLight),
+        @"400" : @(UIFontWeightRegular),
+        @"500" : @(UIFontWeightMedium),
+        @"600" : @(UIFontWeightSemibold),
+        @"700" : @(UIFontWeightBold),
+        @"800" : @(UIFontWeightHeavy),
+        @"900" : @(UIFontWeightBlack),
+    };
+    NSString *key = [NSString stringWithUTF8String:fontWeight.c_str()];
+    NSNumber *weight = weights[key];
+    return weight != nil ? (UIFontWeight)weight.doubleValue : UIFontWeightRegular;
+}
+
 static UIFont *LiteTextFontFromProps(const LiteTextViewProps &props)
 {
+    UIFontWeight weight = LiteTextFontWeightFromProp(props.fontWeight);
+    BOOL italic = props.fontStyle == LiteTextViewFontStyle::Italic;
+
+    UIFont *font;
     if (!props.fontFamily.empty()) {
         NSString *fontFamily = [NSString stringWithUTF8String:props.fontFamily.c_str()];
-        UIFont *font = [UIFont fontWithName:fontFamily size:props.fontSize];
-        if (font != nil) {
-            return font;
-        }
+        UIFontDescriptor *descriptor = [UIFontDescriptor fontDescriptorWithFontAttributes:@{
+            UIFontDescriptorFamilyAttribute : fontFamily,
+            UIFontDescriptorTraitsAttribute : @{UIFontWeightTrait : @(weight)},
+        }];
+        font = [UIFont fontWithDescriptor:descriptor size:props.fontSize];
+    } else {
+        font = [UIFont systemFontOfSize:props.fontSize weight:weight];
     }
-    return [UIFont systemFontOfSize:props.fontSize];
+
+    if (italic) {
+        UIFontDescriptor *italicDescriptor = [font.fontDescriptor
+            fontDescriptorWithSymbolicTraits:font.fontDescriptor.symbolicTraits | UIFontDescriptorTraitItalic];
+        font = [UIFont fontWithDescriptor:italicDescriptor size:props.fontSize];
+    }
+
+    return font;
 }
 
 static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign)
@@ -77,7 +114,9 @@ static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign
     }
 
     if (oldViewProps.fontSize != newViewProps.fontSize ||
-        oldViewProps.fontFamily != newViewProps.fontFamily) {
+        oldViewProps.fontFamily != newViewProps.fontFamily ||
+        oldViewProps.fontWeight != newViewProps.fontWeight ||
+        oldViewProps.fontStyle != newViewProps.fontStyle) {
         _label.font = LiteTextFontFromProps(newViewProps);
     }
 

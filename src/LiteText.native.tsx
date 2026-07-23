@@ -7,10 +7,10 @@ export type LiteTextProps = {
 };
 
 export function LiteText({ children, style }: LiteTextProps) {
-  // fontSize/fontFamily/textAlign are text-style props, so they don't flow
-  // through the native ViewProps. Pull them out of the flattened style and
-  // pass them explicitly.
-  const { fontSize, fontFamily, textAlign, ...viewStyle } =
+  // fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style props,
+  // so they don't flow through the native ViewProps. Pull them out of the
+  // flattened style and pass them explicitly.
+  const { fontSize, fontFamily, fontWeight, fontStyle, textAlign, ...viewStyle } =
     StyleSheet.flatten(style) ?? {};
 
   return (
@@ -18,6 +18,8 @@ export function LiteText({ children, style }: LiteTextProps) {
       text={children}
       fontSize={fontSize}
       fontFamily={fontFamily}
+      fontWeight={fontWeight != null ? String(fontWeight) : undefined}
+      fontStyle={fontStyle}
       textAlign={textAlign}
       style={viewStyle}
     />

@@ -17,16 +17,42 @@ Size LiteTextShadowNode::measureContent(
     text = @"";
   }
 
-  // Mirrors LiteTextFontFromProps in LiteTextView.mm — falls back to the
-  // system font when fontFamily is unset or names a font UIKit can't resolve,
-  // so the measured size matches what the mounted UILabel will render.
+  // Mirrors LiteTextFontFromProps in LiteTextView.mm, so the measured size
+  // matches what the mounted UILabel will render.
+  static NSDictionary<NSString *, NSNumber *> *weights = @{
+      @"normal" : @(UIFontWeightRegular),
+      @"bold" : @(UIFontWeightBold),
+      @"100" : @(UIFontWeightUltraLight),
+      @"200" : @(UIFontWeightThin),
+      @"300" : @(UIFontWeightLight),
+      @"400" : @(UIFontWeightRegular),
+      @"500" : @(UIFontWeightMedium),
+      @"600" : @(UIFontWeightSemibold),
+      @"700" : @(UIFontWeightBold),
+      @"800" : @(UIFontWeightHeavy),
+      @"900" : @(UIFontWeightBlack),
+  };
+  NSString *fontWeightKey = [NSString stringWithUTF8String:props.fontWeight.c_str()];
+  NSNumber *weightNumber = weights[fontWeightKey];
+  UIFontWeight weight = weightNumber != nil ? (UIFontWeight)weightNumber.doubleValue : UIFontWeightRegular;
+  BOOL italic = props.fontStyle == LiteTextViewFontStyle::Italic;
+
   UIFont *font;
   if (!props.fontFamily.empty()) {
     NSString *fontFamily = [NSString stringWithUTF8String:props.fontFamily.c_str()];
-    font = [UIFont fontWithName:fontFamily size:props.fontSize];
+    UIFontDescriptor *descriptor = [UIFontDescriptor fontDescriptorWithFontAttributes:@{
+        UIFontDescriptorFamilyAttribute : fontFamily,
+        UIFontDescriptorTraitsAttribute : @{UIFontWeightTrait : @(weight)},
+    }];
+    font = [UIFont fontWithDescriptor:descriptor size:props.fontSize];
+  } else {
+    font = [UIFont systemFontOfSize:props.fontSize weight:weight];
   }
-  if (font == nil) {
-    font = [UIFont systemFontOfSize:props.fontSize];
+
+  if (italic) {
+    UIFontDescriptor *italicDescriptor = [font.fontDescriptor
+        fontDescriptorWithSymbolicTraits:font.fontDescriptor.symbolicTraits | UIFontDescriptorTraitItalic];
+    font = [UIFont fontWithDescriptor:italicDescriptor size:props.fontSize];
   }
 
   // Measure with the same text engine that renders the UILabel (CoreText, via

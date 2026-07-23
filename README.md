@@ -35,10 +35,10 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | --- | :---: | --- |
 | `fontSize` | ✅ | |
 | `color` | 🔜 | |
-| `fontWeight` | 🔜 | |
+| `fontWeight` | ✅ | |
 | `fontFamily` | ✅ | |
 | `lineHeight` | 🔜 | |
-| `fontStyle` | 🔜 | `'normal' \| 'italic'` |
+| `fontStyle` | ✅ | `'normal' \| 'italic'` |
 | `textAlign` | ✅ | |
 | `textDecorationLine` | 🔜 | |
 | `letterSpacing` | 🔜 | |

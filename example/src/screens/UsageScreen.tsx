@@ -57,6 +57,26 @@ export default function UsageScreen({ navigation }: Props) {
           >{`${label} font family`}</TextItem>
         ))}
       </Section>
+      <Section title="Font Weight">
+        {FONT_WEIGHTS.map((fontWeight) => (
+          <TextItem
+            key={fontWeight}
+            showText={showText}
+            style={{ fontSize: 18, fontWeight }}
+          >{`${fontWeight} font weight`}</TextItem>
+        ))}
+      </Section>
+      <Section title="Font Style">
+        <TextItem showText={showText} style={styles.italic}>
+          Italic font style
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18, fontWeight: 'bold', fontStyle: 'italic' }}
+        >
+          Bold italic font style
+        </TextItem>
+      </Section>
       <Section title="Multiline">
         <TextItem
           showText={showText}
@@ -177,6 +197,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007aff',
   },
+  italic: {
+    fontSize: 18,
+    fontStyle: 'italic',
+  },
   multiline: {
     width: '100%',
     fontSize: 18,
@@ -204,6 +228,16 @@ const styles = StyleSheet.create({
 });
 
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
+
+const FONT_WEIGHTS = [
+  'normal',
+  'bold',
+  '100',
+  '300',
+  '500',
+  '700',
+  '900',
+] as const;
 
 // Font family names aren't portable across platforms, so pick the equivalent
 // built-in for each — mirrors how RN's own <Text> docs demo fontFamily.

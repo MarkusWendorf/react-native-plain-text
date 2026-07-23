@@ -52,6 +52,16 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     view?.setFontFamily(fontFamily)
   }
 
+  @ReactProp(name = "fontWeight")
+  override fun setFontWeight(view: LiteTextView?, fontWeight: String?) {
+    view?.setFontWeight(fontWeight)
+  }
+
+  @ReactProp(name = "fontStyle")
+  override fun setFontStyle(view: LiteTextView?, fontStyle: String?) {
+    view?.setFontStyle(fontStyle)
+  }
+
   @ReactProp(name = "textAlign")
   override fun setTextAlign(view: LiteTextView?, textAlign: String?) {
     view?.setTextAlign(textAlign)
@@ -81,6 +91,8 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     // props serializes an unset fontFamily as "" (the C++ std::string default),
     // not null — normalize so this matches the setFontFamily prop setter path.
     view.setFontFamily(props?.getString("fontFamily")?.ifEmpty { null })
+    view.setFontWeight(props?.getString("fontWeight")?.ifEmpty { null })
+    view.setFontStyle(props?.getString("fontStyle")?.ifEmpty { null })
 
     view.measure(
       toMeasureSpec(width, widthMode),

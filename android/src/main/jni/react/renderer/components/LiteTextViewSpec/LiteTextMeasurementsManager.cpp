@@ -42,6 +42,8 @@ Size LiteTextMeasurementsManager::measure(
   serializedProps["text"] = props.text;
   serializedProps["fontSize"] = props.fontSize;
   serializedProps["fontFamily"] = props.fontFamily;
+  serializedProps["fontWeight"] = props.fontWeight;
+  serializedProps["fontStyle"] = toString(props.fontStyle);
 
   local_ref<ReadableNativeMap::javaobject> propsRNM =
       ReadableNativeMap::newObjectCxxArgs(serializedProps);

@@ -9,8 +9,9 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
 import androidx.appcompat.widget.AppCompatTextView
-import com.facebook.react.common.assets.ReactFontManager
+import com.facebook.react.common.ReactConstants
 import com.facebook.react.uimanager.PixelUtil
+import com.facebook.react.views.text.ReactTypefaceUtils
 import kotlin.math.ceil
 
 // Extends AppCompatTextView (not the plain platform TextView) because that's
@@ -55,16 +56,40 @@ class LiteTextView : AppCompatTextView {
     setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
   }
 
+  private var fontFamily: String? = null
+  private var fontWeight: Int = ReactConstants.UNSET
+  private var fontStyle: Int = ReactConstants.UNSET
+
   // Mirrors RN's <Text> (TextAttributeProps#fontFamily): resolves against
   // ReactFontManager so custom fonts bundled the RN way (assets/fonts, or
   // registered natively) work here too, falling back to the platform default
   // when unset.
   fun setFontFamily(fontFamily: String?) {
-    typeface = if (!fontFamily.isNullOrEmpty()) {
-      ReactFontManager.getInstance().getTypeface(fontFamily, Typeface.NORMAL, context.assets)
-    } else {
-      Typeface.DEFAULT
-    }
+    this.fontFamily = fontFamily
+    updateTypeface()
+  }
+
+  // Mirrors RN's <Text> (TextAttributeProps#fontWeight): parses the numeric
+  // ("100".."900") / "normal" / "bold" values into a raw weight so it composes
+  // correctly with a custom fontFamily via ReactFontManager.TypefaceStyle.
+  fun setFontWeight(fontWeight: String?) {
+    this.fontWeight = ReactTypefaceUtils.parseFontWeight(fontWeight)
+    updateTypeface()
+  }
+
+  fun setFontStyle(fontStyle: String?) {
+    this.fontStyle = ReactTypefaceUtils.parseFontStyle(fontStyle)
+    updateTypeface()
+  }
+
+  private fun updateTypeface() {
+    typeface = ReactTypefaceUtils.applyStyles(
+      typeface,
+      if (fontStyle == Typeface.ITALIC) Typeface.ITALIC else Typeface.NORMAL,
+      fontWeight,
+      fontFamily,
+      context.assets
+    )
   }
 
   // Mirrors RN's <Text> (TextAttributeProps#getTextAlign): textAlign maps onto
