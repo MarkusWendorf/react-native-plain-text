@@ -44,7 +44,7 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
   // scaling font sizes with the user's accessibility font settings.
   @ReactProp(name = "fontSize")
   override fun setFontSize(view: LiteTextView?, fontSize: Float) {
-    view?.textSize = fontSize
+    view?.setFontSizeSp(fontSize)
   }
 
   // Called from C++ (LiteTextMeasurementsManager, via FabricUIManager.measure)
@@ -65,9 +65,9 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
   ): Long {
     val view = LiteTextView(context)
     view.text = props?.getString("text") ?: ""
-    // textSize is in SP, matching the setFontSize prop setter above.
+    // fontSize is in SP, matching the setFontSize prop setter above.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
-    view.textSize = fontSize.toFloat()
+    view.setFontSizeSp(fontSize.toFloat())
 
     view.measure(
       toMeasureSpec(width, widthMode),

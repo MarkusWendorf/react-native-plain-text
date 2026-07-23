@@ -3397,6 +3397,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-navigation/native-stack@npm:^7.18.5":
+  version: 7.18.5
+  resolution: "@react-navigation/native-stack@npm:7.18.5"
+  dependencies:
+    "@react-navigation/elements": "npm:^2.9.35"
+    color: "npm:^4.2.3"
+    sf-symbols-typescript: "npm:^2.1.0"
+    warn-once: "npm:^0.1.1"
+  peerDependencies:
+    "@react-navigation/native": ^7.3.13
+    react: ">= 18.2.0"
+    react-native: "*"
+    react-native-safe-area-context: ">= 4.0.0"
+    react-native-screens: ">= 4.0.0"
+  checksum: 10c0/ecde350063444f0636cf3771513cd841c6df3d7198b01ae7edec0a4c4ad128d560580d5be4a529f1da707001e548741fecf92eec7640cd4c3e79caf89072e91d
+  languageName: node
+  linkType: hard
+
 "@react-navigation/native@npm:^7.3.13":
   version: 7.3.13
   resolution: "@react-navigation/native@npm:7.3.13"
@@ -10224,6 +10242,7 @@ __metadata:
     "@expo/metro-runtime": "npm:~55.0.12"
     "@react-navigation/bottom-tabs": "npm:^7.18.13"
     "@react-navigation/native": "npm:^7.3.13"
+    "@react-navigation/native-stack": "npm:^7.18.5"
     expo: "npm:~55.0.28"
     expo-dev-client: "npm:~55.0.37"
     expo-status-bar: "npm:~55.0.6"
@@ -11978,7 +11997,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"warn-once@npm:^0.1.0":
+"warn-once@npm:^0.1.0, warn-once@npm:^0.1.1":
   version: 0.1.1
   resolution: "warn-once@npm:0.1.1"
   checksum: 10c0/f531e7b2382124f51e6d8f97b8c865246db8ab6ff4e53257a2d274e0f02b97d7201eb35db481843dc155815e154ad7afb53b01c4d4db15fb5aa073562496aff7
