@@ -2,12 +2,14 @@ package com.litetext
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Build
 import android.text.Layout
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
 import androidx.appcompat.widget.AppCompatTextView
+import com.facebook.react.common.assets.ReactFontManager
 import com.facebook.react.uimanager.PixelUtil
 import kotlin.math.ceil
 
@@ -51,6 +53,18 @@ class LiteTextView : AppCompatTextView {
   // drift over a multiline block. Match RN's conversion exactly.
   fun setFontSizeSp(sp: Float) {
     setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
+  }
+
+  // Mirrors RN's <Text> (TextAttributeProps#fontFamily): resolves against
+  // ReactFontManager so custom fonts bundled the RN way (assets/fonts, or
+  // registered natively) work here too, falling back to the platform default
+  // when unset.
+  fun setFontFamily(fontFamily: String?) {
+    typeface = if (!fontFamily.isNullOrEmpty()) {
+      ReactFontManager.getInstance().getTypeface(fontFamily, Typeface.NORMAL, context.assets)
+    } else {
+      Typeface.DEFAULT
+    }
   }
 
   // Mirrors RN's <Text> (TextAttributeProps#getTextAlign): textAlign maps onto

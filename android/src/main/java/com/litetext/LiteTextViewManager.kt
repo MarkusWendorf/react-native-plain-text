@@ -47,6 +47,11 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     view?.setFontSizeSp(fontSize)
   }
 
+  @ReactProp(name = "fontFamily")
+  override fun setFontFamily(view: LiteTextView?, fontFamily: String?) {
+    view?.setFontFamily(fontFamily)
+  }
+
   @ReactProp(name = "textAlign")
   override fun setTextAlign(view: LiteTextView?, textAlign: String?) {
     view?.setTextAlign(textAlign)
@@ -73,6 +78,9 @@ class LiteTextViewManager : SimpleViewManager<LiteTextView>(),
     // fontSize is in SP, matching the setFontSize prop setter above.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
     view.setFontSizeSp(fontSize.toFloat())
+    // props serializes an unset fontFamily as "" (the C++ std::string default),
+    // not null — normalize so this matches the setFontFamily prop setter path.
+    view.setFontFamily(props?.getString("fontFamily")?.ifEmpty { null })
 
     view.measure(
       toMeasureSpec(width, widthMode),

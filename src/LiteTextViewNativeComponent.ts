@@ -7,6 +7,7 @@ import {
 export interface NativeProps extends ViewProps {
   text?: string;
   fontSize?: CodegenTypes.WithDefault<CodegenTypes.Float, 14>;
+  fontFamily?: string;
   textAlign?: CodegenTypes.WithDefault<
     'auto' | 'left' | 'right' | 'center' | 'justify',
     'auto'

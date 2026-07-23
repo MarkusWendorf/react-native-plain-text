@@ -1,5 +1,6 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,6 +46,15 @@ export default function UsageScreen({ navigation }: Props) {
             showText={showText}
             style={{ fontSize }}
           >{`${fontSize}pt font size`}</TextItem>
+        ))}
+      </Section>
+      <Section title="Font Family">
+        {FONT_FAMILIES.map(({ label, fontFamily }) => (
+          <TextItem
+            key={label}
+            showText={showText}
+            style={{ fontSize: 18, fontFamily }}
+          >{`${label} font family`}</TextItem>
         ))}
       </Section>
       <Section title="Multiline">
@@ -194,3 +204,20 @@ const styles = StyleSheet.create({
 });
 
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
+
+// Font family names aren't portable across platforms, so pick the equivalent
+// built-in for each — mirrors how RN's own <Text> docs demo fontFamily.
+const FONT_FAMILIES = Platform.select({
+  ios: [
+    { label: 'System', fontFamily: undefined },
+    { label: 'Georgia', fontFamily: 'Georgia' },
+    { label: 'Menlo', fontFamily: 'Menlo' },
+    { label: 'Courier', fontFamily: 'Courier' },
+  ],
+  default: [
+    { label: 'System', fontFamily: undefined },
+    { label: 'serif', fontFamily: 'serif' },
+    { label: 'monospace', fontFamily: 'monospace' },
+    { label: 'sans-serif-condensed', fontFamily: 'sans-serif-condensed' },
+  ],
+});

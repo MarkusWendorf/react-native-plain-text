@@ -41,6 +41,7 @@ Size LiteTextMeasurementsManager::measure(
   folly::dynamic serializedProps = folly::dynamic::object;
   serializedProps["text"] = props.text;
   serializedProps["fontSize"] = props.fontSize;
+  serializedProps["fontFamily"] = props.fontFamily;
 
   local_ref<ReadableNativeMap::javaobject> propsRNM =
       ReadableNativeMap::newObjectCxxArgs(serializedProps);

@@ -17,7 +17,17 @@ Size LiteTextShadowNode::measureContent(
     text = @"";
   }
 
-  UIFont *font = [UIFont systemFontOfSize:props.fontSize];
+  // Mirrors LiteTextFontFromProps in LiteTextView.mm — falls back to the
+  // system font when fontFamily is unset or names a font UIKit can't resolve,
+  // so the measured size matches what the mounted UILabel will render.
+  UIFont *font;
+  if (!props.fontFamily.empty()) {
+    NSString *fontFamily = [NSString stringWithUTF8String:props.fontFamily.c_str()];
+    font = [UIFont fontWithName:fontFamily size:props.fontSize];
+  }
+  if (font == nil) {
+    font = [UIFont systemFontOfSize:props.fontSize];
+  }
 
   // Measure with the same text engine that renders the UILabel (CoreText, via
   // NSString drawing). This runs on the Fabric shadow thread; NSAttributed

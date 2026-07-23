@@ -36,7 +36,7 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | `fontSize` | ✅ | |
 | `color` | 🔜 | |
 | `fontWeight` | 🔜 | |
-| `fontFamily` | 🔜 | |
+| `fontFamily` | ✅ | |
 | `lineHeight` | 🔜 | |
 | `fontStyle` | 🔜 | `'normal' \| 'italic'` |
 | `textAlign` | ✅ | |

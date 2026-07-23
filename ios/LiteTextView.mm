@@ -8,6 +8,18 @@
 
 using namespace facebook::react;
 
+static UIFont *LiteTextFontFromProps(const LiteTextViewProps &props)
+{
+    if (!props.fontFamily.empty()) {
+        NSString *fontFamily = [NSString stringWithUTF8String:props.fontFamily.c_str()];
+        UIFont *font = [UIFont fontWithName:fontFamily size:props.fontSize];
+        if (font != nil) {
+            return font;
+        }
+    }
+    return [UIFont systemFontOfSize:props.fontSize];
+}
+
 static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign)
 {
     switch (textAlign) {
@@ -64,8 +76,9 @@ static NSTextAlignment LiteTextAlignmentFromProp(LiteTextViewTextAlign textAlign
         _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
     }
 
-    if (oldViewProps.fontSize != newViewProps.fontSize) {
-        _label.font = [UIFont systemFontOfSize:newViewProps.fontSize];
+    if (oldViewProps.fontSize != newViewProps.fontSize ||
+        oldViewProps.fontFamily != newViewProps.fontFamily) {
+        _label.font = LiteTextFontFromProps(newViewProps);
     }
 
     if (oldViewProps.textAlign != newViewProps.textAlign) {
