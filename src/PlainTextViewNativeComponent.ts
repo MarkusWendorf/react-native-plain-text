@@ -1,11 +1,13 @@
 import {
   codegenNativeComponent,
   type CodegenTypes,
+  type ColorValue,
   type ViewProps,
 } from 'react-native';
 
 export interface NativeProps extends ViewProps {
   text?: string;
+  color?: ColorValue;
   fontSize?: CodegenTypes.WithDefault<CodegenTypes.Float, 14>;
   fontFamily?: string;
   // A free string rather than a literal union: codegen enums are C++ enum

@@ -40,6 +40,11 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view?.text = text
   }
 
+  @ReactProp(name = "color", customType = "Color")
+  override fun setColor(view: RNPlainText?, color: Int?) {
+    view?.setColor(color)
+  }
+
   // TextView.textSize uses SP units, which matches React Native's default of
   // scaling font sizes with the user's accessibility font settings.
   @ReactProp(name = "fontSize")

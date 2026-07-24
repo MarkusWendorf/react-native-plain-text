@@ -1,5 +1,6 @@
 #import "RNPlainText.h"
 
+#import <React/RCTConversions.h>
 #import <react/renderer/components/RNPlainTextSpec/Props.h>
 #import <react/renderer/components/RNPlainTextSpec/RCTComponentViewHelpers.h>
 
@@ -122,6 +123,10 @@ static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAli
 
     if (oldViewProps.textAlign != newViewProps.textAlign) {
         _label.textAlignment = RNPlainTextAlignmentFromProp(newViewProps.textAlign);
+    }
+
+    if (oldViewProps.color != newViewProps.color) {
+        _label.textColor = newViewProps.color ? RCTUIColorFromSharedColor(newViewProps.color) : [UIColor blackColor];
     }
 
     [super updateProps:props oldProps:oldProps];

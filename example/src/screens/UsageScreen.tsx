@@ -48,6 +48,23 @@ export default function UsageScreen({ navigation }: Props) {
           >{`${fontSize}pt font size`}</TextItem>
         ))}
       </Section>
+      <Section title="Color">
+        {COLORS.map(({ label, color }) => (
+          <TextItem
+            key={label}
+            showText={showText}
+            style={{ fontSize: 18, color }}
+          >{`${label} text color`}</TextItem>
+        ))}
+      </Section>
+      <Section title="Background Color">
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18, color: '#ffffff', backgroundColor: '#333333' }}
+        >
+          White text on a dark background
+        </TextItem>
+      </Section>
       <Section title="Font Family">
         {FONT_FAMILIES.map(({ label, fontFamily }) => (
           <TextItem
@@ -228,6 +245,12 @@ const styles = StyleSheet.create({
 });
 
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
+
+const COLORS = [
+  { label: 'Red', color: '#e5484d' },
+  { label: 'Green', color: '#30a46c' },
+  { label: 'Blue', color: '#3e63dd' },
+];
 
 const FONT_WEIGHTS = [
   'normal',

@@ -52,6 +52,13 @@ class RNPlainText : AppCompatTextView {
   // values (ours unrounded, RN's ceiled to a whole pixel), which shifts the
   // paint's font metrics and compounds into a growing per-line height/width
   // drift over a multiline block. Match RN's conversion exactly.
+  // Mirrors RN's <Text> (TextAttributeProps#getEffectiveColor): a null value
+  // resets to the black default rather than falling through to the theme's
+  // gray, keeping the two platforms' unset-color rendering identical.
+  fun setColor(color: Int?) {
+    setTextColor(color ?: Color.BLACK)
+  }
+
   fun setFontSizeSp(sp: Float) {
     setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
   }

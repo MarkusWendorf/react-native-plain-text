@@ -7,10 +7,11 @@ export type PlainTextProps = {
 };
 
 export function PlainText({ children, style }: PlainTextProps) {
-  // fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style props,
-  // so they don't flow through the native ViewProps. Pull them out of the
-  // flattened style and pass them explicitly.
+  // color/fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style
+  // props, so they don't flow through the native ViewProps. Pull them out of
+  // the flattened style and pass them explicitly.
   const {
+    color,
     fontSize,
     fontFamily,
     fontWeight,
@@ -22,6 +23,7 @@ export function PlainText({ children, style }: PlainTextProps) {
   return (
     <PlainTextViewNativeComponent
       text={children}
+      color={color}
       fontSize={fontSize}
       fontFamily={fontFamily}
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
