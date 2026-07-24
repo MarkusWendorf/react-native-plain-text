@@ -24,6 +24,8 @@ export function PlainText({
     fontWeight,
     fontStyle,
     textAlign,
+    lineHeight,
+    letterSpacing,
     ...viewStyle
   } = StyleSheet.flatten(style) ?? {};
 
@@ -36,6 +38,8 @@ export function PlainText({
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
       fontStyle={fontStyle}
       textAlign={textAlign}
+      lineHeight={lineHeight}
+      letterSpacing={letterSpacing}
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
       style={viewStyle}

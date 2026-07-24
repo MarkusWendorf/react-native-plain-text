@@ -119,28 +119,80 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
   return self;
 }
 
+// UILabel has no plain properties for lineHeight or letterSpacing, so once
+// either is set the text/font/color/alignment all have to be expressed through
+// an NSAttributedString. This applies whichever form is needed from the current
+// props; call it whenever any text-content prop changes.
+- (void)applyContentFromProps:(const RNPlainTextProps &)props
+{
+    UIFont *font = RNPlainTextFontFromProps(props);
+    UIColor *color = props.color ? RCTUIColorFromSharedColor(props.color) : [UIColor blackColor];
+    NSTextAlignment alignment = RNPlainTextAlignmentFromProp(props.textAlign);
+    NSString *text = [NSString stringWithUTF8String:props.text.c_str()] ?: @"";
+
+    BOOL hasLineHeight = props.lineHeight > 0;
+    BOOL hasLetterSpacing = props.letterSpacing != 0;
+
+    if (!hasLineHeight && !hasLetterSpacing) {
+        // Plain path: let the label carry font/color/alignment directly.
+        _label.font = font;
+        _label.textColor = color;
+        _label.textAlignment = alignment;
+        _label.text = text;
+        return;
+    }
+
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
+    attributes[NSFontAttributeName] = font;
+    attributes[NSForegroundColorAttributeName] = color;
+
+    // letterSpacing is in points, applied directly as kerning (mirrors RN <Text>).
+    if (hasLetterSpacing) {
+        attributes[NSKernAttributeName] = @(props.letterSpacing);
+    }
+
+    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+    paragraphStyle.alignment = alignment;
+    // A paragraph style overrides the label's own lineBreakMode, so carry the
+    // ellipsize mode into it to keep truncation working with attributed text.
+    paragraphStyle.lineBreakMode = RNPlainTextLineBreakModeFromProp(props.ellipsizeMode);
+
+    if (hasLineHeight) {
+        // lineHeight is in points; pin the line box to it (mirrors RN <Text>).
+        paragraphStyle.minimumLineHeight = props.lineHeight;
+        paragraphStyle.maximumLineHeight = props.lineHeight;
+        // Vertically center the glyphs within the enlarged line box, matching
+        // RN <Text>'s RCTApplyBaselineOffset: shift the baseline by half the
+        // difference between the requested and the font's natural line height.
+        if (props.lineHeight >= font.lineHeight) {
+            attributes[NSBaselineOffsetAttributeName] = @((props.lineHeight - font.lineHeight) / 2.0);
+        }
+    }
+
+    attributes[NSParagraphStyleAttributeName] = paragraphStyle;
+    _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
+}
+
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
     const auto &oldViewProps = *std::static_pointer_cast<RNPlainTextProps const>(_props);
     const auto &newViewProps = *std::static_pointer_cast<RNPlainTextProps const>(props);
 
-    if (oldViewProps.text != newViewProps.text) {
-        _label.text = [NSString stringWithUTF8String:newViewProps.text.c_str()];
-    }
-
-    if (oldViewProps.fontSize != newViewProps.fontSize ||
+    // text/font/color/textAlign/lineHeight/letterSpacing all feed a single
+    // content build (see applyContentFromProps) since they may share an
+    // attributed string; ellipsizeMode does too because it lands in that
+    // string's paragraph style when one is used.
+    if (oldViewProps.text != newViewProps.text ||
+        oldViewProps.fontSize != newViewProps.fontSize ||
         oldViewProps.fontFamily != newViewProps.fontFamily ||
         oldViewProps.fontWeight != newViewProps.fontWeight ||
-        oldViewProps.fontStyle != newViewProps.fontStyle) {
-        _label.font = RNPlainTextFontFromProps(newViewProps);
-    }
-
-    if (oldViewProps.textAlign != newViewProps.textAlign) {
-        _label.textAlignment = RNPlainTextAlignmentFromProp(newViewProps.textAlign);
-    }
-
-    if (oldViewProps.color != newViewProps.color) {
-        _label.textColor = newViewProps.color ? RCTUIColorFromSharedColor(newViewProps.color) : [UIColor blackColor];
+        oldViewProps.fontStyle != newViewProps.fontStyle ||
+        oldViewProps.textAlign != newViewProps.textAlign ||
+        oldViewProps.color != newViewProps.color ||
+        oldViewProps.lineHeight != newViewProps.lineHeight ||
+        oldViewProps.letterSpacing != newViewProps.letterSpacing ||
+        oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
+        [self applyContentFromProps:newViewProps];
     }
 
     if (oldViewProps.numberOfLines != newViewProps.numberOfLines) {

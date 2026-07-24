@@ -133,6 +133,28 @@ export default function FeaturesScreen({ navigation }: Props) {
           </TextItem>
         ))}
       </Section>
+      <Section title="Line Height">
+        {LINE_HEIGHTS.map((lineHeight) => (
+          <TextItem
+            key={lineHeight}
+            showText={showText}
+            style={{ fontSize: 18, lineHeight }}
+            containerStyle={styles.wideRow}
+          >
+            {`lineHeight ${lineHeight}: this is a longer piece of text that wraps ` +
+              'onto multiple lines so the spacing between lines is visible.'}
+          </TextItem>
+        ))}
+      </Section>
+      <Section title="Letter Spacing">
+        {LETTER_SPACINGS.map((letterSpacing) => (
+          <TextItem
+            key={letterSpacing}
+            showText={showText}
+            style={{ fontSize: 18, letterSpacing }}
+          >{`letterSpacing ${letterSpacing}`}</TextItem>
+        ))}
+      </Section>
       <Section title="Text Align">
         <TextItem
           showText={showText}
@@ -294,6 +316,10 @@ const styles = StyleSheet.create({
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
 
 const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
+
+const LINE_HEIGHTS = [18, 26, 36];
+
+const LETTER_SPACINGS = [-2, 0, 2, 6];
 
 const COLORS = [
   { label: 'Red', color: '#e5484d' },

@@ -17,6 +17,12 @@ export interface NativeProps extends ViewProps {
   // fontWeight as plain `string`).
   fontWeight?: string;
   fontStyle?: CodegenTypes.WithDefault<'normal' | 'italic', 'normal'>;
+  // Points. 0 means unset (matches RN <Text>, where lineHeight defaults to the
+  // font's natural line height); any positive value overrides it.
+  lineHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
+  // Points. 0 means unset/no extra tracking (RN <Text> default), matching the
+  // platform default, so it doubles as the sentinel for "not provided".
+  letterSpacing?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   textAlign?: CodegenTypes.WithDefault<
     'auto' | 'left' | 'right' | 'center' | 'justify',
     'auto'

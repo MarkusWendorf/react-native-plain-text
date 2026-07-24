@@ -2,10 +2,14 @@ package com.plaintext
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.text.Layout
+import android.text.Spannable
+import android.text.SpannableString
 import android.text.TextUtils
+import android.text.style.LineHeightSpan
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
@@ -14,6 +18,7 @@ import com.facebook.react.common.ReactConstants
 import com.facebook.react.uimanager.PixelUtil
 import com.facebook.react.views.text.ReactTypefaceUtils
 import kotlin.math.ceil
+import kotlin.math.floor
 
 // Extends AppCompatTextView (not the plain platform TextView) because that's
 // what RN's own <Text> is backed by (ReactTextView extends AppCompatTextView).
@@ -62,6 +67,65 @@ class RNPlainText : AppCompatTextView {
 
   fun setFontSizeSp(sp: Float) {
     setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
+    // letterSpacing is expressed relative to the font size (see below), so a
+    // font-size change has to recompute it.
+    applyLetterSpacing()
+  }
+
+  private var rawText: CharSequence? = null
+  private var lineHeightPx: Float = Float.NaN
+  private var letterSpacingDip: Float = Float.NaN
+
+  // Text is routed through here (rather than TextView.setText directly) so a
+  // lineHeight span can be layered on when needed. Re-applied whenever the text
+  // or the line height changes.
+  fun setPlainText(value: String?) {
+    rawText = value
+    applyText()
+  }
+
+  // Mirrors RN's <Text> (TextAttributeProps#lineHeight): the value is in DIP and
+  // scaled to px with font scaling on (RN's allowFontScaling default). 0/unset
+  // keeps the font's natural line height.
+  fun setLineHeight(lineHeight: Float) {
+    lineHeightPx = if (lineHeight <= 0f) Float.NaN else PixelUtil.toPixelFromSP(lineHeight)
+    applyText()
+  }
+
+  private fun applyText() {
+    val value = rawText ?: ""
+    if (lineHeightPx.isNaN()) {
+      setText(value)
+      return
+    }
+    // Reimplements RN's (internal) CustomLineHeightSpan so line spacing matches
+    // <Text> exactly. Applied over the whole string with the same span flags RN
+    // uses for a span anchored at index 0.
+    val spannable = SpannableString(value)
+    spannable.setSpan(
+      RNLineHeightSpan(lineHeightPx),
+      0,
+      spannable.length,
+      Spannable.SPAN_INCLUSIVE_INCLUSIVE
+    )
+    setText(spannable)
+  }
+
+  // Mirrors RN's <Text> (TextAttributeProps#letterSpacing + ReactTextView): the
+  // DIP input is scaled to px and divided by the font size, because Android's
+  // TextView.letterSpacing is in em units (relative to the font size), unlike
+  // iOS's absolute point kerning.
+  fun setLetterSpacingDip(letterSpacing: Float) {
+    letterSpacingDip = letterSpacing
+    applyLetterSpacing()
+  }
+
+  private fun applyLetterSpacing() {
+    letterSpacing = if (letterSpacingDip.isNaN() || letterSpacingDip == 0f) {
+      0f
+    } else {
+      PixelUtil.toPixelFromSP(letterSpacingDip) / textSize
+    }
   }
 
   private var fontFamily: String? = null
@@ -157,5 +221,33 @@ class RNPlainText : AppCompatTextView {
   override fun requestLayout() {
     super.requestLayout()
     post(measureAndLayout)
+  }
+}
+
+// A reimplementation of RN's internal CustomLineHeightSpan (which isn't part of
+// the public API). Unlike LineHeightSpan.Standard it uses web-like line-box
+// behavior: the extra leading is split evenly above and below the text, and it
+// also affects the space before the first line and after the last, so text
+// vertically matches RN's own <Text>.
+private class RNLineHeightSpan(height: Float) : LineHeightSpan {
+  private val lineHeight: Int = ceil(height.toDouble()).toInt()
+
+  override fun chooseHeight(
+    text: CharSequence,
+    start: Int,
+    end: Int,
+    spanstartv: Int,
+    v: Int,
+    fm: Paint.FontMetricsInt,
+  ) {
+    val leading = lineHeight - ((-fm.ascent) + fm.descent)
+    fm.ascent -= ceil(leading / 2.0f).toInt()
+    fm.descent += floor(leading / 2.0f).toInt()
+    if (start == 0) {
+      fm.top = fm.ascent
+    }
+    if (end == text.length) {
+      fm.bottom = fm.descent
+    }
   }
 }

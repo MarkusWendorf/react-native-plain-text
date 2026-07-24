@@ -37,7 +37,7 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
 
   @ReactProp(name = "text")
   override fun setText(view: RNPlainText?, text: String?) {
-    view?.text = text
+    view?.setPlainText(text)
   }
 
   @ReactProp(name = "color", customType = "Color")
@@ -72,6 +72,16 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view?.setTextAlign(textAlign)
   }
 
+  @ReactProp(name = "lineHeight")
+  override fun setLineHeight(view: RNPlainText?, lineHeight: Float) {
+    view?.setLineHeight(lineHeight)
+  }
+
+  @ReactProp(name = "letterSpacing")
+  override fun setLetterSpacing(view: RNPlainText?, letterSpacing: Float) {
+    view?.setLetterSpacingDip(letterSpacing)
+  }
+
   @ReactProp(name = "numberOfLines")
   override fun setNumberOfLines(view: RNPlainText?, numberOfLines: Int) {
     view?.setNumberOfLines(numberOfLines)
@@ -99,8 +109,8 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     attachmentsPositions: FloatArray?
   ): Long {
     val view = RNPlainText(context)
-    view.text = props?.getString("text") ?: ""
-    // fontSize is in SP, matching the setFontSize prop setter above.
+    // fontSize is in SP, matching the setFontSize prop setter above. Set it
+    // before letterSpacing, which is computed relative to the font size.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
     view.setFontSizeSp(fontSize.toFloat())
     // props serializes an unset fontFamily as "" (the C++ std::string default),
@@ -108,9 +118,15 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view.setFontFamily(props?.getString("fontFamily")?.ifEmpty { null })
     view.setFontWeight(props?.getString("fontWeight")?.ifEmpty { null })
     view.setFontStyle(props?.getString("fontStyle")?.ifEmpty { null })
+    // letterSpacing widens the text (width) and lineHeight grows each line
+    // (height), so both must be applied for the measured size to match.
+    view.setLetterSpacingDip(if (props?.hasKey("letterSpacing") == true) props.getDouble("letterSpacing").toFloat() else 0f)
+    view.setLineHeight(if (props?.hasKey("lineHeight") == true) props.getDouble("lineHeight").toFloat() else 0f)
     // numberOfLines caps the measured height; ellipsizeMode doesn't change the
     // size (only where the ellipsis lands), so it isn't serialized for measure.
     view.setNumberOfLines(if (props?.hasKey("numberOfLines") == true) props.getInt("numberOfLines") else 0)
+    // Set text last so the lineHeight span (applied on text set) is in place.
+    view.setPlainText(props?.getString("text") ?: "")
 
     view.measure(
       toMeasureSpec(width, widthMode),

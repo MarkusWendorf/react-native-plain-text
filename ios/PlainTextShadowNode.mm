@@ -55,6 +55,28 @@ Size PlainTextShadowNode::measureContent(
     font = [UIFont fontWithDescriptor:italicDescriptor size:props.fontSize];
   }
 
+  // Build the same attributes the mounted UILabel renders with, so the measured
+  // size matches. Kerning (letterSpacing) widens the text; a pinned line height
+  // (lineHeight) changes each line's height. Both mirror RNPlainText.mm's
+  // applyContentFromProps.
+  NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
+  attributes[NSFontAttributeName] = font;
+
+  if (props.letterSpacing != 0) {
+    attributes[NSKernAttributeName] = @(props.letterSpacing);
+  }
+
+  // The per-line height used to cap numberOfLines: the pinned lineHeight when
+  // set, otherwise the font's natural line height.
+  Float perLineHeight = static_cast<Float>(font.lineHeight);
+  if (props.lineHeight > 0) {
+    NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
+    paragraphStyle.minimumLineHeight = props.lineHeight;
+    paragraphStyle.maximumLineHeight = props.lineHeight;
+    attributes[NSParagraphStyleAttributeName] = paragraphStyle;
+    perLineHeight = static_cast<Float>(props.lineHeight);
+  }
+
   // Measure with the same text engine that renders the UILabel (CoreText, via
   // NSString drawing). This runs on the Fabric shadow thread; NSAttributed
   // string measurement is thread-safe. Height is unbounded so multi-line text
@@ -65,7 +87,7 @@ Size PlainTextShadowNode::measureContent(
 
   CGRect rect = [text boundingRectWithSize:maxSize
                                    options:NSStringDrawingUsesLineFragmentOrigin
-                                attributes:@{NSFontAttributeName : font}
+                                attributes:attributes
                                    context:nil];
 
   Size size{
@@ -74,11 +96,11 @@ Size PlainTextShadowNode::measureContent(
   };
 
   // Cap the height to numberOfLines (0 = unlimited), matching the mounted
-  // UILabel's own line clamp. UILabel truncates to N lines of font.lineHeight,
+  // UILabel's own line clamp. UILabel truncates to N lines of perLineHeight,
   // so bound the measured height the same way; min() keeps text that already
   // fits in fewer lines from being inflated.
   if (props.numberOfLines > 0) {
-    Float maxHeight = static_cast<Float>(std::ceil(props.numberOfLines * font.lineHeight));
+    Float maxHeight = static_cast<Float>(std::ceil(props.numberOfLines * perLineHeight));
     size.height = std::min(size.height, maxHeight);
   }
 

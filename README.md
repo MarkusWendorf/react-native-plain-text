@@ -52,11 +52,11 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | `color` | ✅ | |
 | `fontWeight` | ✅ | |
 | `fontFamily` | ✅ | |
-| `lineHeight` | 🔜 | |
+| `lineHeight` | ✅ | |
 | `fontStyle` | ✅ | `'normal' \| 'italic'` |
 | `textAlign` | ✅ | |
 | `textDecorationLine` | 🔜 | |
-| `letterSpacing` | 🔜 | |
+| `letterSpacing` | ✅ | |
 | `textTransform` | 🔜 | |
 | `textAlignVertical` | 🔜 | Android only |
 | `verticalAlign` | 🔜 | |
