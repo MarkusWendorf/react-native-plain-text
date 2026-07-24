@@ -4,9 +4,16 @@ import PlainTextViewNativeComponent from './PlainTextViewNativeComponent';
 export type PlainTextProps = {
   children?: string;
   style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
 };
 
-export function PlainText({ children, style }: PlainTextProps) {
+export function PlainText({
+  children,
+  style,
+  numberOfLines,
+  ellipsizeMode,
+}: PlainTextProps) {
   // color/fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style
   // props, so they don't flow through the native ViewProps. Pull them out of
   // the flattened style and pass them explicitly.
@@ -29,6 +36,8 @@ export function PlainText({ children, style }: PlainTextProps) {
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
       fontStyle={fontStyle}
       textAlign={textAlign}
+      numberOfLines={numberOfLines}
+      ellipsizeMode={ellipsizeMode}
       style={viewStyle}
     />
   );

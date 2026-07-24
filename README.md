@@ -49,7 +49,7 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | Style | Status | Notes |
 | --- | :---: | --- |
 | `fontSize` | ✅ | |
-| `color` | 🔜 | |
+| `color` | ✅ | |
 | `fontWeight` | ✅ | |
 | `fontFamily` | ✅ | |
 | `lineHeight` | 🔜 | |
@@ -74,8 +74,8 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | Prop | Status | Notes |
 | --- | :---: | --- |
 | `children` | ✅ | Plain `string` only — no nested `<Text>`/styled fragments. |
-| `numberOfLines` | 🔜 | |
-| `ellipsizeMode` | 🔜 | |
+| `numberOfLines` | ✅ | |
+| `ellipsizeMode` | ✅ | `'head' \| 'middle' \| 'tail' \| 'clip'` |
 | `onPress` / `onLongPress` | 🔜 | |
 | `selectable` | 🔜 | |
 | `allowFontScaling` / `maxFontSizeMultiplier` | 🔜 | |

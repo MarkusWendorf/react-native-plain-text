@@ -104,6 +104,35 @@ export default function FeaturesScreen({ navigation }: Props) {
           and size its height automatically.
         </TextItem>
       </Section>
+      <Section title="Number of Lines">
+        {[1, 2, 3].map((numberOfLines) => (
+          <TextItem
+            key={numberOfLines}
+            showText={showText}
+            numberOfLines={numberOfLines}
+            style={styles.multiline}
+            containerStyle={styles.wideRow}
+          >
+            {`Clamped to ${numberOfLines} line${numberOfLines === 1 ? '' : 's'}: ` +
+              'this is a longer piece of text that should truncate with an ' +
+              'ellipsis once it exceeds the allotted number of lines.'}
+          </TextItem>
+        ))}
+      </Section>
+      <Section title="Ellipsize Mode">
+        {ELLIPSIZE_MODES.map((ellipsizeMode) => (
+          <TextItem
+            key={ellipsizeMode}
+            showText={showText}
+            numberOfLines={1}
+            ellipsizeMode={ellipsizeMode}
+            style={styles.multiline}
+            containerStyle={styles.wideRow}
+          >
+            {`ellipsizeMode "${ellipsizeMode}": this single line of text is too long to fit and gets truncated.`}
+          </TextItem>
+        ))}
+      </Section>
       <Section title="Text Align">
         <TextItem
           showText={showText}
@@ -152,18 +181,36 @@ function TextItem({
   style,
   containerStyle,
   showText,
+  numberOfLines,
+  ellipsizeMode,
   children,
 }: {
   style?: StyleProp<TextStyle>;
   containerStyle?: StyleProp<ViewStyle>;
   showText: boolean;
+  numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   children: string;
 }) {
   return (
     <View style={[styles.row, containerStyle]}>
       {/* No explicit height: the native text measures its own size. */}
-      <PlainText style={style}>{children}</PlainText>
-      {showText && <Text style={[style, styles.overlay]}>{children}</Text>}
+      <PlainText
+        style={style}
+        numberOfLines={numberOfLines}
+        ellipsizeMode={ellipsizeMode}
+      >
+        {children}
+      </PlainText>
+      {showText && (
+        <Text
+          style={[style, styles.overlay]}
+          numberOfLines={numberOfLines}
+          ellipsizeMode={ellipsizeMode}
+        >
+          {children}
+        </Text>
+      )}
     </View>
   );
 }
@@ -245,6 +292,8 @@ const styles = StyleSheet.create({
 });
 
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
+
+const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
 
 const COLORS = [
   { label: 'Red', color: '#e5484d' },

@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Build
 import android.text.Layout
+import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
@@ -119,6 +120,25 @@ class RNPlainText : AppCompatTextView {
       justificationMode =
         if (textAlign == "justify") Layout.JUSTIFICATION_MODE_INTER_WORD
         else Layout.JUSTIFICATION_MODE_NONE
+    }
+  }
+
+  // Mirrors RN's <Text> (ReactTextView#setNumberOfLines): 0 means unlimited,
+  // so map it onto TextView's Integer.MAX_VALUE maxLines. This also bounds the
+  // off-screen measure pass in the ViewManager, matching the intrinsic height.
+  fun setNumberOfLines(numberOfLines: Int) {
+    maxLines = if (numberOfLines <= 0) Integer.MAX_VALUE else numberOfLines
+  }
+
+  // Mirrors RN's <Text> (ReactTextView#setEllipsizeMode): "clip" removes the
+  // ellipsis (text is hard-cut at maxLines); the rest map onto TruncateAt.
+  fun setEllipsizeMode(ellipsizeMode: String?) {
+    ellipsize = when (ellipsizeMode) {
+      "head" -> TextUtils.TruncateAt.START
+      "middle" -> TextUtils.TruncateAt.MIDDLE
+      "clip" -> null
+      // "tail", null and any unknown value fall back to the RN default.
+      else -> TextUtils.TruncateAt.END
     }
   }
 

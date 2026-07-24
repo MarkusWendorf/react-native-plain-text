@@ -44,6 +44,7 @@ Size PlainTextMeasurementsManager::measure(
   serializedProps["fontFamily"] = props.fontFamily;
   serializedProps["fontWeight"] = props.fontWeight;
   serializedProps["fontStyle"] = toString(props.fontStyle);
+  serializedProps["numberOfLines"] = props.numberOfLines;
 
   local_ref<ReadableNativeMap::javaobject> propsRNM =
       ReadableNativeMap::newObjectCxxArgs(serializedProps);

@@ -73,6 +73,15 @@ Size PlainTextShadowNode::measureContent(
       .height = static_cast<Float>(std::ceil(rect.size.height)),
   };
 
+  // Cap the height to numberOfLines (0 = unlimited), matching the mounted
+  // UILabel's own line clamp. UILabel truncates to N lines of font.lineHeight,
+  // so bound the measured height the same way; min() keeps text that already
+  // fits in fewer lines from being inflated.
+  if (props.numberOfLines > 0) {
+    Float maxHeight = static_cast<Float>(std::ceil(props.numberOfLines * font.lineHeight));
+    size.height = std::min(size.height, maxHeight);
+  }
+
   return layoutConstraints.clamp(size);
 }
 

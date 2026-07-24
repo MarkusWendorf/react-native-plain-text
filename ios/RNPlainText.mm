@@ -74,6 +74,20 @@ static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAli
     }
 }
 
+static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode ellipsizeMode)
+{
+    switch (ellipsizeMode) {
+        case RNPlainTextEllipsizeMode::Head:
+            return NSLineBreakByTruncatingHead;
+        case RNPlainTextEllipsizeMode::Middle:
+            return NSLineBreakByTruncatingMiddle;
+        case RNPlainTextEllipsizeMode::Tail:
+            return NSLineBreakByTruncatingTail;
+        case RNPlainTextEllipsizeMode::Clip:
+            return NSLineBreakByClipping;
+    }
+}
+
 @implementation RNPlainText {
     UILabel * _label;
 }
@@ -127,6 +141,14 @@ static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAli
 
     if (oldViewProps.color != newViewProps.color) {
         _label.textColor = newViewProps.color ? RCTUIColorFromSharedColor(newViewProps.color) : [UIColor blackColor];
+    }
+
+    if (oldViewProps.numberOfLines != newViewProps.numberOfLines) {
+        _label.numberOfLines = newViewProps.numberOfLines;
+    }
+
+    if (oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
+        _label.lineBreakMode = RNPlainTextLineBreakModeFromProp(newViewProps.ellipsizeMode);
     }
 
     [super updateProps:props oldProps:oldProps];

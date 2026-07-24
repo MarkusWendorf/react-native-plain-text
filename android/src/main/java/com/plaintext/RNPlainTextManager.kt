@@ -72,6 +72,16 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view?.setTextAlign(textAlign)
   }
 
+  @ReactProp(name = "numberOfLines")
+  override fun setNumberOfLines(view: RNPlainText?, numberOfLines: Int) {
+    view?.setNumberOfLines(numberOfLines)
+  }
+
+  @ReactProp(name = "ellipsizeMode")
+  override fun setEllipsizeMode(view: RNPlainText?, ellipsizeMode: String?) {
+    view?.setEllipsizeMode(ellipsizeMode)
+  }
+
   // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure)
   // on the Fabric layout thread to compute the view's intrinsic size. Fabric
   // never runs Android's normal onMeasure for our view, so this is where the
@@ -98,6 +108,9 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view.setFontFamily(props?.getString("fontFamily")?.ifEmpty { null })
     view.setFontWeight(props?.getString("fontWeight")?.ifEmpty { null })
     view.setFontStyle(props?.getString("fontStyle")?.ifEmpty { null })
+    // numberOfLines caps the measured height; ellipsizeMode doesn't change the
+    // size (only where the ellipsis lands), so it isn't serialized for measure.
+    view.setNumberOfLines(if (props?.hasKey("numberOfLines") == true) props.getInt("numberOfLines") else 0)
 
     view.measure(
       toMeasureSpec(width, widthMode),
