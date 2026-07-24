@@ -16,7 +16,7 @@ import { PlainText } from 'react-native-plain-text';
 
 type Props = NativeStackScreenProps<ParamListBase>;
 
-export default function UsageScreen({ navigation }: Props) {
+export default function FeaturesScreen({ navigation }: Props) {
   const [showText, setShowText] = useState(false);
 
   // Install the compare toggle into the native stack header.

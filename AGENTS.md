@@ -48,7 +48,7 @@ Unless told otherwise, any request to implement a new feature (e.g. a new prop) 
 
 - **API parity with RN `Text`**: match the shape/semantics of the equivalent prop or behavior on React Native's own `<Text>` component, rather than inventing a new API.
 - **Both platforms**: implement it for iOS and Android — not one platform first "for now". See the four-layer prop flow above for what touching both platforms means in practice.
-- **Example coverage**: add a dedicated section for it on the Features tab (`example/src/screens/UsageScreen.tsx`) so it's visible and testable in the example app.
+- **Example coverage**: add a dedicated section for it on the Features tab (`example/src/screens/FeaturesScreen.tsx`) so it's visible and testable in the example app.
 
 ## Native gotchas (learned the hard way)
 
