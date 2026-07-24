@@ -50,6 +50,14 @@ Unless told otherwise, any request to implement a new feature (e.g. a new prop) 
 - **Both platforms**: implement it for iOS and Android — not one platform first "for now". See the four-layer prop flow above for what touching both platforms means in practice.
 - **Example coverage**: add a dedicated section for it on the Features tab (`example/src/screens/FeaturesScreen.tsx`) so it's visible and testable in the example app.
 
+Work in this order:
+
+1. **Add usage/test cases to the Features screen first** (`example/src/screens/FeaturesScreen.tsx`).
+2. **Implement iOS, then Android** across the four-layer prop flow.
+3. **Run all checks last** — `yarn typecheck`, `yarn lint`, `yarn test`.
+
+**Do not build the native binaries yourself** (`yarn example ios|android`) unless explicitly asked to.
+
 ## Native gotchas (learned the hard way)
 
 - **Native code changes require a full rebuild** (`yarn example ios|android`). Metro reload / Fast Refresh only picks up JS. A stale native build is the first thing to suspect when a native change "does nothing".
