@@ -27,6 +27,11 @@ export interface NativeProps extends ViewProps {
     'auto' | 'left' | 'right' | 'center' | 'justify',
     'auto'
   >;
+  // A free string rather than a literal union: the 'underline line-through'
+  // value contains a space, which codegen would turn into an invalid C++ enum
+  // member (getEnumName only splits on '-'), so it's parsed on the native side
+  // instead (same reasoning as fontWeight above).
+  textDecorationLine?: string;
   // 0 means unlimited (matches RN <Text>). Caps rendered lines and the
   // intrinsic height computed by the shadow node's measure pass.
   numberOfLines?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;

@@ -72,6 +72,11 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view?.setTextAlign(textAlign)
   }
 
+  @ReactProp(name = "textDecorationLine")
+  override fun setTextDecorationLine(view: RNPlainText?, textDecorationLine: String?) {
+    view?.setTextDecorationLine(textDecorationLine)
+  }
+
   @ReactProp(name = "lineHeight")
   override fun setLineHeight(view: RNPlainText?, lineHeight: Float) {
     view?.setLineHeight(lineHeight)

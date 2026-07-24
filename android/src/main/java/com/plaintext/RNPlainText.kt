@@ -128,6 +128,25 @@ class RNPlainText : AppCompatTextView {
     }
   }
 
+  // Mirrors RN's <Text> (ReactBaseTextShadowNode's UnderlineSpan/
+  // StrikethroughSpan): "underline"/"line-through" can appear together in a
+  // space-joined string, and each toggles independently. Applied via the
+  // paint's flags (which cover the whole view) rather than spans, since this
+  // TextView always renders a single uniform run. The decoration line color
+  // follows the text color, matching <Text>.
+  fun setTextDecorationLine(value: String?) {
+    paintFlags = if (value?.contains("underline") == true) {
+      paintFlags or Paint.UNDERLINE_TEXT_FLAG
+    } else {
+      paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+    }
+    paintFlags = if (value?.contains("line-through") == true) {
+      paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+    } else {
+      paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+    }
+  }
+
   private var fontFamily: String? = null
   private var fontWeight: Int = ReactConstants.UNSET
   private var fontStyle: Int = ReactConstants.UNSET

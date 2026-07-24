@@ -44,6 +44,8 @@ import { PlainText } from "react-native-plain-text";
 
 Legend: ✅ supported · 🔜 planned, not yet available
 
+Planned rows are listed in rough implementation order (top = next up).
+
 #### Style props (via `style={{ ... }}`)
 
 | Style | Status | Notes |
@@ -55,7 +57,7 @@ Legend: ✅ supported · 🔜 planned, not yet available
 | `lineHeight` | ✅ | |
 | `fontStyle` | ✅ | `'normal' \| 'italic'` |
 | `textAlign` | ✅ | |
-| `textDecorationLine` | 🔜 | |
+| `textDecorationLine` | ✅ | `'none' \| 'underline' \| 'line-through' \| 'underline line-through'` |
 | `letterSpacing` | ✅ | |
 | `verticalAlign` / `textAlignVertical` (Android) | 🔜 | Vertical centering within a fixed-height box. Common in list rows and buttons. |
 | `textDecorationColor` / `textDecorationStyle` | 🔜 | Follow-on to `textDecorationLine`. Costs more on Android, which needs a `SpannableString` since plain `TextView` underline ignores color. |

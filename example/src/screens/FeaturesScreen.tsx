@@ -155,6 +155,15 @@ export default function FeaturesScreen({ navigation }: Props) {
           >{`letterSpacing ${letterSpacing}`}</TextItem>
         ))}
       </Section>
+      <Section title="Text Decoration Line">
+        {TEXT_DECORATION_LINES.map((textDecorationLine) => (
+          <TextItem
+            key={textDecorationLine}
+            showText={showText}
+            style={{ fontSize: 18, textDecorationLine }}
+          >{`textDecorationLine "${textDecorationLine}"`}</TextItem>
+        ))}
+      </Section>
       <Section title="Text Align">
         <TextItem
           showText={showText}
@@ -320,6 +329,13 @@ const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
 const LINE_HEIGHTS = [18, 26, 36];
 
 const LETTER_SPACINGS = [-2, 0, 2, 6];
+
+const TEXT_DECORATION_LINES = [
+  'none',
+  'underline',
+  'line-through',
+  'underline line-through',
+] as const;
 
 const COLORS = [
   { label: 'Red', color: '#e5484d' },

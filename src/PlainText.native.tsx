@@ -24,6 +24,7 @@ export function PlainText({
     fontWeight,
     fontStyle,
     textAlign,
+    textDecorationLine,
     lineHeight,
     letterSpacing,
     ...viewStyle
@@ -38,6 +39,7 @@ export function PlainText({
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
       fontStyle={fontStyle}
       textAlign={textAlign}
+      textDecorationLine={textDecorationLine}
       lineHeight={lineHeight}
       letterSpacing={letterSpacing}
       numberOfLines={numberOfLines}

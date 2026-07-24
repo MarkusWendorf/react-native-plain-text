@@ -74,6 +74,19 @@ static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAli
     }
 }
 
+// textDecorationLine is a space-joined set of "underline"/"line-through" (see
+// PlainTextViewNativeComponent.ts on why it isn't a codegen enum). Mirrors RN
+// <Text>: substring presence toggles each decoration independently.
+static BOOL RNPlainTextHasUnderline(const std::string &textDecorationLine)
+{
+    return textDecorationLine.find("underline") != std::string::npos;
+}
+
+static BOOL RNPlainTextHasLineThrough(const std::string &textDecorationLine)
+{
+    return textDecorationLine.find("line-through") != std::string::npos;
+}
+
 static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode ellipsizeMode)
 {
     switch (ellipsizeMode) {
@@ -132,8 +145,11 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
     BOOL hasLineHeight = props.lineHeight > 0;
     BOOL hasLetterSpacing = props.letterSpacing != 0;
+    BOOL hasUnderline = RNPlainTextHasUnderline(props.textDecorationLine);
+    BOOL hasLineThrough = RNPlainTextHasLineThrough(props.textDecorationLine);
+    BOOL hasTextDecoration = hasUnderline || hasLineThrough;
 
-    if (!hasLineHeight && !hasLetterSpacing) {
+    if (!hasLineHeight && !hasLetterSpacing && !hasTextDecoration) {
         // Plain path: let the label carry font/color/alignment directly.
         _label.font = font;
         _label.textColor = color;
@@ -149,6 +165,16 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     // letterSpacing is in points, applied directly as kerning (mirrors RN <Text>).
     if (hasLetterSpacing) {
         attributes[NSKernAttributeName] = @(props.letterSpacing);
+    }
+
+    // Underline / strikethrough. UILabel has no plain property for either, so
+    // like lineHeight/letterSpacing they force the attributed path. The line
+    // color defaults to the text color, matching RN <Text>.
+    if (hasUnderline) {
+        attributes[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
+    }
+    if (hasLineThrough) {
+        attributes[NSStrikethroughStyleAttributeName] = @(NSUnderlineStyleSingle);
     }
 
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
@@ -191,6 +217,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.color != newViewProps.color ||
         oldViewProps.lineHeight != newViewProps.lineHeight ||
         oldViewProps.letterSpacing != newViewProps.letterSpacing ||
+        oldViewProps.textDecorationLine != newViewProps.textDecorationLine ||
         oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
         [self applyContentFromProps:newViewProps];
     }
