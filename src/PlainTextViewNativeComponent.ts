@@ -47,6 +47,14 @@ export interface NativeProps extends ViewProps {
     'head' | 'middle' | 'tail' | 'clip',
     'tail'
   >;
+  // Whether the font scales with the OS accessibility text-size setting
+  // (Dynamic Type on iOS, font scale on Android). Matches RN <Text>'s default
+  // of true; when false the text renders at its literal point size.
+  allowFontScaling?: CodegenTypes.WithDefault<boolean, true>;
+  // Caps the accessibility scale when allowFontScaling is on. 0 means no cap
+  // (RN <Text> default); a value >= 1 clamps the multiplier, and anything else
+  // (including the invalid 0 < x < 1 range) is treated as no cap.
+  maxFontSizeMultiplier?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
 }
 
 export default codegenNativeComponent<NativeProps>('RNPlainText');

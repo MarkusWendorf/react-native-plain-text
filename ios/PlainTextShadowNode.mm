@@ -1,6 +1,7 @@
 #import "PlainTextShadowNode.h"
 
 #import <react/renderer/core/LayoutConstraints.h>
+#import <react/renderer/core/LayoutContext.h>
 
 #import <UIKit/UIKit.h>
 #import <cmath>
@@ -8,7 +9,7 @@
 namespace facebook::react {
 
 Size PlainTextShadowNode::measureContent(
-    const LayoutContext & /*layoutContext*/,
+    const LayoutContext &layoutContext,
     const LayoutConstraints &layoutConstraints) const {
   const auto &props = getConcreteProps();
 
@@ -16,6 +17,19 @@ Size PlainTextShadowNode::measureContent(
   if (text == nil) {
     text = @"";
   }
+
+  // Accessibility font scaling, mirroring RNPlainTextFontSizeMultiplier in
+  // RNPlainText.mm so the measured size matches the mounted UILabel. The base
+  // scale comes from the layout context (the Fabric surface seeds it from
+  // RCTFontSizeMultiplier), clamped by maxFontSizeMultiplier when >= 1.
+  CGFloat fontSizeMultiplier = 1.0;
+  if (props.allowFontScaling) {
+    fontSizeMultiplier = layoutContext.fontSizeMultiplier;
+    if (props.maxFontSizeMultiplier >= 1.0) {
+      fontSizeMultiplier = fminf((CGFloat)props.maxFontSizeMultiplier, fontSizeMultiplier);
+    }
+  }
+  CGFloat fontSize = props.fontSize * fontSizeMultiplier;
 
   // Mirrors RNPlainTextFontFromProps in RNPlainText.mm, so the measured size
   // matches what the mounted UILabel will render.
@@ -44,15 +58,15 @@ Size PlainTextShadowNode::measureContent(
         UIFontDescriptorFamilyAttribute : fontFamily,
         UIFontDescriptorTraitsAttribute : @{UIFontWeightTrait : @(weight)},
     }];
-    font = [UIFont fontWithDescriptor:descriptor size:props.fontSize];
+    font = [UIFont fontWithDescriptor:descriptor size:fontSize];
   } else {
-    font = [UIFont systemFontOfSize:props.fontSize weight:weight];
+    font = [UIFont systemFontOfSize:fontSize weight:weight];
   }
 
   if (italic) {
     UIFontDescriptor *italicDescriptor = [font.fontDescriptor
         fontDescriptorWithSymbolicTraits:font.fontDescriptor.symbolicTraits | UIFontDescriptorTraitItalic];
-    font = [UIFont fontWithDescriptor:italicDescriptor size:props.fontSize];
+    font = [UIFont fontWithDescriptor:italicDescriptor size:fontSize];
   }
 
   // Build the same attributes the mounted UILabel renders with, so the measured
@@ -70,11 +84,13 @@ Size PlainTextShadowNode::measureContent(
   // set, otherwise the font's natural line height.
   Float perLineHeight = static_cast<Float>(font.lineHeight);
   if (props.lineHeight > 0) {
+    // Scaled by the same multiplier as the font (mirrors RNPlainText.mm).
+    CGFloat lineHeight = props.lineHeight * fontSizeMultiplier;
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
-    paragraphStyle.minimumLineHeight = props.lineHeight;
-    paragraphStyle.maximumLineHeight = props.lineHeight;
+    paragraphStyle.minimumLineHeight = lineHeight;
+    paragraphStyle.maximumLineHeight = lineHeight;
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
-    perLineHeight = static_cast<Float>(props.lineHeight);
+    perLineHeight = static_cast<Float>(lineHeight);
   }
 
   // Measure with the same text engine that renders the UILabel (CoreText, via
@@ -90,8 +106,21 @@ Size PlainTextShadowNode::measureContent(
                                 attributes:attributes
                                    context:nil];
 
+  // RN's own text measurement (RCTTextLayoutManager) reports the full
+  // constraint width, not the narrower widest-rendered-line width, whenever
+  // the text actually word-wrapped — only unwrapped text (a single line, or
+  // one broken up by explicit "\n"s) gets the tight width. Detect wrapping by
+  // comparing against an unconstrained (single-line-per-"\n") measurement: if
+  // the constrained layout needed more height, width was the cause.
+  CGRect unconstrainedRect = [text boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+                                                 options:NSStringDrawingUsesLineFragmentOrigin
+                                              attributes:attributes
+                                                 context:nil];
+  BOOL textDidWrap = rect.size.height > unconstrainedRect.size.height + 0.01;
+
   Size size{
-      .width = static_cast<Float>(std::ceil(rect.size.width)),
+      .width = static_cast<Float>(
+          std::ceil(textDidWrap ? layoutConstraints.maximumSize.width : rect.size.width)),
       .height = static_cast<Float>(std::ceil(rect.size.height)),
   };
 

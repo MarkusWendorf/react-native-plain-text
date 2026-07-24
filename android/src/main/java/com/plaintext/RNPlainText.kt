@@ -34,6 +34,18 @@ class RNPlainText : AppCompatTextView {
     defStyleAttr
   )
 
+  // Declared before the init block below because init calls setFontSizeSp, which
+  // reads all three; a property whose initializer runs after init would still be
+  // at its zero-default (notably allowFontScaling would be false, not true).
+  private var fontSizeSp: Float = 14f
+  // Font scaling knobs, mirroring RN's <Text> (TextAttributes): allowFontScaling
+  // (default true) toggles whether sizes track the OS accessibility text-size
+  // setting, and maxFontSizeMultiplier (0 = no cap) clamps that scale. Both feed
+  // toEffectivePixel below, which every sp-based size (font/line height/letter
+  // spacing) routes through.
+  private var allowFontScaling: Boolean = true
+  private var maxFontSizeMultiplier: Float = 0f
+
   init {
     // Default to black so text color matches iOS's UILabel default. The theme's
     // default TextView color is a gray, which would differ across platforms.
@@ -66,14 +78,49 @@ class RNPlainText : AppCompatTextView {
   }
 
   fun setFontSizeSp(sp: Float) {
-    setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(PixelUtil.toPixelFromSP(sp)))
+    fontSizeSp = sp
+    applyFontSize()
+  }
+
+  private fun applyFontSize() {
+    setTextSize(TypedValue.COMPLEX_UNIT_PX, ceil(toEffectivePixel(fontSizeSp)))
     // letterSpacing is expressed relative to the font size (see below), so a
     // font-size change has to recompute it.
     applyLetterSpacing()
   }
 
+  fun setAllowFontScaling(value: Boolean) {
+    if (allowFontScaling == value) return
+    allowFontScaling = value
+    reapplyScaledSizes()
+  }
+
+  fun setMaxFontSizeMultiplier(value: Float) {
+    if (maxFontSizeMultiplier == value) return
+    maxFontSizeMultiplier = value
+    reapplyScaledSizes()
+  }
+
+  // Recompute every size derived from an sp value after a scaling knob changes.
+  private fun reapplyScaledSizes() {
+    applyFontSize()
+    applyText()
+  }
+
+  // Mirrors RN's <Text> (TextAttributes#getEffective*): when font scaling is on,
+  // scale sp -> px through the OS setting, clamped by maxFontSizeMultiplier
+  // (PixelUtil ignores the cap unless it's >= 1); when off, treat the value as
+  // raw DIP so it renders at its literal size.
+  private fun toEffectivePixel(sp: Float): Float {
+    return if (allowFontScaling) {
+      PixelUtil.toPixelFromSP(sp, maxFontSizeMultiplier)
+    } else {
+      PixelUtil.toPixelFromDIP(sp)
+    }
+  }
+
   private var rawText: CharSequence? = null
-  private var lineHeightPx: Float = Float.NaN
+  private var lineHeightSp: Float = Float.NaN
   private var letterSpacingDip: Float = Float.NaN
 
   // Text is routed through here (rather than TextView.setText directly) so a
@@ -88,22 +135,23 @@ class RNPlainText : AppCompatTextView {
   // scaled to px with font scaling on (RN's allowFontScaling default). 0/unset
   // keeps the font's natural line height.
   fun setLineHeight(lineHeight: Float) {
-    lineHeightPx = if (lineHeight <= 0f) Float.NaN else PixelUtil.toPixelFromSP(lineHeight)
+    lineHeightSp = if (lineHeight <= 0f) Float.NaN else lineHeight
     applyText()
   }
 
   private fun applyText() {
     val value = rawText ?: ""
-    if (lineHeightPx.isNaN()) {
+    if (lineHeightSp.isNaN()) {
       setText(value)
       return
     }
     // Reimplements RN's (internal) CustomLineHeightSpan so line spacing matches
     // <Text> exactly. Applied over the whole string with the same span flags RN
-    // uses for a span anchored at index 0.
+    // uses for a span anchored at index 0. The height is scaled through the same
+    // font-scaling path as the font size.
     val spannable = SpannableString(value)
     spannable.setSpan(
-      RNLineHeightSpan(lineHeightPx),
+      RNLineHeightSpan(toEffectivePixel(lineHeightSp)),
       0,
       spannable.length,
       Spannable.SPAN_INCLUSIVE_INCLUSIVE
@@ -124,7 +172,7 @@ class RNPlainText : AppCompatTextView {
     letterSpacing = if (letterSpacingDip.isNaN() || letterSpacingDip == 0f) {
       0f
     } else {
-      PixelUtil.toPixelFromSP(letterSpacingDip) / textSize
+      toEffectivePixel(letterSpacingDip) / textSize
     }
   }
 

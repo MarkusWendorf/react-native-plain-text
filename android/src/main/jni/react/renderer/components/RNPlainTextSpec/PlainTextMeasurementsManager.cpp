@@ -47,6 +47,8 @@ Size PlainTextMeasurementsManager::measure(
   serializedProps["lineHeight"] = props.lineHeight;
   serializedProps["letterSpacing"] = props.letterSpacing;
   serializedProps["numberOfLines"] = props.numberOfLines;
+  serializedProps["allowFontScaling"] = props.allowFontScaling;
+  serializedProps["maxFontSizeMultiplier"] = props.maxFontSizeMultiplier;
 
   local_ref<ReadableNativeMap::javaobject> propsRNM =
       ReadableNativeMap::newObjectCxxArgs(serializedProps);

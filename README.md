@@ -74,7 +74,7 @@ Planned rows are listed in rough implementation order (top = next up).
 | `children` | ✅ | Plain `string` only, no nested `<Text>`/styled fragments. |
 | `numberOfLines` | ✅ | |
 | `ellipsizeMode` | ✅ | `'head' \| 'middle' \| 'tail' \| 'clip'` |
-| `allowFontScaling` / `maxFontSizeMultiplier` | 🔜 | Accessibility text scaling. Widely used, and often a store-review or compliance concern. |
+| `allowFontScaling` / `maxFontSizeMultiplier` | ✅ | Accessibility text scaling. |
 | `adjustsFontSizeToFit` / `minimumFontScale` | 🔜 | Shrink-to-fit, for matching fixed-size design frames exactly. No native Android equivalent to `adjustsFontSizeToFit`, so this is the most expensive item on the list. |
 | `testID` / `accessibilityRole` / other accessibility props | 🔜 | Already flow through natively via `ViewProps`; just needs exposing on the JS wrapper's prop type. |
 

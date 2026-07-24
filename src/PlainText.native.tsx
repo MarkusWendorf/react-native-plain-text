@@ -6,6 +6,8 @@ export type PlainTextProps = {
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+  allowFontScaling?: boolean;
+  maxFontSizeMultiplier?: number;
 };
 
 // RN <Text> supports both the Android-specific `textAlignVertical` and the
@@ -27,6 +29,8 @@ export function PlainText({
   style,
   numberOfLines,
   ellipsizeMode,
+  allowFontScaling,
+  maxFontSizeMultiplier,
 }: PlainTextProps) {
   // color/fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style
   // props, so they don't flow through the native ViewProps. Pull them out of
@@ -64,6 +68,8 @@ export function PlainText({
       letterSpacing={letterSpacing}
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
+      allowFontScaling={allowFontScaling}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       style={viewStyle}
     />
   );

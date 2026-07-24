@@ -102,6 +102,16 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     view?.setEllipsizeMode(ellipsizeMode)
   }
 
+  @ReactProp(name = "allowFontScaling", defaultBoolean = true)
+  override fun setAllowFontScaling(view: RNPlainText?, allowFontScaling: Boolean) {
+    view?.setAllowFontScaling(allowFontScaling)
+  }
+
+  @ReactProp(name = "maxFontSizeMultiplier")
+  override fun setMaxFontSizeMultiplier(view: RNPlainText?, maxFontSizeMultiplier: Float) {
+    view?.setMaxFontSizeMultiplier(maxFontSizeMultiplier)
+  }
+
   // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure)
   // on the Fabric layout thread to compute the view's intrinsic size. Fabric
   // never runs Android's normal onMeasure for our view, so this is where the
@@ -119,6 +129,15 @@ class RNPlainTextManager : SimpleViewManager<RNPlainText>(),
     attachmentsPositions: FloatArray?
   ): Long {
     val view = RNPlainText(context)
+    // Apply the font-scaling knobs first: fontSize/lineHeight/letterSpacing are
+    // all converted through them, so they must be in place before those are set
+    // (matches the ordering the RNPlainText view itself relies on).
+    view.setAllowFontScaling(
+      if (props?.hasKey("allowFontScaling") == true) props.getBoolean("allowFontScaling") else true
+    )
+    view.setMaxFontSizeMultiplier(
+      if (props?.hasKey("maxFontSizeMultiplier") == true) props.getDouble("maxFontSizeMultiplier").toFloat() else 0f
+    )
     // fontSize is in SP, matching the setFontSize prop setter above. Set it
     // before letterSpacing, which is computed relative to the font size.
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0

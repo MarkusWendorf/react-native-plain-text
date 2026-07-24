@@ -1,6 +1,7 @@
 #import "RNPlainText.h"
 
 #import <React/RCTConversions.h>
+#import <React/RCTUtils.h>
 #import <react/renderer/components/RNPlainTextSpec/Props.h>
 #import <react/renderer/components/RNPlainTextSpec/RCTComponentViewHelpers.h>
 
@@ -32,10 +33,29 @@ static UIFontWeight RNPlainTextFontWeightFromProp(const std::string &fontWeight)
     return weight != nil ? (UIFontWeight)weight.doubleValue : UIFontWeightRegular;
 }
 
+// The accessibility font-size multiplier to apply, mirroring RN's
+// RCTEffectiveFontSizeMultiplierFromTextAttributes: the system Dynamic Type
+// scale (RCTFontSizeMultiplier, same value the Fabric surface feeds into layout)
+// when allowFontScaling is on, clamped by maxFontSizeMultiplier when that is
+// >= 1. Runs on the main thread from updateProps; the shadow node mirrors this
+// with the layout context's fontSizeMultiplier for measurement.
+static CGFloat RNPlainTextFontSizeMultiplier(const RNPlainTextProps &props)
+{
+    if (!props.allowFontScaling) {
+        return 1.0;
+    }
+    CGFloat multiplier = RCTFontSizeMultiplier();
+    if (props.maxFontSizeMultiplier >= 1.0) {
+        multiplier = fminf((CGFloat)props.maxFontSizeMultiplier, multiplier);
+    }
+    return multiplier;
+}
+
 static UIFont *RNPlainTextFontFromProps(const RNPlainTextProps &props)
 {
     UIFontWeight weight = RNPlainTextFontWeightFromProp(props.fontWeight);
     BOOL italic = props.fontStyle == RNPlainTextFontStyle::Italic;
+    CGFloat fontSize = props.fontSize * RNPlainTextFontSizeMultiplier(props);
 
     UIFont *font;
     if (!props.fontFamily.empty()) {
@@ -44,15 +64,15 @@ static UIFont *RNPlainTextFontFromProps(const RNPlainTextProps &props)
             UIFontDescriptorFamilyAttribute : fontFamily,
             UIFontDescriptorTraitsAttribute : @{UIFontWeightTrait : @(weight)},
         }];
-        font = [UIFont fontWithDescriptor:descriptor size:props.fontSize];
+        font = [UIFont fontWithDescriptor:descriptor size:fontSize];
     } else {
-        font = [UIFont systemFontOfSize:props.fontSize weight:weight];
+        font = [UIFont systemFontOfSize:fontSize weight:weight];
     }
 
     if (italic) {
         UIFontDescriptor *italicDescriptor = [font.fontDescriptor
             fontDescriptorWithSymbolicTraits:font.fontDescriptor.symbolicTraits | UIFontDescriptorTraitItalic];
-        font = [UIFont fontWithDescriptor:italicDescriptor size:props.fontSize];
+        font = [UIFont fontWithDescriptor:italicDescriptor size:fontSize];
     }
 
     return font;
@@ -206,14 +226,17 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     paragraphStyle.lineBreakMode = RNPlainTextLineBreakModeFromProp(props.ellipsizeMode);
 
     if (hasLineHeight) {
-        // lineHeight is in points; pin the line box to it (mirrors RN <Text>).
-        paragraphStyle.minimumLineHeight = props.lineHeight;
-        paragraphStyle.maximumLineHeight = props.lineHeight;
+        // lineHeight is in points, scaled by the same accessibility multiplier
+        // as the font (mirrors RN <Text>, which multiplies lineHeight by the
+        // effective font-size multiplier); pin the line box to it.
+        CGFloat lineHeight = props.lineHeight * RNPlainTextFontSizeMultiplier(props);
+        paragraphStyle.minimumLineHeight = lineHeight;
+        paragraphStyle.maximumLineHeight = lineHeight;
         // Vertically center the glyphs within the enlarged line box, matching
         // RN <Text>'s RCTApplyBaselineOffset: shift the baseline by half the
         // difference between the requested and the font's natural line height.
-        if (props.lineHeight >= font.lineHeight) {
-            attributes[NSBaselineOffsetAttributeName] = @((props.lineHeight - font.lineHeight) / 2.0);
+        if (lineHeight >= font.lineHeight) {
+            attributes[NSBaselineOffsetAttributeName] = @((lineHeight - font.lineHeight) / 2.0);
         }
     }
 
@@ -240,7 +263,9 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.lineHeight != newViewProps.lineHeight ||
         oldViewProps.letterSpacing != newViewProps.letterSpacing ||
         oldViewProps.textDecorationLine != newViewProps.textDecorationLine ||
-        oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
+        oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode ||
+        oldViewProps.allowFontScaling != newViewProps.allowFontScaling ||
+        oldViewProps.maxFontSizeMultiplier != newViewProps.maxFontSizeMultiplier) {
         [self applyContentFromProps:newViewProps];
     }
 

@@ -155,6 +155,36 @@ export default function FeaturesScreen({ navigation }: Props) {
           >{`letterSpacing ${letterSpacing}`}</TextItem>
         ))}
       </Section>
+      {/* Font scaling follows the OS accessibility text-size setting (Dynamic
+          Type on iOS, Font size on Android). Change it in Settings to see the
+          first row grow while the clamped/disabled rows hold their size. */}
+      <Section title="Font Scaling">
+        <TextItem showText={showText} style={{ fontSize: 18 }}>
+          Default: scales with the OS text-size setting.
+        </TextItem>
+        {/* iOS known discrepancy: UILabel's line breaker treats a plain "-"
+            as a wrap point, while RN <Text> (TextKit's NSLayoutManager)
+            doesn't — see the "Font scaling / line-wrapping" note in
+            AGENTS.md. Swapping in a non-breaking hyphen (U+2011) works
+            around it on both platforms. */}
+        <TextItem showText={showText} style={{ fontSize: 18 }}>
+          {'Workaround: scales the OS text‑size setting.'}
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          allowFontScaling={false}
+        >
+          allowFontScaling false: never scales.
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          maxFontSizeMultiplier={1.5}
+        >
+          maxFontSizeMultiplier 1.5: scales up to 1.5x.
+        </TextItem>
+      </Section>
       <Section title="Text Decoration Line">
         {TEXT_DECORATION_LINES.map((textDecorationLine) => (
           <TextItem
@@ -226,6 +256,8 @@ function TextItem({
   showText,
   numberOfLines,
   ellipsizeMode,
+  allowFontScaling,
+  maxFontSizeMultiplier,
   children,
 }: {
   style?: StyleProp<TextStyle>;
@@ -233,6 +265,8 @@ function TextItem({
   showText: boolean;
   numberOfLines?: number;
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+  allowFontScaling?: boolean;
+  maxFontSizeMultiplier?: number;
   children: string;
 }) {
   return (
@@ -242,6 +276,8 @@ function TextItem({
         style={style}
         numberOfLines={numberOfLines}
         ellipsizeMode={ellipsizeMode}
+        allowFontScaling={allowFontScaling}
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
       >
         {children}
       </PlainText>
@@ -250,6 +286,8 @@ function TextItem({
           style={[style, styles.overlay]}
           numberOfLines={numberOfLines}
           ellipsizeMode={ellipsizeMode}
+          allowFontScaling={allowFontScaling}
+          maxFontSizeMultiplier={maxFontSizeMultiplier}
         >
           {children}
         </Text>
@@ -290,6 +328,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    right: 0,
     opacity: 0.5,
     pointerEvents: 'none',
     // Transparent so the PlainText underneath stays visible for comparison.
