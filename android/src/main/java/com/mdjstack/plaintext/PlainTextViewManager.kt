@@ -120,6 +120,19 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     view?.setTextDecorationLine(textDecorationLine)
   }
 
+  // textDecorationColor / textDecorationStyle are iOS-only, matching RN <Text>
+  // (see PlainTextViewNativeComponent.ts). The shared codegen spec still emits
+  // these setters on the Android manager interface, so implement them as no-ops.
+  @ReactProp(name = "textDecorationColor", customType = "Color")
+  override fun setTextDecorationColor(view: PlainTextView?, textDecorationColor: Int?) {
+    // no-op on Android
+  }
+
+  @ReactProp(name = "textDecorationStyle")
+  override fun setTextDecorationStyle(view: PlainTextView?, textDecorationStyle: String?) {
+    // no-op on Android
+  }
+
   @ReactProp(name = "lineHeight")
   override fun setLineHeight(view: PlainTextView?, lineHeight: Float) {
     view?.setLineHeight(lineHeight)

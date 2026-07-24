@@ -62,6 +62,9 @@ Via `style={{ ... }}`:
 - `letterSpacing`
 - `textAlign`
 - `textDecorationLine`: `'none' | 'underline' | 'line-through' | 'underline line-through'`
+- `textDecorationColor` / `textDecorationStyle`: iOS only, matching RN
+  `<Text>`. `textDecorationStyle` is `'solid' | 'double' | 'dotted' | 'dashed' |
+  'wavy'`; `'wavy'` falls back to a single line (no UIKit equivalent).
 - `verticalAlign`: Android only, like RN `<Text>`
 - `textAlignVertical`: Android only, like RN `<Text>`
 - Every other `ViewStyle` prop (`width`, `margin`, `padding`,
@@ -82,7 +85,6 @@ Via `style={{ ... }}`:
 
 ## Planned
 
-- `textDecorationColor` / `textDecorationStyle`
 - `textShadowColor` / `textShadowOffset` / `textShadowRadius`
 - `includeFontPadding` (Android)
 - `adjustsFontSizeToFit` / `minimumFontScale`: the most expensive item on the

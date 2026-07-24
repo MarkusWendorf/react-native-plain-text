@@ -72,6 +72,8 @@ export function PlainText({
     textAlignVertical,
     verticalAlign,
     textDecorationLine,
+    textDecorationColor,
+    textDecorationStyle,
     lineHeight,
     letterSpacing,
     ...viewStyle
@@ -90,6 +92,8 @@ export function PlainText({
       textAlign={textAlign}
       textAlignVertical={resolveTextAlignVertical(textAlignVertical, verticalAlign)}
       textDecorationLine={textDecorationLine}
+      textDecorationColor={textDecorationColor}
+      textDecorationStyle={textDecorationStyle}
       lineHeight={lineHeight}
       letterSpacing={letterSpacing}
       numberOfLines={numberOfLines}

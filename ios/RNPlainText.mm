@@ -44,6 +44,27 @@ static BOOL RNPlainTextHasLineThrough(const std::string &textDecorationLine)
     return textDecorationLine.find("line-through") != std::string::npos;
 }
 
+// Maps textDecorationStyle onto an NSUnderlineStyle (shared by the underline
+// and strikethrough attributes). Mirrors RN <Text>'s iOS mapping
+// (RCTNSUnderlineStyleFromTextDecorationStyle): 'double' is native; 'dotted'/
+// 'dashed' use UIKit's pattern bits as an approximation. 'wavy' has no UIKit
+// equivalent without a custom drawing pass, so it falls back to a single line.
+static NSUnderlineStyle RNPlainTextUnderlineStyleFromProp(RNPlainTextTextDecorationStyle textDecorationStyle)
+{
+    switch (textDecorationStyle) {
+        case RNPlainTextTextDecorationStyle::Solid:
+            return NSUnderlineStyleSingle;
+        case RNPlainTextTextDecorationStyle::Double:
+            return NSUnderlineStyleDouble;
+        case RNPlainTextTextDecorationStyle::Dotted:
+            return NSUnderlineStyleSingle | NSUnderlinePatternDot;
+        case RNPlainTextTextDecorationStyle::Dashed:
+            return NSUnderlineStyleSingle | NSUnderlinePatternDash;
+        case RNPlainTextTextDecorationStyle::Wavy:
+            return NSUnderlineStyleSingle;
+    }
+}
+
 static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode ellipsizeMode)
 {
     switch (ellipsizeMode) {
@@ -144,12 +165,23 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         attributes[NSKernAttributeName] = @(props.letterSpacing);
     }
 
-    // UILabel has no plain property for these either; line color defaults to text color, matching RN <Text>.
+    // Underline / strikethrough. UILabel has no plain property for either, so
+    // like lineHeight/letterSpacing they force the attributed path. The line's
+    // style follows textDecorationStyle; its color follows textDecorationColor
+    // when set, otherwise the text color (matching RN <Text>).
+    NSUnderlineStyle decorationStyle = RNPlainTextUnderlineStyleFromProp(props.textDecorationStyle);
+    UIColor *decorationColor = props.textDecorationColor ? RCTUIColorFromSharedColor(props.textDecorationColor) : nil;
     if (hasUnderline) {
-        attributes[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
+        attributes[NSUnderlineStyleAttributeName] = @(decorationStyle);
+        if (decorationColor) {
+            attributes[NSUnderlineColorAttributeName] = decorationColor;
+        }
     }
     if (hasLineThrough) {
-        attributes[NSStrikethroughStyleAttributeName] = @(NSUnderlineStyleSingle);
+        attributes[NSStrikethroughStyleAttributeName] = @(decorationStyle);
+        if (decorationColor) {
+            attributes[NSStrikethroughColorAttributeName] = decorationColor;
+        }
     }
 
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
@@ -209,6 +241,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.lineHeight != newViewProps.lineHeight ||
         oldViewProps.letterSpacing != newViewProps.letterSpacing ||
         oldViewProps.textDecorationLine != newViewProps.textDecorationLine ||
+        oldViewProps.textDecorationColor != newViewProps.textDecorationColor ||
+        oldViewProps.textDecorationStyle != newViewProps.textDecorationStyle ||
         oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode ||
         oldViewProps.allowFontScaling != newViewProps.allowFontScaling ||
         oldViewProps.maxFontSizeMultiplier != newViewProps.maxFontSizeMultiplier) {
