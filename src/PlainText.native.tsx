@@ -1,13 +1,26 @@
-import { StyleSheet, type StyleProp, type TextStyle } from 'react-native';
+import {
+  StyleSheet,
+  type AccessibilityProps,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 import PlainTextViewNativeComponent from './PlainTextViewNativeComponent';
 
-export type PlainTextProps = {
+// Accessibility, testID, and nativeID/id are all part of RN's ViewProps, which
+// the native component's codegen spec extends — so the base native view
+// (RCTViewComponentView on iOS, BaseViewManager on Android) already applies
+// them. They just need forwarding from here, which the `...accessibilityProps`
+// rest below does. This mirrors RN <Text>'s accessibility surface.
+export type PlainTextProps = AccessibilityProps & {
   children?: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
+  testID?: string;
+  nativeID?: string;
+  id?: string;
 };
 
 // RN <Text> supports both the Android-specific `textAlignVertical` and the
@@ -31,6 +44,7 @@ export function PlainText({
   ellipsizeMode,
   allowFontScaling,
   maxFontSizeMultiplier,
+  ...accessibilityProps
 }: PlainTextProps) {
   // color/fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style
   // props, so they don't flow through the native ViewProps. Pull them out of
@@ -71,6 +85,7 @@ export function PlainText({
       allowFontScaling={allowFontScaling}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
       style={viewStyle}
+      {...accessibilityProps}
     />
   );
 }

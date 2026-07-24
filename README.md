@@ -76,7 +76,7 @@ Planned rows are listed in rough implementation order (top = next up).
 | `ellipsizeMode` | ✅ | `'head' \| 'middle' \| 'tail' \| 'clip'` |
 | `allowFontScaling` / `maxFontSizeMultiplier` | ✅ | Accessibility text scaling. |
 | `adjustsFontSizeToFit` / `minimumFontScale` | 🔜 | Shrink-to-fit, for matching fixed-size design frames exactly. No native Android equivalent to `adjustsFontSizeToFit`, so this is the most expensive item on the list. |
-| `testID` / `accessibilityRole` / other accessibility props | 🔜 | Already flow through natively via `ViewProps`; just needs exposing on the JS wrapper's prop type. |
+| `testID` / `accessibilityRole` / other accessibility props | ✅ | The full RN `<Text>` accessibility surface (`accessibilityLabel`, `accessibilityHint`, `accessibilityState`, `accessibilityRole`, `nativeID`, etc.), forwarded through `ViewProps` to the native view. |
 
 > Want a prop or style bumped up the list? Open an issue, since real-world usage drives what gets built next.
 

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type AccessibilityProps,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -237,6 +238,62 @@ export default function FeaturesScreen({ navigation }: Props) {
           >{`verticalAlign "${verticalAlign}"`}</TextItem>
         ))}
       </Section>
+      {/* Accessibility props are part of RN's ViewProps, so they pass straight
+          through to the native view. They're not visually distinct — turn on
+          VoiceOver (iOS) / TalkBack (Android) to hear the label/role/state, or
+          inspect the native tree for the testID. */}
+      <Section title="Accessibility">
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{ testID: 'plain-text-demo' }}
+        >
+          testID "plain-text-demo" (find it in the native tree)
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{
+            accessibilityLabel: 'A screen reader announces this instead',
+          }}
+        >
+          accessibilityLabel overrides the spoken text
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{ accessibilityRole: 'header' }}
+        >
+          accessibilityRole "header"
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{
+            accessibilityRole: 'link',
+            accessibilityHint: 'Opens the linked page',
+          }}
+        >
+          accessibilityRole "link" with a hint
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{ accessibilityState: { disabled: true } }}
+        >
+          accessibilityState disabled
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={{ fontSize: 18 }}
+          accessibilityProps={{
+            accessibilityElementsHidden: true,
+            importantForAccessibility: 'no-hide-descendants',
+          }}
+        >
+          Hidden from screen readers (iOS + Android)
+        </TextItem>
+      </Section>
     </ScrollView>
   );
 }
@@ -258,6 +315,7 @@ function TextItem({
   ellipsizeMode,
   allowFontScaling,
   maxFontSizeMultiplier,
+  accessibilityProps,
   children,
 }: {
   style?: StyleProp<TextStyle>;
@@ -267,6 +325,9 @@ function TextItem({
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
+  // Forwarded to both PlainText and the comparison Text so the two expose the
+  // same accessibility surface (testID, role, label, ...) to the native tree.
+  accessibilityProps?: AccessibilityProps & { testID?: string };
   children: string;
 }) {
   return (
@@ -278,6 +339,7 @@ function TextItem({
         ellipsizeMode={ellipsizeMode}
         allowFontScaling={allowFontScaling}
         maxFontSizeMultiplier={maxFontSizeMultiplier}
+        {...accessibilityProps}
       >
         {children}
       </PlainText>
@@ -288,6 +350,7 @@ function TextItem({
           ellipsizeMode={ellipsizeMode}
           allowFontScaling={allowFontScaling}
           maxFontSizeMultiplier={maxFontSizeMultiplier}
+          {...accessibilityProps}
         >
           {children}
         </Text>
