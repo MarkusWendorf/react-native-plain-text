@@ -8,6 +8,8 @@ import {
   Text,
   View,
 } from 'react-native';
+// unstable_NativeText is RN's bare RCTText host component (no <Text> JS wrapper).
+import { unstable_NativeText as NativeText } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMemoryFootprint } from 'react-native-memory-footprint';
 import { PlainText } from 'react-native-plain-text';
@@ -26,7 +28,7 @@ const FONT_SIZES = [
 // (GC timing, TextView layout) so it needs a longer settle window than iOS.
 const SETTLE_MS = Platform.select({ android: 2000, default: 500 });
 
-type Kind = 'plain' | 'text';
+type Kind = 'plain' | 'text' | 'nativeText';
 
 type Stats = {
   memBefore: number;
@@ -40,8 +42,10 @@ export default function PerformanceScreen() {
   const insets = useSafeAreaInsets();
   const [plainCount, setPlainCount] = useState(0);
   const [textCount, setTextCount] = useState(0);
+  const [nativeTextCount, setNativeTextCount] = useState(0);
   const [plainStats, setPlainStats] = useState<Stats | null>(null);
   const [textStats, setTextStats] = useState<Stats | null>(null);
+  const [nativeTextStats, setNativeTextStats] = useState<Stats | null>(null);
   const [fontSize, setFontSize] = useState<number>(56);
 
   // Holds an in-flight measurement between the button press (state update)
@@ -61,8 +65,10 @@ export default function PerformanceScreen() {
     pending.current = { kind, memBefore, startTime };
     if (kind === 'plain') {
       setPlainCount(COUNT);
-    } else {
+    } else if (kind === 'text') {
       setTextCount(COUNT);
+    } else {
+      setNativeTextCount(COUNT);
     }
   }, []);
 
@@ -87,13 +93,15 @@ export default function PerformanceScreen() {
       };
       if (m.kind === 'plain') {
         setPlainStats(stats);
-      } else {
+      } else if (m.kind === 'text') {
         setTextStats(stats);
+      } else {
+        setNativeTextStats(stats);
       }
     }, SETTLE_MS);
 
     return () => clearTimeout(timer);
-  }, [plainCount, textCount]);
+  }, [plainCount, textCount, nativeTextCount]);
 
   return (
     <ScrollView
@@ -137,6 +145,12 @@ export default function PerformanceScreen() {
       />
       <StatsRow label="Text" stats={textStats} />
 
+      <Button
+        title={`Add ${COUNT} NativeText`}
+        onPress={() => startMeasure('nativeText')}
+      />
+      <StatsRow label="NativeText" stats={nativeTextStats} />
+
       {Array.from({ length: plainCount }, (_, n) => (
         <PlainText key={n} style={[styles.listItem, { fontSize }]}>
           {`List Item ${n + 1}`}
@@ -147,6 +161,13 @@ export default function PerformanceScreen() {
         <Text key={n} style={[styles.listItem, { fontSize }]}>
           {`List Item ${n + 1}`}
         </Text>
+      ))}
+
+      {Array.from({ length: nativeTextCount }, (_, n) => (
+        // Bare RCTText host component, bypassing the <Text> JS wrapper.
+        <NativeText key={n} style={[styles.listItem, { fontSize }]}>
+          {`List Item ${n + 1}`}
+        </NativeText>
       ))}
     </ScrollView>
   );
