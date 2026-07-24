@@ -8,6 +8,20 @@ export type PlainTextProps = {
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
 };
 
+// RN <Text> supports both the Android-specific `textAlignVertical` and the
+// cross-platform `verticalAlign` style. When both are set, `verticalAlign`
+// wins (RN applies it as an override), and its 'middle' value maps to the
+// native prop's 'center'. Mirror that here so the native side sees one value.
+function resolveTextAlignVertical(
+  textAlignVertical: TextStyle['textAlignVertical'],
+  verticalAlign: TextStyle['verticalAlign']
+): 'auto' | 'top' | 'bottom' | 'center' | undefined {
+  if (verticalAlign != null) {
+    return verticalAlign === 'middle' ? 'center' : verticalAlign;
+  }
+  return textAlignVertical;
+}
+
 export function PlainText({
   children,
   style,
@@ -24,6 +38,8 @@ export function PlainText({
     fontWeight,
     fontStyle,
     textAlign,
+    textAlignVertical,
+    verticalAlign,
     textDecorationLine,
     lineHeight,
     letterSpacing,
@@ -39,6 +55,10 @@ export function PlainText({
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
       fontStyle={fontStyle}
       textAlign={textAlign}
+      textAlignVertical={resolveTextAlignVertical(
+        textAlignVertical,
+        verticalAlign
+      )}
       textDecorationLine={textDecorationLine}
       lineHeight={lineHeight}
       letterSpacing={letterSpacing}

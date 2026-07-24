@@ -59,7 +59,7 @@ Planned rows are listed in rough implementation order (top = next up).
 | `textAlign` | ✅ | |
 | `textDecorationLine` | ✅ | `'none' \| 'underline' \| 'line-through' \| 'underline line-through'` |
 | `letterSpacing` | ✅ | |
-| `verticalAlign` / `textAlignVertical` (Android) | 🔜 | Vertical centering within a fixed-height box. Common in list rows and buttons. |
+| `verticalAlign` / `textAlignVertical` | ✅ | Android-only, matching RN `<Text>`; iOS top-aligns like `<Text>`. `'auto' \| 'top' \| 'bottom' \| 'center'` (`verticalAlign`'s `'middle'` maps to `'center'`). |
 | `textDecorationColor` / `textDecorationStyle` | 🔜 | Follow-on to `textDecorationLine`. Costs more on Android, which needs a `SpannableString` since plain `TextView` underline ignores color. |
 | `textShadowColor` / `textShadowOffset` / `textShadowRadius` | 🔜 | For text-over-image legibility. Ship as one unit since the three props only make sense together. |
 | `includeFontPadding` (Android) | 🔜 | |

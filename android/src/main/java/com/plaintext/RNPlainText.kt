@@ -190,7 +190,7 @@ class RNPlainText : AppCompatTextView {
   // justification is a separate Layout.justificationMode (API 26+, see below).
   fun setTextAlign(textAlign: String?) {
     val isRTL = layoutDirection == LAYOUT_DIRECTION_RTL
-    gravity = when (textAlign) {
+    val horizontal = when (textAlign) {
       "justify" -> Gravity.LEFT
       "auto", null -> Gravity.NO_GRAVITY
       "left" -> if (isRTL) Gravity.RIGHT else Gravity.LEFT
@@ -198,12 +198,38 @@ class RNPlainText : AppCompatTextView {
       "center" -> Gravity.CENTER_HORIZONTAL
       else -> Gravity.NO_GRAVITY
     }
+    // Set only the horizontal bits so a textAlignVertical set in either order
+    // survives (mirrors RN's ReactTextView#setGravityHorizontal). Both the
+    // absolute and the relative horizontal masks must be cleared: the view's
+    // default gravity is START, a *relative* gravity whose flag lives outside
+    // HORIZONTAL_GRAVITY_MASK, so clearing only the absolute bits would leave it
+    // set and resolve "center" (which sets no pull direction) back to start.
+    gravity = (gravity and
+      Gravity.HORIZONTAL_GRAVITY_MASK.inv() and
+      Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK.inv()) or horizontal
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       justificationMode =
         if (textAlign == "justify") Layout.JUSTIFICATION_MODE_INTER_WORD
         else Layout.JUSTIFICATION_MODE_NONE
     }
+  }
+
+  // Mirrors RN's <Text> (ReactTextViewManager#setTextAlignVertical +
+  // ReactTextView#setGravityVertical): maps onto the vertical component of
+  // Gravity, touching only the vertical bits so it composes with textAlign's
+  // horizontal gravity. "auto" falls back to the default top alignment. Only
+  // affects the text's position when the view is taller than the text (e.g. an
+  // explicit height); Android-only, matching RN (iOS <Text> ignores it).
+  fun setTextAlignVertical(textAlignVertical: String?) {
+    val vertical = when (textAlignVertical) {
+      "top" -> Gravity.TOP
+      "bottom" -> Gravity.BOTTOM
+      "center" -> Gravity.CENTER_VERTICAL
+      // "auto", null and any unknown value fall back to the default (top).
+      else -> Gravity.TOP
+    }
+    gravity = (gravity and Gravity.VERTICAL_GRAVITY_MASK.inv()) or vertical
   }
 
   // Mirrors RN's <Text> (ReactTextView#setNumberOfLines): 0 means unlimited,

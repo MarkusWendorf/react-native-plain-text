@@ -101,6 +101,28 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     }
 }
 
+// UILabel vertically centers its text when its frame is taller than the text
+// (e.g. an explicit height). RN's <Text> on iOS top-aligns instead, and treats
+// vertical alignment as Android-only, so top-align here to match <Text>. This
+// is why textAlignVertical is not applied on iOS: RN's iOS text has no vertical
+// alignment knob — it is always pinned to the top.
+@interface RNPlainTextLabel : UILabel
+@end
+
+@implementation RNPlainTextLabel
+- (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
+{
+    CGRect rect = [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
+    rect.origin.y = bounds.origin.y;
+    return rect;
+}
+
+- (void)drawTextInRect:(CGRect)rect
+{
+    [super drawTextInRect:[self textRectForBounds:rect limitedToNumberOfLines:self.numberOfLines]];
+}
+@end
+
 @implementation RNPlainText {
     UILabel * _label;
 }
@@ -116,7 +138,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     static const auto defaultProps = std::make_shared<const RNPlainTextProps>();
     _props = defaultProps;
 
-    _label = [[UILabel alloc] init];
+    _label = [[RNPlainTextLabel alloc] init];
     _label.numberOfLines = 0;
     _label.textColor = [UIColor blackColor];
     // Seed the label's font from the prop defaults so the diff in updateProps

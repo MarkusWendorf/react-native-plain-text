@@ -195,6 +195,18 @@ export default function FeaturesScreen({ navigation }: Props) {
           line but the last stretches to fill it.
         </TextItem>
       </Section>
+      {/* Vertical alignment is Android-only (matches RN <Text>); on iOS it's a
+          no-op. Each box is taller than its text so the position is visible. */}
+      <Section title="Vertical Align (Android)">
+        {VERTICAL_ALIGNS.map((verticalAlign) => (
+          <TextItem
+            key={verticalAlign}
+            showText={showText}
+            style={{ width: '100%', height: 72, fontSize: 18, verticalAlign }}
+            containerStyle={styles.wideRow}
+          >{`verticalAlign "${verticalAlign}"`}</TextItem>
+        ))}
+      </Section>
     </ScrollView>
   );
 }
@@ -327,6 +339,8 @@ const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
 const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
 
 const LINE_HEIGHTS = [18, 26, 36];
+
+const VERTICAL_ALIGNS = ['top', 'middle', 'bottom'] as const;
 
 const LETTER_SPACINGS = [-2, 0, 2, 6];
 
