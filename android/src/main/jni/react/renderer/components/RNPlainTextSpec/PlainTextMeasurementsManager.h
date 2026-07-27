@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <fbjni/fbjni.h>
 #include <react/renderer/components/RNPlainTextSpec/Props.h>
 #include <react/renderer/core/LayoutConstraints.h>
 #include <react/utils/ContextContainer.h>
@@ -17,9 +18,14 @@ namespace facebook::react {
 
 class PlainTextMeasurementsManager {
  public:
-  PlainTextMeasurementsManager(
+  explicit PlainTextMeasurementsManager(
       const std::shared_ptr<const ContextContainer> &contextContainer)
-      : contextContainer_(contextContainer) {}
+      // Hoisted out of measure(), which runs once per node per layout pass (RN's
+      // own managers re-resolve this key every call). Safe this early:
+      // FabricUIManagerBinding inserts the key before building the Scheduler,
+      // which is what creates the registry owning this manager.
+      : fabricUIManager_(
+            contextContainer->at<jni::global_ref<jobject>>("FabricUIManager")) {}
 
   Size measure(
       SurfaceId surfaceId,
@@ -27,7 +33,7 @@ class PlainTextMeasurementsManager {
       LayoutConstraints layoutConstraints) const;
 
  private:
-  const std::shared_ptr<const ContextContainer> contextContainer_;
+  const jni::global_ref<jobject> fabricUIManager_;
 };
 
 } // namespace facebook::react
