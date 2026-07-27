@@ -26,9 +26,9 @@ const FONT_SIZES = [
 ] as const;
 
 // Native allocations (CoreText layout, CALayer backing stores, JS heap growth)
-// are deferred past the React commit, so sampling immediately undercounts. This
-// also bounds how long the Event Timing entry has to arrive, since the readouts
-// are published on this timer — see the effects below.
+// are deferred past the React commit, so sampling immediately undercounts. Only
+// the mount runs wait on this — they sample memory, which has no completion
+// signal. The update runs publish off the PerformanceObserver instead.
 //
 // One value for both platforms, deliberately generous. Neither platform's
 // settle curve has been sampled, and undercounting memory fails *silently* —
@@ -131,10 +131,28 @@ export default function PerformanceScreen() {
   // label rather than just a flag, so the readout can say which run it was.
   const updatePending = useRef<string | null>(null);
 
+  // The armed run once its commit has been measured. Held in a ref because the
+  // Event Timing entry lands later, off the observer, and has to be paired back
+  // up with the commit number from the same press.
+  const updateRun = useRef<{ label: string; commitMs: number } | null>(null);
+
   // Event Timing arrives after mount, later than the effect that clears
   // `pending`, so the press timestamp it matches against has to outlive it.
   const interactionMs = useRef<number | null>(null);
   const runStartTime = useRef<number | null>(null);
+
+  // Publishes the update readout from whatever is known so far. Called twice
+  // per run: from the commit effect, where the commit number is already final
+  // and interaction is usually still missing, and again from the observer once
+  // the entry for that press lands.
+  const publishUpdate = useCallback(() => {
+    const run = updateRun.current;
+    if (run == null) return;
+    setUpdateTiming({
+      label: run.label,
+      timing: { commitMs: run.commitMs, interactionMs: interactionMs.current },
+    });
+  }, []);
 
   useEffect(() => {
     if (PerformanceObserverGlobal == null) return;
@@ -143,22 +161,26 @@ export default function PerformanceScreen() {
       const start = runStartTime.current;
       if (start == null) return;
 
+      let raised = false;
       for (const entry of list.getEntries()) {
         if (Math.abs(entry.startTime - start) > EVENT_MATCH_SLACK_MS) continue;
         // A press emits several entries (touchstart, touchend, click…); only
         // the one whose handler triggered the render waits for mount, so it is
         // by far the longest.
-        interactionMs.current = Math.max(
-          interactionMs.current ?? 0,
-          entry.duration
-        );
+        if (entry.duration <= (interactionMs.current ?? -1)) continue;
+        interactionMs.current = entry.duration;
+        raised = true;
       }
+
+      // Those entries can arrive across several flushes, so the readout is
+      // republished whenever the max grows rather than after a fixed wait.
+      if (raised) publishUpdate();
     });
 
     // 0 overrides the spec's default, which drops short events.
     observer.observe({ type: 'event', durationThreshold: 0 });
     return () => observer.disconnect();
-  }, []);
+  }, [publishUpdate]);
 
   const startMeasure = useCallback((kind: Kind) => {
     // Memory is sampled before the render that mounts the views. The commit
@@ -171,6 +193,12 @@ export default function PerformanceScreen() {
 
     interactionMs.current = null;
     runStartTime.current = startTime;
+
+    // Disarms the update readout. This press's own Event Timing entries match
+    // the observer's window, and a live `updateRun` would have it publish them
+    // — a setState that re-renders every mounted item in the middle of the
+    // settle window, perturbing the memory sample this run exists to take.
+    updateRun.current = null;
 
     if (kind === 'plain') {
       setPlainCount(COUNT);
@@ -188,6 +216,9 @@ export default function PerformanceScreen() {
   const startUpdateMeasure = useCallback((label: string) => {
     performance.mark(UPDATE_START_MARK);
     updatePending.current = label;
+    // Dropped now, not in the commit effect: an entry landing in between would
+    // otherwise be published against the previous run's commit number.
+    updateRun.current = null;
 
     interactionMs.current = null;
     runStartTime.current = performance.now();
@@ -263,11 +294,10 @@ export default function PerformanceScreen() {
     return () => clearTimeout(timer);
   }, [plainCount, nativePlainCount, textCount, nativeTextCount]);
 
-  // The update counterpart. Commit is readable right away, but Event Timing
-  // only delivers the entry once the update has mounted, so the result is read
-  // on the same SETTLE_MS timer — generous here, since it is tuned for native
-  // allocations settling, but a shorter deadline risks reading before a slow
-  // re-render has mounted and reporting no interaction at all.
+  // The update counterpart. Nothing is sampled here, so there is nothing to
+  // wait for: commit is final the moment this fires, and interaction is filled
+  // in by the observer when the entry arrives — the readout shows the commit
+  // number immediately and gains the interaction number a frame or two later.
   useEffect(() => {
     const label = updatePending.current;
     if (label == null) return;
@@ -278,15 +308,11 @@ export default function PerformanceScreen() {
       UPDATE_START_MARK
     ).duration;
 
-    const timer = setTimeout(() => {
-      setUpdateTiming({
-        label,
-        timing: { commitMs, interactionMs: interactionMs.current },
-      });
-    }, SETTLE_MS);
-
-    return () => clearTimeout(timer);
-  }, [fontSize, rerenders]);
+    updateRun.current = { label, commitMs };
+    // Covers the case where the entry beat this effect: the observer saw no
+    // armed run and skipped publishing, but the value is already in the ref.
+    publishUpdate();
+  }, [fontSize, rerenders, publishUpdate]);
 
   return (
     <ScrollView
