@@ -94,22 +94,36 @@ on both memory and time, Small the smallest. A bigger font means a longer
 `NSAttributedString` and more `NSLayoutManager` work for `Text` to build; `PlainText`
 skips that pipeline regardless of size, so the delta it avoids scales with it.
 
-This mount-level view (memory and interaction only) replaces the earlier
-simulator-based numbers for this platform. It does not yet have a `commit`/
-UI-thread split the way the Android numbers do — no physical-device run of that
-split exists yet (see [Open opportunities](#open-opportunities)).
+This mount-level view replaces the earlier simulator-based numbers for this
+platform. The table above is memory and interaction only, but a device run of
+the `commit` split at Large now exists, taken while measuring the wrap-detection
+work:
+
+| mount 1000, Large | interaction | commit | UI thread (derived) |
+| --- | --- | --- | --- |
+| before | 165 ms | 64.5 ms | ~100.5 ms |
+| after | 161 ms | 59 ms | ~102 ms |
+
+**About 62% of iOS interaction is the UI-thread half**, and it did not move —
+as expected, since that change was commit-side only. That answers the question
+the *iOS mount path* row in [Open opportunities](#open-opportunities) was
+waiting on: the remaining headroom is in mounting, not measuring. Single runs at
+one font size; the other sizes and the update scenarios are still
+interaction-only.
 
 ## What changed, in order
 
-| Change | Effect |
-| --- | --- |
-| Reuse the off-screen measuring view | commit 450 → 230 ms |
-| C++ micro-optimizations in the measure hop | commit 230 → 200 ms |
-| `requestLayout` scoping + batched prop application | mount half 488 → 307 ms (interaction 687 → ~505 ms) |
-| `shouldNewRevisionDirtyMeasurement` override | ancestor re-render of 1000 mounted items: ~165 → 68 ms commit |
+| Change | Platform | Effect |
+| --- | --- | --- |
+| Reuse the off-screen measuring view | Android | commit 450 → 230 ms |
+| C++ micro-optimizations in the measure hop | Android | commit 230 → 200 ms |
+| `requestLayout` scoping + batched prop application | Android | mount half 488 → 307 ms (interaction 687 → ~505 ms) |
+| `shouldNewRevisionDirtyMeasurement` override | both | ancestor re-render of 1000 mounted items: ~165 → 68 ms commit (Pixel 3) |
+| Skip the second layout when the text fits | iOS | commit 64.5 → 59 ms (iPhone 16, Large) |
 
-The first two moved the JS half, the last two the UI half. Nothing moved both,
-which is why the `interaction`/`commit` split is worth keeping.
+Each of these moved one half or the other, never both, which is why the
+`interaction`/`commit` split is worth keeping: the first two and the last are
+commit-side, the `requestLayout`/batching work is mount-side.
 
 ## Implemented
 
@@ -206,6 +220,50 @@ registered at runtime (expo-font) doesn't leave the earlier fallback cached.
 
 Not yet measured; the font path is a small share of an iOS commit dominated by
 CoreText layout.
+
+### Skip iOS's second layout when the text fits (`ios/PlainTextShadowNode.mm`)
+
+`measureContent` needs two things: the size, and whether the text wrapped (RN
+reports the full constraint width when it did, the tight width when it didn't).
+It used to get them from two unconditional `boundingRectWithSize:` calls — the
+constrained one for the size, an unconstrained one purely to compare heights.
+
+Reversing the order makes the second call conditional. Measure unconstrained
+first: with no width limit the engine breaks only at hard breaks, so that width
+is exactly the width the text needs in order *not* to wrap.
+
+- `unconstrained.width <= constraint` → it already fits, so constraining to a
+  width it never reaches cannot move a line break. The constrained layout would
+  be identical, and the unconstrained result is the answer. **One layout.**
+- Otherwise it wraps, which fixes the width at the constraint and leaves only
+  the height to measure. **Two layouts, as before.**
+
+The `textDidWrap` flag disappears — the branch is the flag.
+
+What makes this different from the proxies below is that it adds no new way of
+computing anything. Both numbers still come from `boundingRectWithSize:`, so
+CoreText's line-breaking rules are inherited rather than predicted. The one
+assumption is a property of line breaking, not of any API: text that already
+fits does not break differently given more room.
+
+Verified equivalent by probing both algorithms over 11 strings × 55 constraint
+widths — 605 combinations, zero differences in reported width or height, and
+67% of them served by a single layout. (An artificial spread; a screen of short
+labels in a wide container is closer to 100%, which is what the benchmark
+mounts.)
+
+iPhone 16, physical device, mount 1000 at Large, single runs:
+
+| | interaction | commit |
+| --- | --- | --- |
+| Two unconditional layouts (baseline) | 165 ms | 64.5 ms |
+| **Skip the second when it fits** | **161 ms** | **59 ms** |
+| Widest-paragraph proxy ([rejected](#replacing-ioss-second-boundingrectwithsize-with-a-cheaper-wrap-test)) | 169 ms | 69.5 ms |
+
+**~8.5% off commit.** Worth putting the three rows side by side: the same
+second layout that a cheaper proxy could not profitably replace is worth 5.5 ms
+to skip outright when it is provably unnecessary. The saving was never in
+computing the wrap answer faster — it was in not needing to ask.
 
 ### Skip measurement invalidation on structural clones (both platforms)
 
@@ -323,6 +381,61 @@ An LRU keyed on the size-affecting props plus constraints, in the C++ manager,
 so hits skip JNI entirely. **Not implemented**: zero benefit in this benchmark
 (1000 unique strings). Plausible win for real screens with repeated labels.
 
+### Replacing iOS's second `boundingRectWithSize:` with a cheaper wrap test
+
+`measureContent` used to run `boundingRectWithSize:` twice unconditionally, the
+second one purely to answer *did this wrap?* Replacing that second layout with a
+cheaper way of computing the same answer looks like an obvious win. **Built,
+measured, reverted — it was slower.**
+
+(The second layout is now skipped when the text fits, by
+[reordering the two calls](#skip-ioss-second-layout-when-the-text-fits-iosplaintextshadownodemm)
+— a different change, and one that adds no new way of computing anything.)
+
+iPhone 16, physical device, mount 1000, isolating this change against `main`:
+
+| | interaction | commit |
+| --- | --- | --- |
+| Second `boundingRectWithSize:` (kept) | 165 ms | 64.5 ms |
+| Widest-paragraph width comparison | 169 ms | 69.5 ms |
+
+Roughly 8% worse on commit. The replacement was `enumerateSubstringsInRange:`
+`ByLines` plus `sizeWithAttributes:` per run — the iOS analogue of Android's
+`Layout.getDesiredWidth`, which is what RN Android compares against the
+constraint instead of computing a wrap flag at all. In hindsight the mechanism
+is plain: that is ICU line segmentation *and* a measurement that builds its own
+layout machinery, i.e. two costs where the second `boundingRectWithSize:` is
+one.
+
+It was also wrong twice before it was fast enough to reject, and both errors
+were found by a throwaway probe rather than by reading the code:
+
+- `ByParagraphs` does not split on U+2028, which the text engine still breaks at.
+- `sizeWithAttributes:` counts trailing whitespace where line breaking hangs it,
+  so the test over-reported wrapping in a narrow band. The obvious fix — trim
+  trailing whitespace — turned out to break the other two cases, because iOS
+  drops that whitespace in exactly one shape (see
+  [native-gotchas.md](native-gotchas.md#cross-platform)).
+
+**The reason the second layout wins is the reason to keep it.** It asks the same
+engine the same question, so it inherits CoreText's line-breaking rules for
+free. Every cheaper proxy has to *predict* them, and there is no reason to think
+two quirks was all of them.
+
+Two further alternatives, not measured:
+
+- **Infer the line count from `height / perLineHeight`** and compare against a
+  count of `\n`. Genuinely free, and it shipped briefly — but font fallback
+  breaks the even division and a trailing newline needs a deliberate bias.
+- **`NSTextStorage`/`NSLayoutManager` line fragments**, what RN's
+  `RCTTextLayoutManager` does (`:536-570`), exact from a single layout. It sets
+  `usesFontLeading = NO` and measures through TextKit — right for RN, which
+  *renders* through TextKit, wrong here. `PlainText` draws into a `UILabel`, and
+  `boundingRectWithSize:` is the CoreText path that matches it.
+
+Revisit only with a profile showing iOS measurement dominating, and measure
+before believing it.
+
 ### Removing the `requestLayout` hack entirely
 
 **Not possible.** Fabric's `updateLayout` covers the mount path, but a prop
@@ -336,11 +449,10 @@ matters. Ordered by expected value if its trigger fires.
 
 | Idea | Expected value | Why not yet | Revisit when |
 | --- | --- | --- | --- |
-| **iOS mount path** | Unknown, but the UI thread is where `PlainText` leads least | The iPhone 16 mount numbers confirm a real, size-scaling win (13–25% on interaction) but only as one combined figure — nothing splits it into commit vs UI-thread the way the Pixel 3 numbers do, so whether the remaining headroom is in mounting or measuring is still unknown on device. Every mount-path fix so far has been Android-only, and nothing checks whether `applyContentFromProps` rebuilds the attributed string more than once per transaction | A physical-device iOS run adds the `performance.mark`/`measure` commit split alongside `interaction`, the way the Android numbers already do |
+| **iOS mount path** | Now the largest known iOS target: ~62% of interaction | **Trigger has fired.** The device split at Large puts ~102 ms of a 161 ms interaction on the UI thread against 59 ms of commit, so the remaining headroom is in mounting, not measuring ([above](#ios--iphone-16-physical-device)). Every mount-path fix so far has been Android-only, and nothing checks whether `applyContentFromProps` rebuilds the attributed string more than once per transaction — the exact problem prop batching solved on Android | Ready now. Start by instrumenting `updateProps:`/`applyContentFromProps` for repeat work within one transaction |
 | **View recycling** | Nothing on cold mount; real for list churn | `enableViewRecycling` defaults false, so not even RN's `<Text>` recycles ([details](#view-recycling)) | The flag flips, or a consuming app enables it. Do it with the flag on locally and a mount/unmount churn benchmark |
 | **Measurement LRU cache** (C++, keyed on size-affecting props + constraints) | Skips the JNI hop entirely on a hit | Zero benefit in a benchmark of 1000 unique strings | A real screen with repeated labels shows measurement cost |
 | **`StaticLayout` measure path** | Small, now that the view is reused | Parity risk, and Minikin shaping sits under both approaches ([details](#measure-via-staticlayoutboringlayout-instead-of-a-textview)) | Profiling shows measurement dominating again |
-| **iOS wrap detection without a second layout** | Drops one of the two `boundingRectWithSize:` calls `measureContent` runs per node | The second pass exists only to decide *whether* the text wrapped, because RN reports the full constraint width when it did and the tight width when it didn't. It is the cheaper of the two (unconstrained, so no line breaking), and the obvious replacements — compare the height against one line height, or count line fragments — are exactly the shortcuts that break on an explicit `\n` or a font with unusual metrics, which the current version gets right. Unquantified besides: iOS has no `commit`/UI-thread split yet, so measurement's share of commit is unknown there (Android's is ~60%) | The iOS commit split lands (see the **iOS mount path** row) and measurement shows up in it. Code: `ios/PlainTextShadowNode.mm` |
 | **Custom JNI measure entry** (primitives instead of a `ReadableNativeMap`) | Removes the per-node map allocation | Default-omission already took most of it | The remaining serialization shows in a profile |
 | **Trim the JS wrapper** | A few ms per 1000 views | Most of the 33 ms is one extra React fiber per item, which trimming can't remove ([details](#trimming-the-js-wrapper)) | Only if the wrapper delta grows |
 
@@ -352,9 +464,10 @@ stronger claims — or before assuming a change was a win everywhere.
 - **iOS mount cost and memory are now measured on a physical device** (iPhone
   16, [above](#ios--iphone-16-physical-device)), confirming the simulator's
   directional read: `PlainText` beats `Text` on both mem and interaction, and
-  the win scales up with font size rather than down. What's still unconfirmed
-  on device is the `commit`/UI-thread split and the update scenarios
-  (re-render, font-size-on-mounted) — those numbers below remain simulator-only.
+  the win scales up with font size rather than down. The `commit`/UI-thread
+  split now exists on device too, but only for `PlainText` at Large — there is
+  no device split for `Text`, for the other sizes, or for the update scenarios
+  (re-render, font-size-on-mounted), which remain simulator-only.
 - **The clone-invalidation override is verified on both platforms.** Prop
   changes re-measure and ancestor re-renders don't. Android confirms it against
   its own baseline (165 vs 68 ms commit, physical device); iOS confirms it

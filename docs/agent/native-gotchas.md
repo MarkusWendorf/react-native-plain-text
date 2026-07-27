@@ -20,6 +20,40 @@ Learned the hard way. Most of these cost an afternoon the first time.
 - **New `ios/*.mm` files are only compiled after `pod install`** re-scans the
   podspec glob.
 
+## Cross-platform
+
+- **Trailing whitespace widens the measured box on Android always, on iOS
+  almost always.** iOS drops it in exactly one shape: when it sits at the very
+  end of a string that contains at least one line break. Measured with
+  `boundingRectWithSize:` at 18pt, three trailing spaces (13.68pt):
+
+  | | |
+  | --- | --- |
+  | `"one line   "` | counted |
+  | `"one line   \n"` | counted |
+  | `"longest   \nX"` (spaces on first line) | counted |
+  | `"X\nlongest   "` (spaces on last line) | **dropped** |
+  | `"X\nlongest   \nY"` (spaces mid-string) | counted |
+  | `"X\nlongest   \n"` (trailing newline after) | counted |
+
+  Note the first and fourth rows: both end in spaces, and they disagree. A
+  single-line string never drops them.
+
+  The cause is that the platforms measure different things. Android's width is
+  `Layout.getDesiredWidth`, an advance sum per paragraph with no line breaking
+  involved, so nothing can be trimmed. iOS's is the used rect of a real layout,
+  where the final line fragment of a multi-fragment layout has its trailing
+  whitespace trimmed — and a single-line string never enters that path.
+
+  **RN `<Text>` does exactly the same thing** — verified on device with the
+  Features screen's *Wrap Detection* rows and the Compare Text overlay, on both
+  platforms. So this is inherited from the platforms' text engines via RN, not
+  something this library introduces.
+
+  Deliberately not normalized. The contract is per-platform parity with
+  `<Text>`; "fixing" it would mean differing from `<Text>` on one platform to
+  agree with the other, which is the worse trade for a drop-in replacement.
+
 ## Android
 
 - **`TextView` needs a manual measure pass for prop changes that don't resize

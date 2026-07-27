@@ -56,35 +56,48 @@ Size PlainTextShadowNode::measureContent(
     perLineHeight = static_cast<Float>(lineHeight);
   }
 
-  // Measure with the same text engine that renders the UILabel (CoreText, via
-  // NSString drawing). This runs on the Fabric shadow thread; NSAttributed
-  // string measurement is thread-safe. Height is unbounded so multi-line text
-  // grows vertically; width is capped to the constraint so wrapping matches
-  // what the mounted UILabel will do.
-  CGSize maxSize =
-      CGSizeMake(layoutConstraints.maximumSize.width, CGFLOAT_MAX);
+  // Measured with the same text engine that renders the UILabel (CoreText, via
+  // NSString drawing). Runs on the Fabric shadow thread; NSAttributedString
+  // measurement is thread-safe.
+  //
+  // RN reports the full constraint width, not the narrower widest-rendered-line
+  // width, whenever the text word-wrapped — only unwrapped text (a single line,
+  // or one broken up by explicit "\n"s) gets the tight width. So the two cases
+  // need different things measured, and taking them in this order means only
+  // the wrapping one needs two layouts.
+  //
+  // Unconstrained first: with no width limit the engine breaks only at hard
+  // breaks, so this width is precisely the width the text needs in order not to
+  // wrap. Deliberately asked of the same API that will do the wrapping — every
+  // cheaper stand-in has to predict CoreText's rules (trailing whitespace
+  // hanging, U+2028, font fallback) instead of inheriting them, and the ones
+  // tried measured slower anyway. See docs/agent/performance.md.
+  CGRect unconstrained = [text boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+                                            options:NSStringDrawingUsesLineFragmentOrigin
+                                         attributes:attributes
+                                            context:nil];
 
-  CGRect rect = [text boundingRectWithSize:maxSize
-                                   options:NSStringDrawingUsesLineFragmentOrigin
-                                attributes:attributes
-                                   context:nil];
-
-  // RN's own text measurement (RCTTextLayoutManager) reports the full
-  // constraint width, not the narrower widest-rendered-line width, whenever
-  // the text actually word-wrapped — only unwrapped text (a single line, or
-  // one broken up by explicit "\n"s) gets the tight width. Detect wrapping by
-  // comparing against an unconstrained (single-line-per-"\n") measurement: if
-  // the constrained layout needed more height, width was the cause.
-  CGRect unconstrainedRect = [text boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
-                                                 options:NSStringDrawingUsesLineFragmentOrigin
-                                              attributes:attributes
-                                                 context:nil];
-  BOOL textDidWrap = rect.size.height > unconstrainedRect.size.height + 0.01;
+  CGSize measured;
+  if (unconstrained.size.width <= layoutConstraints.maximumSize.width) {
+    // Already fits, so constraining to a width it never reaches cannot change
+    // where the lines break. The constrained layout would be identical — same
+    // lines, same height — so there is nothing left to measure.
+    measured = unconstrained.size;
+  } else {
+    // It wraps, which fixes the width at the constraint by the rule above and
+    // leaves only the height unknown. Height is unbounded here so multiline
+    // text grows vertically rather than being clipped.
+    CGRect constrained =
+        [text boundingRectWithSize:CGSizeMake(layoutConstraints.maximumSize.width, CGFLOAT_MAX)
+                           options:NSStringDrawingUsesLineFragmentOrigin
+                        attributes:attributes
+                           context:nil];
+    measured = CGSizeMake(layoutConstraints.maximumSize.width, constrained.size.height);
+  }
 
   Size size{
-      .width = static_cast<Float>(
-          std::ceil(textDidWrap ? layoutConstraints.maximumSize.width : rect.size.width)),
-      .height = static_cast<Float>(std::ceil(rect.size.height)),
+      .width = static_cast<Float>(std::ceil(measured.width)),
+      .height = static_cast<Float>(std::ceil(measured.height)),
   };
 
   // Cap the height to numberOfLines (0 = unlimited), matching the mounted
