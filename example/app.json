@@ -13,7 +13,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "plaintext.example"
+      "bundleIdentifier": "plaintext.example",
+      "appleTeamId": "GTWH34J2C9"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +27,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "./plugins/withDebugVariant"
+    ]
   }
 }
