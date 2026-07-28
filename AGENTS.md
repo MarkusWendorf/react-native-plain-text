@@ -41,3 +41,4 @@ exists.
 | A native change "does nothing", or builds misbehave | [native-gotchas.md](docs/agent/native-gotchas.md) |
 | Quoting or producing a performance number | [measuring.md](docs/agent/measuring.md) — metrics and procedure |
 | Optimizing anything | [performance.md](docs/agent/performance.md) — what's been done, what was rejected and why, and what's still open |
+| Comparing `PlainText` to RN's `<Text>`, or explaining why this library exists | [rn-text-history.md](docs/agent/rn-text-history.md) — how RN core measures text, and why it never used `UILabel` |
