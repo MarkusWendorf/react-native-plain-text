@@ -3,9 +3,10 @@
 [![npm version](https://img.shields.io/npm/v/react-native-plain-text.svg)](https://www.npmjs.com/package/react-native-plain-text)
 [![license](https://img.shields.io/npm/l/react-native-plain-text.svg)](./LICENSE)
 
-A faster, lower-memory `<Text>` alternative for React Native. `PlainText`
-renders straight to the platform's native text widget (`UILabel` on iOS,
-`TextView` on Android) instead of going through RN's text layout pipeline.
+A faster, lower-memory alternative to React Native's `<Text>` for simple,
+single-style text. `PlainText` renders straight to the platform's native text
+widget (`UILabel` on iOS, `TextView` on Android) instead of going through RN's
+text layout pipeline.
 
 The tradeoff: one string, one style. No nested `<Text>`, no mixed styles. That
 still covers most real-world text: body copy, labels, list and feed content.
