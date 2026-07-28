@@ -5,11 +5,10 @@ renders straight to the platform's native text widget (`UILabel` on iOS,
 `TextView` on Android) instead of going through RN's own text layout
 pipeline, so it uses less memory and renders faster. The tradeoff: no nested
 or mixed-style text, just a single string with one style (see
-[Compatibility](#compatibility)). That
-covers the large majority of real-world `<Text>` usage (body copy, labels,
-list and feed content), making `PlainText` a drop-in-*shaped* swap for
-perf-conscious apps and design systems alike. It's an early, evolving
-library, and feedback drives what gets built next.
+[Compatibility](#compatibility)). That covers the large majority of
+real-world `<Text>` usage (body copy, labels, list and feed content), making
+`PlainText` a drop-in-*shaped* swap for perf-conscious apps and design
+systems alike. It's in beta, and feedback drives what gets built next.
 
 Early measurements with the example app's Performance tab (rough,
 self-measured, take as directional — see
