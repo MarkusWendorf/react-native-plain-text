@@ -13,17 +13,17 @@ Everything comes from React Native's own Web Performance APIs, [stable since
 memory probe. Nothing is hand-rolled, so each number means what the spec says it
 means rather than what the benchmark decided it means.
 
-| Metric | Source | Span |
-| --- | --- | --- |
-| **interaction** | `PerformanceObserver`, `event` entry (`PerformanceEventTiming.duration`) | Native press → the new views are mounted |
-| **commit** | `performance.mark` / `performance.measure` | The JS-thread slice: React render, Fabric commit, Yoga layout |
-| **memory/view** | `react-native-memory-footprint` | Process footprint delta ÷ number of views |
+| Metric          | Source                                                                   | Span                                                          |
+| --------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| **interaction** | `PerformanceObserver`, `event` entry (`PerformanceEventTiming.duration`) | Native press → the new views are mounted                      |
+| **commit**      | `performance.mark` / `performance.measure`                               | The JS-thread slice: React render, Fabric commit, Yoga layout |
+| **memory/view** | `react-native-memory-footprint`                                          | Process footprint delta ÷ number of views                     |
 
 **interaction** is the headline. It is React Native's analogue of the web's
 [INP](https://web.dev/articles/inp): when an event's handler causes rendering
 updates, RN's `EventPerformanceLogger` holds the entry until the shadow tree
 mounts and reports `duration = mountTime - eventStartTime`. It starts at the
-*native* event timestamp, so it includes the input-dispatch latency the user
+_native_ event timestamp, so it includes the input-dispatch latency the user
 really waits through — typically ~13&nbsp;ms more than a JS-side timer would
 show.
 
@@ -39,7 +39,7 @@ on the JS thread or the UI thread.
   be small for a component with expensive per-frame painting.
 - **Non-interaction updates.** No `event` entry exists for a render caused by a
   timer, a network response, or app startup.
-- **Multi-commit interactions.** The entry resolves on the *first* mount after
+- **Multi-commit interactions.** The entry resolves on the _first_ mount after
   the event. An interaction that renders a placeholder and then real content is
   timed to the placeholder.
 - **Scrolling and steady-state jank.** Nothing here measures dropped frames
@@ -55,12 +55,12 @@ per-view costs this library exists to reduce.
 Four variants are measured so that JS-wrapper cost is separable from native
 cost:
 
-| Variant | What it is |
-| --- | --- |
-| `PlainText` | This library's public component |
-| `NativePlainText` | Its bare codegen host component, no JS wrapper |
-| `Text` | React Native's `<Text>` |
-| `NativeText` | RN's bare `RCTText` host component (`unstable_NativeText`) |
+| Variant           | What it is                                                 |
+| ----------------- | ---------------------------------------------------------- |
+| `PlainText`       | This library's public component                            |
+| `NativePlainText` | Its bare codegen host component, no JS wrapper             |
+| `Text`            | React Native's `<Text>`                                    |
+| `NativeText`      | RN's bare `RCTText` host component (`unstable_NativeText`) |
 
 The `PlainText`/`NativePlainText` and `Text`/`NativeText` deltas price each
 library's JS wrapper; the `NativePlainText`/`NativeText` delta compares the
@@ -68,16 +68,16 @@ native implementations directly.
 
 ### Update scenarios
 
-The four buttons above measure *mounting*. The controls on the top row measure
-*updating* text that is already on screen, which is a different cost and the
+The four buttons above measure _mounting_. The controls on the top row measure
+_updating_ text that is already on screen, which is a different cost and the
 only way to exercise measurement invalidation
 ([intrinsic-sizing.md](intrinsic-sizing.md#measurement-invalidation-both-platforms)).
 They report `interaction`/`commit` on their own line, no memory.
 
-| Control | What changes | Should |
-| --- | --- | --- |
-| **Large / Regular / Small** | `fontSize` on every mounted item | re-measure all of them |
-| **Re-render** | one sibling label, nothing the items receive | re-measure none of them |
+| Control                     | What changes                                 | Should                  |
+| --------------------------- | -------------------------------------------- | ----------------------- |
+| **Large / Regular / Small** | `fontSize` on every mounted item             | re-measure all of them  |
+| **Re-render**               | one sibling label, nothing the items receive | re-measure none of them |
 
 They are complements, and they catch opposite failures: a **font size** run near
 the empty-screen baseline means invalidation never fires (stale sizes — text

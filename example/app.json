@@ -28,8 +28,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "./plugins/withDebugVariant"
-    ]
+    "plugins": ["./plugins/withDebugVariant"]
   }
 }

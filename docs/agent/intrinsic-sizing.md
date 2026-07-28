@@ -56,8 +56,8 @@ project's only C++/CMake/JNI, under `android/src/main/jni/`:
   rather than per call, unlike RN's own managers. Needs
   `<react/jni/ReadableNativeMap.h>` + `<folly/dynamic.h>`; the size math uses
   `yogaMeassureToSize` from `<react/renderer/core/conversions.h>`.
-- **`.../ComponentDescriptors.h`** — an override of the generated header *of the
-  same include path*, defining a measuring `RNPlainTextComponentDescriptor` whose
+- **`.../ComponentDescriptors.h`** — an override of the generated header _of the
+  same include path_, defining a measuring `RNPlainTextComponentDescriptor` whose
   `adopt()` wires the manager onto the shadow node.
 - **`PlainTextViewManager.kt`** — overrides `measure(...)`: reads the serialized
   props, sizes a reused off-screen `PlainTextView`, returns
@@ -86,7 +86,7 @@ project's only C++/CMake/JNI, under `android/src/main/jni/`:
 
 Both shadow nodes override `shouldNewRevisionDirtyMeasurement`. The base
 `YogaLayoutableShadowNode` implementation returns `true` unconditionally, which
-is expensive: when an ancestor re-renders, Fabric clones *every* child of the
+is expensive: when an ancestor re-renders, Fabric clones _every_ child of the
 changed parent purely to re-own its Yoga node
 (`YogaLayoutableShadowNode::adoptYogaChild` — a Yoga node can have one owner), so
 with the default every `PlainText` on screen re-measures on any ancestor state
@@ -112,7 +112,7 @@ is already in `package.json`'s `files`.
 **`shouldRevisionDirtyMeasurement` is called from each shadow node's clone
 constructor, not from the `shouldNewRevisionDirtyMeasurement` override.** The
 override only returns the `bool` the constructor cached. This looks
-roundabout and is not: the override *cannot* do the comparison itself.
+roundabout and is not: the override _cannot_ do the comparison itself.
 
 `YogaLayoutableShadowNode::completeClone` discards its own `sourceShadowNode`
 parameter and calls the override with `*this`:
@@ -129,7 +129,7 @@ void YogaLayoutableShadowNode::completeClone(
 `ConcreteComponentDescriptor::cloneShadowNode` runs the clone constructor first
 and `completeClone` after, and the base `ShadowNode` clone constructor has by
 then already installed `fragment.props` as `props_`. So inside the override,
-`sourceShadowNode.getProps()` and `getConcreteProps()` are the *same object* —
+`sourceShadowNode.getProps()` and `getConcreteProps()` are the _same object_ —
 comparing them is comparing the new props against themselves. It is always
 equal, the node is never dirtied, and every size-affecting prop change keeps
 its stale frame. This shipped once; see the note in
@@ -142,5 +142,5 @@ the inherited constructor of the same signature, which is why
 path. This is also why RN's `ParagraphShadowNode` ignores `sourceShadowNode`
 entirely — it is useless in that position.
 
-Yoga *style* props are deliberately excluded from the comparison —
+Yoga _style_ props are deliberately excluded from the comparison —
 `updateYogaProps` dirties the node on style changes independently.

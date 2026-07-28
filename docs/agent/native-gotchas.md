@@ -27,14 +27,14 @@ Learned the hard way. Most of these cost an afternoon the first time.
   end of a string that contains at least one line break. Measured with
   `boundingRectWithSize:` at 18pt, three trailing spaces (13.68pt):
 
-  | | |
-  | --- | --- |
-  | `"one line   "` | counted |
-  | `"one line   \n"` | counted |
-  | `"longest   \nX"` (spaces on first line) | counted |
-  | `"X\nlongest   "` (spaces on last line) | **dropped** |
-  | `"X\nlongest   \nY"` (spaces mid-string) | counted |
-  | `"X\nlongest   \n"` (trailing newline after) | counted |
+  |                                              |             |
+  | -------------------------------------------- | ----------- |
+  | `"one line   "`                              | counted     |
+  | `"one line   \n"`                            | counted     |
+  | `"longest   \nX"` (spaces on first line)     | counted     |
+  | `"X\nlongest   "` (spaces on last line)      | **dropped** |
+  | `"X\nlongest   \nY"` (spaces mid-string)     | counted     |
+  | `"X\nlongest   \n"` (trailing newline after) | counted     |
 
   Note the first and fourth rows: both end in spaces, and they disagree. A
   single-line string never drops them.
@@ -46,7 +46,7 @@ Learned the hard way. Most of these cost an afternoon the first time.
   whitespace trimmed — and a single-line string never enters that path.
 
   **RN `<Text>` does exactly the same thing** — verified on device with the
-  Features screen's *Wrap Detection* rows and the Compare Text overlay, on both
+  Features screen's _Wrap Detection_ rows and the Compare Text overlay, on both
   platforms. So this is inherited from the platforms' text engines via RN, not
   something this library introduces.
 

@@ -27,7 +27,7 @@ In 0.83, `grep -rl UILabel` over the RN checkout returns no hits in
 `UILabel` uses are dev tooling (RedBox, `RCTPerfMonitor`, `RCTFPSGraph`) and the
 unimplemented-component placeholder.
 
-Android is the mirror image. `ReactTextView` *does* extend `AppCompatTextView`,
+Android is the mirror image. `ReactTextView` _does_ extend `AppCompatTextView`,
 but measurement has always bypassed `TextView.onMeasure` in favour of
 hand-constructed `BoringLayout`/`StaticLayout`
 (`ReactAndroid/src/main/java/com/facebook/react/views/text/TextLayoutManager.kt`,
@@ -38,12 +38,12 @@ hand-constructed `BoringLayout`/`StaticLayout`
 Obj-C/Java measurement code moved **behind a C++ facade**. The text engine
 underneath did not change.
 
-| | |
-| --- | --- |
+|                                                                          |                                                                                                                                                            |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`05890a594`](https://github.com/facebook/react-native/commit/05890a594) | "Fabric/Text: textlayoutmanager", Valentin Shergin, 2018-05-08 (D7751852). Creates `ReactCommon/fabric/textlayoutmanager`. **This is the starting point.** |
-| [`f3893aab3`](https://github.com/facebook/react-native/commit/f3893aab3) | "Fabric/Text: Connecting the dots" — registers the component, 2018-05-09 |
-| [`ee535fafe`](https://github.com/facebook/react-native/commit/ee535fafe) | Makes `textlayoutmanager` compile on Android, 2018-07-02 |
-| [`5c0da011c`](https://github.com/facebook/react-native/commit/5c0da011c) | "Add support to measure shadow nodes in the FabricUIManager", David Vacca, 2018-09-18 — the Android backend, C++ → JNI → Java |
+| [`f3893aab3`](https://github.com/facebook/react-native/commit/f3893aab3) | "Fabric/Text: Connecting the dots" — registers the component, 2018-05-09                                                                                   |
+| [`ee535fafe`](https://github.com/facebook/react-native/commit/ee535fafe) | Makes `textlayoutmanager` compile on Android, 2018-07-02                                                                                                   |
+| [`5c0da011c`](https://github.com/facebook/react-native/commit/5c0da011c) | "Add support to measure shadow nodes in the FabricUIManager", David Vacca, 2018-09-18 — the Android backend, C++ → JNI → Java                              |
 
 The intent is stated in the first commit message verbatim:
 
@@ -52,11 +52,11 @@ The intent is stated in the first commit message verbatim:
 > functionality.
 
 And the iOS backend added in that commit (`RCTTextLayoutManager.mm`) uses the
-*same* stack as the old architecture — `NSTextStorage` + `NSLayoutManager` +
+_same_ stack as the old architecture — `NSTextStorage` + `NSLayoutManager` +
 `NSTextContainer`, size read from `usedRectForTextContainer:`. Same technique,
 new boundary.
 
-The C++ header still describes itself as a *"Cross platform facade"*, exposing
+The C++ header still describes itself as a _"Cross platform facade"_, exposing
 `measure(AttributedStringBox, ParagraphAttributes, TextLayoutContext,
 LayoutConstraints)` plus an opaque `getNativeTextLayoutManager()` that the view
 layer reuses for rendering
@@ -76,12 +76,11 @@ possible:
 
 - **`TextMeasureCache`** — memoizes on attributed string + attributes +
   constraints ([enlarged](https://github.com/facebook/react-native/commit/8f6aee0df)
-  2021, [shipped everywhere](https://github.com/facebook/react-native/commit/9578c2cad)
-  2022)
+  2021, [shipped everywhere](https://github.com/facebook/react-native/commit/9578c2cad) 2022)
 - [`d41e95fb1`](https://github.com/facebook/react-native/commit/d41e95fb1) —
   "Cache NSTextStorage", Samuel Susla, 2023
-- **`enablePreparedTextLayout`** — *"Enables caching text layout artifacts for
-  later reuse"* (`ReactCommon/react/featureflags/ReactNativeFeatureFlags.h`), so
+- **`enablePreparedTextLayout`** — _"Enables caching text layout artifacts for
+  later reuse"_ (`ReactCommon/react/featureflags/ReactNativeFeatureFlags.h`), so
   the `Layout`/`NSTextStorage` built during measure is handed to render instead
   of rebuilt. See `ParagraphShadowNode.cpp` (`enablePreparedTextLayout` call
   sites), `TextLayoutManagerExtended.h` (a C++ concept gating whether a platform

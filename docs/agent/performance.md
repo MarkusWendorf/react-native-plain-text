@@ -21,21 +21,21 @@ Release build, mount 1000 views in one state update, mean of 3 runs at each
 font size — same methodology and Large/Regular/Small tiers as the iOS table
 below.
 
-| | `PlainText` mem | `PlainText` interaction | `Text` mem | `Text` interaction | `NativeText` mem | `NativeText` interaction |
-| --- | --- | --- | --- | --- | --- | --- |
-| Large | 35.3 KB | 503.7 ms | 53.2 KB | 718.0 ms | 50.0 KB | 673.7 ms |
-| Regular | 35.4 KB | 504.7 ms | 52.7 KB | 724.3 ms | 50.1 KB | 675.0 ms |
-| Small | 35.1 KB | 502.0 ms | 52.9 KB | 716.3 ms | 50.4 KB | 675.7 ms |
-| **mean** | **35.3 KB** | **503.4 ms** | **52.9 KB** | **719.6 ms** | **50.2 KB** | **674.8 ms** |
+|          | `PlainText` mem | `PlainText` interaction | `Text` mem  | `Text` interaction | `NativeText` mem | `NativeText` interaction |
+| -------- | --------------- | ----------------------- | ----------- | ------------------ | ---------------- | ------------------------ |
+| Large    | 35.3 KB         | 503.7 ms                | 53.2 KB     | 718.0 ms           | 50.0 KB          | 673.7 ms                 |
+| Regular  | 35.4 KB         | 504.7 ms                | 52.7 KB     | 724.3 ms           | 50.1 KB          | 675.0 ms                 |
+| Small    | 35.1 KB         | 502.0 ms                | 52.9 KB     | 716.3 ms           | 50.4 KB          | 675.7 ms                 |
+| **mean** | **35.3 KB**     | **503.4 ms**            | **52.9 KB** | **719.6 ms**       | **50.2 KB**      | **674.8 ms**             |
 
 `PlainText` vs `Text`:
 
-| | mem | interaction |
-| --- | --- | --- |
-| Large | -33.6% | -29.9% |
-| Regular | -32.8% | -30.3% |
-| Small | -33.6% | -30.1% |
-| **average** | **-33.3%** | **-30.1%** |
+|             | mem        | interaction |
+| ----------- | ---------- | ----------- |
+| Large       | -33.6%     | -29.9%      |
+| Regular     | -32.8%     | -30.3%      |
+| Small       | -33.6%     | -30.1%      |
+| **average** | **-33.3%** | **-30.1%**  |
 
 `NativeText` vs `Text` is again mostly flat across sizes (-4.8% to -6.1% mem,
 -6.2% to -6.8% interaction) — the same read as iOS below: most of `PlainText`'s
@@ -54,9 +54,9 @@ are real, repeated Event Timing runs. The `commit` (JS-thread) breakdown and the
 `NativePlainText` comparison below are still from that single earlier run and
 haven't been repeated per size:
 
-| | `PlainText` | `NativePlainText` | `Text` | `NativeText` |
-| --- | --- | --- | --- | --- |
-| commit (JS thread) | ~200 ms | ~175 ms | ~324 ms | ~272 ms |
+|                    | `PlainText` | `NativePlainText` | `Text`  | `NativeText` |
+| ------------------ | ----------- | ----------------- | ------- | ------------ |
+| commit (JS thread) | ~200 ms     | ~175 ms           | ~324 ms | ~272 ms      |
 
 Starting point for the same scenario was ~450 ms commit and ~687 ms to painted.
 
@@ -68,20 +68,20 @@ to skip: Large is a headline-scale size, Regular is body text, Small is a
 caption — the same three tiers the example app's Large/Regular/Small buttons
 mount.
 
-| | `PlainText` mem | `PlainText` interaction | `Text` mem | `Text` interaction | `NativeText` mem | `NativeText` interaction |
-| --- | --- | --- | --- | --- | --- | --- |
-| Large | 148.6 KB | 165.0 ms | 197.6 KB | 210.3 ms | 196.5 KB | 202.0 ms |
-| Regular | 49.6 KB | 144.3 ms | 58.4 KB | 170.7 ms | 57.1 KB | 162.3 ms |
-| Small | 34.5 KB | 142.0 ms | 42.6 KB | 164.0 ms | 41.0 KB | 155.7 ms |
+|         | `PlainText` mem | `PlainText` interaction | `Text` mem | `Text` interaction | `NativeText` mem | `NativeText` interaction |
+| ------- | --------------- | ----------------------- | ---------- | ------------------ | ---------------- | ------------------------ |
+| Large   | 148.6 KB        | 165.0 ms                | 197.6 KB   | 210.3 ms           | 196.5 KB         | 202.0 ms                 |
+| Regular | 49.6 KB         | 144.3 ms                | 58.4 KB    | 170.7 ms           | 57.1 KB          | 162.3 ms                 |
+| Small   | 34.5 KB         | 142.0 ms                | 42.6 KB    | 164.0 ms           | 41.0 KB          | 155.7 ms                 |
 
 `PlainText` vs `Text` (its JS wrapper included both sides):
 
-| | mem | interaction |
-| --- | --- | --- |
-| Large | -24.8% | -21.6% |
-| Regular | -15.1% | -15.4% |
-| Small | -19.1% | -13.4% |
-| **average** | **-19.7%** | **-16.8%** |
+|             | mem        | interaction |
+| ----------- | ---------- | ----------- |
+| Large       | -24.8%     | -21.6%      |
+| Regular     | -15.1%     | -15.4%      |
+| Small       | -19.1%     | -13.4%      |
+| **average** | **-19.7%** | **-16.8%**  |
 
 `NativeText` vs `Text` isolates the wrapper cost from the native win: it is
 mostly flat, -0.6% to -3.8% on memory and -4.0% to -5.1% on interaction across
@@ -99,27 +99,27 @@ platform. The table above is memory and interaction only, but a device run of
 the `commit` split at Large now exists, taken while measuring the wrap-detection
 work:
 
-| mount 1000, Large | interaction | commit | UI thread (derived) |
-| --- | --- | --- | --- |
-| before | 165 ms | 64.5 ms | ~100.5 ms |
-| after | 161 ms | 59 ms | ~102 ms |
+| mount 1000, Large | interaction | commit  | UI thread (derived) |
+| ----------------- | ----------- | ------- | ------------------- |
+| before            | 165 ms      | 64.5 ms | ~100.5 ms           |
+| after             | 161 ms      | 59 ms   | ~102 ms             |
 
 **About 62% of iOS interaction is the UI-thread half**, and it did not move —
 as expected, since that change was commit-side only. That answers the question
-the *iOS mount path* row in [Open opportunities](#open-opportunities) was
+the _iOS mount path_ row in [Open opportunities](#open-opportunities) was
 waiting on: the remaining headroom is in mounting, not measuring. Single runs at
 one font size; the other sizes and the update scenarios are still
 interaction-only.
 
 ## What changed, in order
 
-| Change | Platform | Effect |
-| --- | --- | --- |
-| Reuse the off-screen measuring view | Android | commit 450 → 230 ms |
-| C++ micro-optimizations in the measure hop | Android | commit 230 → 200 ms |
-| `requestLayout` scoping + batched prop application | Android | mount half 488 → 307 ms (interaction 687 → ~505 ms) |
-| `shouldNewRevisionDirtyMeasurement` override | both | ancestor re-render of 1000 mounted items: ~165 → 68 ms commit (Pixel 3) |
-| Skip the second layout when the text fits | iOS | commit 64.5 → 59 ms (iPhone 16, Large) |
+| Change                                             | Platform | Effect                                                                  |
+| -------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
+| Reuse the off-screen measuring view                | Android  | commit 450 → 230 ms                                                     |
+| C++ micro-optimizations in the measure hop         | Android  | commit 230 → 200 ms                                                     |
+| `requestLayout` scoping + batched prop application | Android  | mount half 488 → 307 ms (interaction 687 → ~505 ms)                     |
+| `shouldNewRevisionDirtyMeasurement` override       | both     | ancestor re-render of 1000 mounted items: ~165 → 68 ms commit (Pixel 3) |
+| Skip the second layout when the text fits          | iOS      | commit 64.5 → 59 ms (iPhone 16, Large)                                  |
 
 Each of these moved one half or the other, never both, which is why the
 `interaction`/`commit` split is worth keeping: the first two and the last are
@@ -174,7 +174,7 @@ key now means "default", not "unset".
 ### Scope the `requestLayout` re-measure hack (`PlainTextView.kt`)
 
 The hack posts a `measureAndLayout` runnable so the mounted `TextView` rebuilds
-its draw `Layout`. It fired on *every* `requestLayout`, including during initial
+its draw `Layout`. It fired on _every_ `requestLayout`, including during initial
 mount — where the view has no frame yet, so it measured at 0×0, and where Fabric
 already calls `measure()` + `layout()` itself after applying props
 (`SurfaceMountingManager.updateLayout`). With ~18 prop setters each triggering a
@@ -213,7 +213,7 @@ font database, and italic adds a second descriptor round-trip. `UIFont` and
 one cache.
 
 This is the iOS counterpart to Android's batched typeface resolution, and unlike
-the changes above it *removes* a sync point rather than adding one — the two
+the changes above it _removes_ a sync point rather than adding one — the two
 copies had to stay identical or the measured box wouldn't fit the drawn text.
 The cache clears on `kCTFontManagerRegisteredFontsChangedNotification`, so a font
 registered at runtime (expo-font) doesn't leave the earlier fallback cached.
@@ -230,7 +230,7 @@ constrained one for the size, an unconstrained one purely to compare heights.
 
 Reversing the order makes the second call conditional. Measure unconstrained
 first: with no width limit the engine breaks only at hard breaks, so that width
-is exactly the width the text needs in order *not* to wrap.
+is exactly the width the text needs in order _not_ to wrap.
 
 - `unconstrained.width <= constraint` → it already fits, so constraining to a
   width it never reaches cannot move a line break. The constrained layout would
@@ -254,11 +254,11 @@ mounts.)
 
 iPhone 16, physical device, mount 1000 at Large, single runs:
 
-| | interaction | commit |
-| --- | --- | --- |
-| Two unconditional layouts (baseline) | 165 ms | 64.5 ms |
-| **Skip the second when it fits** | **161 ms** | **59 ms** |
-| Widest-paragraph proxy ([rejected](#replacing-ioss-second-boundingrectwithsize-with-a-cheaper-wrap-test)) | 169 ms | 69.5 ms |
+|                                                                                                           | interaction | commit    |
+| --------------------------------------------------------------------------------------------------------- | ----------- | --------- |
+| Two unconditional layouts (baseline)                                                                      | 165 ms      | 64.5 ms   |
+| **Skip the second when it fits**                                                                          | **161 ms**  | **59 ms** |
+| Widest-paragraph proxy ([rejected](#replacing-ioss-second-boundingrectwithsize-with-a-cheaper-wrap-test)) | 169 ms      | 69.5 ms   |
 
 **~8.5% off commit.** Worth putting the three rows side by side: the same
 second layout that a cheaper proxy could not profitably replace is worth 5.5 ms
@@ -280,7 +280,7 @@ both platforms), so a revision changing only e.g. `color` also keeps its size.
 
 The comparison runs in the shadow node's **clone constructor**, and the override
 just returns the cached verdict. It cannot run in the override itself —
-`completeClone` calls that with the *new* node, whose props are already the new
+`completeClone` calls that with the _new_ node, whose props are already the new
 ones. [intrinsic-sizing.md](intrinsic-sizing.md#where-the-comparison-has-to-happen)
 has the details; the paragraph below has the history.
 
@@ -290,12 +290,12 @@ Release build, Pixel 3, single runs. The Performance screen's **Re-render** and
 font-size buttons measure updates to text already on screen, so these are
 directly comparable; see [measuring.md](measuring.md#update-scenarios).
 
-| With 1000 `PlainText` mounted | interaction | commit |
-| --- | --- | --- |
-| Empty screen (baseline, nothing mounted) | 28 ms | 9 ms |
-| **Re-render** — ancestor changes, item props identical | 102 ms | 68 ms |
-| **Font size** — every item's measurement inputs change | 323 ms | 165 ms |
-| *Add 1000, for scale* | *497 ms* | *195 ms* |
+| With 1000 `PlainText` mounted                          | interaction | commit   |
+| ------------------------------------------------------ | ----------- | -------- |
+| Empty screen (baseline, nothing mounted)               | 28 ms       | 9 ms     |
+| **Re-render** — ancestor changes, item props identical | 102 ms      | 68 ms    |
+| **Font size** — every item's measurement inputs change | 323 ms      | 165 ms   |
+| _Add 1000, for scale_                                  | _497 ms_    | _195 ms_ |
 
 Reading the commit column, which is where measurement happens:
 
@@ -306,7 +306,7 @@ Reading the commit column, which is where measurement happens:
   diffing and payload creation, plus 1000 real measurements. Measurement is
   most of it.
 
-So the override saves most of ~97 ms of commit on *every* ancestor re-render,
+So the override saves most of ~97 ms of commit on _every_ ancestor re-render,
 and the earlier `1000 → 0` framing holds: had it not worked, the Re-render row
 would sit up near the font-size row instead of at 40% of it.
 
@@ -318,7 +318,7 @@ the measure hop again.
 #### History: the first version never invalidated anything
 
 The override originally ran its comparison inside
-`shouldNewRevisionDirtyMeasurement`, where `completeClone` supplies the *new*
+`shouldNewRevisionDirtyMeasurement`, where `completeClone` supplies the _new_
 node — so it compared the new props against themselves, always returned
 `false`, and no prop change ever dirtied measurement. Symptom: with 1000 items
 mounted, changing the font size left every label at its old size. Fixed by
@@ -335,7 +335,7 @@ Each of these has a revisit trigger; they are summarized in
 RN's approach. **Rejected**, for three reasons that compound:
 
 - `TextLayoutManager` is Kotlin `internal` and takes RN's private `MapBuffer`
-  serialization, so it can only be *reimplemented*, not called.
+  serialization, so it can only be _reimplemented_, not called.
 - After view reuse, the remaining delta is small: `TextView.measure()` already
   builds a `BoringLayout`/`StaticLayout` internally and takes the boring fast
   path for single-line text.
@@ -384,7 +384,7 @@ so hits skip JNI entirely. **Not implemented**: zero benefit in this benchmark
 ### Replacing iOS's second `boundingRectWithSize:` with a cheaper wrap test
 
 `measureContent` used to run `boundingRectWithSize:` twice unconditionally, the
-second one purely to answer *did this wrap?* Replacing that second layout with a
+second one purely to answer _did this wrap?_ Replacing that second layout with a
 cheaper way of computing the same answer looks like an obvious win. **Built,
 measured, reverted — it was slower.**
 
@@ -394,16 +394,16 @@ measured, reverted — it was slower.**
 
 iPhone 16, physical device, mount 1000, isolating this change against `main`:
 
-| | interaction | commit |
-| --- | --- | --- |
-| Second `boundingRectWithSize:` (kept) | 165 ms | 64.5 ms |
-| Widest-paragraph width comparison | 169 ms | 69.5 ms |
+|                                       | interaction | commit  |
+| ------------------------------------- | ----------- | ------- |
+| Second `boundingRectWithSize:` (kept) | 165 ms      | 64.5 ms |
+| Widest-paragraph width comparison     | 169 ms      | 69.5 ms |
 
 Roughly 8% worse on commit. The replacement was `enumerateSubstringsInRange:`
 `ByLines` plus `sizeWithAttributes:` per run — the iOS analogue of Android's
 `Layout.getDesiredWidth`, which is what RN Android compares against the
 constraint instead of computing a wrap flag at all. In hindsight the mechanism
-is plain: that is ICU line segmentation *and* a measurement that builds its own
+is plain: that is ICU line segmentation _and_ a measurement that builds its own
 layout machinery, i.e. two costs where the second `boundingRectWithSize:` is
 one.
 
@@ -419,7 +419,7 @@ were found by a throwaway probe rather than by reading the code:
 
 **The reason the second layout wins is the reason to keep it.** It asks the same
 engine the same question, so it inherits CoreText's line-breaking rules for
-free. Every cheaper proxy has to *predict* them, and there is no reason to think
+free. Every cheaper proxy has to _predict_ them, and there is no reason to think
 two quirks was all of them.
 
 Two further alternatives, not measured:
@@ -430,7 +430,7 @@ Two further alternatives, not measured:
 - **`NSTextStorage`/`NSLayoutManager` line fragments**, what RN's
   `RCTTextLayoutManager` does (`:536-570`), exact from a single layout. It sets
   `usesFontLeading = NO` and measures through TextKit — right for RN, which
-  *renders* through TextKit, wrong here. `PlainText` draws into a `UILabel`, and
+  _renders_ through TextKit, wrong here. `PlainText` draws into a `UILabel`, and
   `boundingRectWithSize:` is the CoreText path that matches it.
 
 Revisit only with a profile showing iOS measurement dominating, and measure
@@ -447,14 +447,14 @@ nothing else rebuilds the `TextView`'s draw `Layout`.
 Nothing here is blocked; each is waiting on a trigger or on evidence that it
 matters. Ordered by expected value if its trigger fires.
 
-| Idea | Expected value | Why not yet | Revisit when |
-| --- | --- | --- | --- |
-| **iOS mount path** | Now the largest known iOS target: ~62% of interaction | **Trigger has fired.** The device split at Large puts ~102 ms of a 161 ms interaction on the UI thread against 59 ms of commit, so the remaining headroom is in mounting, not measuring ([above](#ios--iphone-16-physical-device)). Every mount-path fix so far has been Android-only, and nothing checks whether `applyContentFromProps` rebuilds the attributed string more than once per transaction — the exact problem prop batching solved on Android | Ready now. Start by instrumenting `updateProps:`/`applyContentFromProps` for repeat work within one transaction |
-| **View recycling** | Nothing on cold mount; real for list churn | `enableViewRecycling` defaults false, so not even RN's `<Text>` recycles ([details](#view-recycling)) | The flag flips, or a consuming app enables it. Do it with the flag on locally and a mount/unmount churn benchmark |
-| **Measurement LRU cache** (C++, keyed on size-affecting props + constraints) | Skips the JNI hop entirely on a hit | Zero benefit in a benchmark of 1000 unique strings | A real screen with repeated labels shows measurement cost |
-| **`StaticLayout` measure path** | Small, now that the view is reused | Parity risk, and Minikin shaping sits under both approaches ([details](#measure-via-staticlayoutboringlayout-instead-of-a-textview)) | Profiling shows measurement dominating again |
-| **Custom JNI measure entry** (primitives instead of a `ReadableNativeMap`) | Removes the per-node map allocation | Default-omission already took most of it | The remaining serialization shows in a profile |
-| **Trim the JS wrapper** | A few ms per 1000 views | Most of the 33 ms is one extra React fiber per item, which trimming can't remove ([details](#trimming-the-js-wrapper)) | Only if the wrapper delta grows |
+| Idea                                                                         | Expected value                                        | Why not yet                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Revisit when                                                                                                      |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **iOS mount path**                                                           | Now the largest known iOS target: ~62% of interaction | **Trigger has fired.** The device split at Large puts ~102 ms of a 161 ms interaction on the UI thread against 59 ms of commit, so the remaining headroom is in mounting, not measuring ([above](#ios--iphone-16-physical-device)). Every mount-path fix so far has been Android-only, and nothing checks whether `applyContentFromProps` rebuilds the attributed string more than once per transaction — the exact problem prop batching solved on Android | Ready now. Start by instrumenting `updateProps:`/`applyContentFromProps` for repeat work within one transaction   |
+| **View recycling**                                                           | Nothing on cold mount; real for list churn            | `enableViewRecycling` defaults false, so not even RN's `<Text>` recycles ([details](#view-recycling))                                                                                                                                                                                                                                                                                                                                                       | The flag flips, or a consuming app enables it. Do it with the flag on locally and a mount/unmount churn benchmark |
+| **Measurement LRU cache** (C++, keyed on size-affecting props + constraints) | Skips the JNI hop entirely on a hit                   | Zero benefit in a benchmark of 1000 unique strings                                                                                                                                                                                                                                                                                                                                                                                                          | A real screen with repeated labels shows measurement cost                                                         |
+| **`StaticLayout` measure path**                                              | Small, now that the view is reused                    | Parity risk, and Minikin shaping sits under both approaches ([details](#measure-via-staticlayoutboringlayout-instead-of-a-textview))                                                                                                                                                                                                                                                                                                                        | Profiling shows measurement dominating again                                                                      |
+| **Custom JNI measure entry** (primitives instead of a `ReadableNativeMap`)   | Removes the per-node map allocation                   | Default-omission already took most of it                                                                                                                                                                                                                                                                                                                                                                                                                    | The remaining serialization shows in a profile                                                                    |
+| **Trim the JS wrapper**                                                      | A few ms per 1000 views                               | Most of the 33 ms is one extra React fiber per item, which trimming can't remove ([details](#trimming-the-js-wrapper))                                                                                                                                                                                                                                                                                                                                      | Only if the wrapper delta grows                                                                                   |
 
 ## What we don't know yet
 
@@ -495,7 +495,7 @@ stronger claims — or before assuming a change was a win everywhere.
 
 **Fabric commit and layout run on the JS thread** (`mqt_v_js`); mounting is
 dispatched to the UI thread afterwards. A `useEffect` after a `setState` fires
-~11 ms after layout finishes and, in this scenario, ~385 ms *before* the first
+~11 ms after layout finishes and, in this scenario, ~385 ms _before_ the first
 frame. Any JS-side timing therefore excludes mounting — which is why the
 original numbers looked like a large win while real time-to-paint was a tie.
 
@@ -528,14 +528,14 @@ mount cost after the fixes: ~300 µs.
 
 Three of the changes above traded automatic correctness for speed, and the cost
 is manual coupling that nothing verifies. All are listed with their failure
-modes in AGENTS.md under *Manual sync points*, and marked in code with `// SYNC:`
+modes in AGENTS.md under _Manual sync points_, and marked in code with `// SYNC:`
 comments — `grep -rn "SYNC:" src cpp ios android`.
 
-| Optimization | What must now be kept in sync |
-| --- | --- |
-| Serializing only non-default props across JNI | The generated `Props.h` default, the C++ omission condition, and the Kotlin fallback — three places, one value |
-| Reusing the off-screen measuring view | Every size-affecting prop must be set on every `measure()` call, and no view state may derive from the view's own current state |
-| Comparing measurement inputs on clone | `measurementInputsEqual` must list every prop either `measureContent` reads |
+| Optimization                                  | What must now be kept in sync                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Serializing only non-default props across JNI | The generated `Props.h` default, the C++ omission condition, and the Kotlin fallback — three places, one value                  |
+| Reusing the off-screen measuring view         | Every size-affecting prop must be set on every `measure()` call, and no view state may derive from the view's own current state |
+| Comparing measurement inputs on clone         | `measurementInputsEqual` must list every prop either `measureContent` reads                                                     |
 
 The shared failure mode is the same in all three: correct on first render, wrong
 after an update, and silent in between. Worth knowing before optimizing further
