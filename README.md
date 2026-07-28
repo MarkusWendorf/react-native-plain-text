@@ -1,49 +1,27 @@
 # react-native-plain-text
 
+[![npm version](https://img.shields.io/npm/v/react-native-plain-text.svg)](https://www.npmjs.com/package/react-native-plain-text)
+[![license](https://img.shields.io/npm/l/react-native-plain-text.svg)](./LICENSE)
+
 A faster, lower-memory `<Text>` alternative for React Native. `PlainText`
 renders straight to the platform's native text widget (`UILabel` on iOS,
-`TextView` on Android) instead of going through RN's own text layout
-pipeline, so it uses less memory and renders faster. The tradeoff: no nested
-or mixed-style text, just a single string with one style (see
-[Compatibility](#compatibility)). That covers the large majority of
-real-world `<Text>` usage (body copy, labels, list and feed content), making
-`PlainText` a drop-in-_shaped_ swap for perf-conscious apps and design
-systems alike. It's in beta, and feedback drives what gets built next.
+`TextView` on Android) instead of going through RN's text layout pipeline.
 
-Early measurements with the example app's Performance tab (rough,
-self-measured, take as directional — see
-[measuring.md](docs/agent/measuring.md) for what the numbers mean and how to
-reproduce them):
+The tradeoff: one string, one style. No nested `<Text>`, no mixed styles. That
+still covers most real-world text: body copy, labels, list and feed content.
 
-Memory per mounted view:
+Beta: the API is stable enough to use, and feedback drives what gets built next.
 
-| Text size        | `PlainText` | RN `Text` |
-| ---------------- | ----------- | --------- |
-| iOS, small       | 34.5 KB     | 42.6 KB   |
-| iOS, regular     | 49.6 KB     | 58.4 KB   |
-| iOS, large       | 148.6 KB    | 197.6 KB  |
-| Android, small   | 35.1 KB     | 52.9 KB   |
-| Android, regular | 35.4 KB     | 52.7 KB   |
-| Android, large   | 35.3 KB     | 53.2 KB   |
+## Should you use it?
 
-Interaction latency — press until 1000 mounted views appear, as reported by
-RN's own Event Timing API, release builds:
+RN's `<Text>` is the right choice for most apps. Reach for `PlainText` when you
+want to squeeze the most out of text-heavy screens like long lists and feeds,
+where a lot of labels mount at once.
 
-|                                               | `PlainText` | RN `Text` |
-| --------------------------------------------- | ----------- | --------- |
-| Android, 1000 views, small (Pixel 3 device)   | 502 ms      | 716 ms    |
-| Android, 1000 views, regular (Pixel 3 device) | 505 ms      | 724 ms    |
-| Android, 1000 views, large (Pixel 3 device)   | 504 ms      | 718 ms    |
-| iOS, 1000 views, small (iPhone 16 device)     | 142 ms      | 164 ms    |
-| iOS, 1000 views, regular (iPhone 16 device)   | 144 ms      | 171 ms    |
-| iOS, 1000 views, large (iPhone 16 device)     | 165 ms      | 210 ms    |
-
-Each figure is a mean of 3 runs; see [performance.md](docs/agent/performance.md)
-for the per-run numbers and the older single-run `commit`/`NativePlainText`
-breakdown.
-
-Compare within a row, never between rows: each row is one component against the
-other on one device, and the two rows say nothing about each other.
+It is not all-or-nothing. Everything `PlainText` supports is API-compatible with
+RN `<Text>`, so the two mix freely in one screen. Use `PlainText` for the flat,
+single-style labels and plain `<Text>` wherever you need something it doesn't
+do, like mixed styles, nested text, press handling or selection.
 
 ## Installation
 
@@ -51,78 +29,135 @@ other on one device, and the two rows say nothing about each other.
 npm install react-native-plain-text
 ```
 
+This is a native module, so installing it is not enough. Rebuild the app, running
+`pod install` first on iOS. It does not work in Expo Go, so use a dev client or a
+bare app.
+
+Requires the New Architecture (Fabric).
+
 ## Usage
 
 ```jsx
 import { PlainText } from 'react-native-plain-text';
 
-// ...
-
 <PlainText style={{ fontSize: 16 }}>Hello from PlainText 👋</PlainText>;
 ```
 
-### Compatibility
+## Supported styles
 
-`PlainText` is a drop-in-_shaped_ alternative to RN's `<Text>`, currently in beta, supporting the most important of `<Text>`'s props and styles. The tables below track what works today versus what's still on the roadmap.
+Via `style={{ ... }}`:
 
-Legend: ✅ supported · 🔜 planned, not yet available
+- `fontSize`
+- `color`
+- `fontWeight`
+- `fontFamily`
+- `fontStyle`: `'normal' | 'italic'`
+- `lineHeight`
+- `letterSpacing`
+- `textAlign`
+- `textDecorationLine`: `'none' | 'underline' | 'line-through' | 'underline line-through'`
+- `verticalAlign`: Android only, like RN `<Text>`
+- `textAlignVertical`: Android only, like RN `<Text>`
+- Every other `ViewStyle` prop (`width`, `margin`, `padding`,
+  `backgroundColor`, `opacity`, …), forwarded to the native view as-is
 
-Planned rows are listed in rough implementation order (top = next up).
+## Supported props
 
-#### Style props (via `style={{ ... }}`)
+- `children`: plain `string` only
+- `numberOfLines`
+- `ellipsizeMode`: `'head' | 'middle' | 'tail' | 'clip'`
+- `allowFontScaling`
+- `maxFontSizeMultiplier`
+- `testID`
+- `nativeID` / `id`
+- All of RN's accessibility props (`accessible`, `accessibilityLabel`,
+  `accessibilityRole`, `accessibilityState`, …), including the platform-specific
+  ones
 
-| Style                                                                                                    | Status | Notes                                                                                                                                                          |
-| -------------------------------------------------------------------------------------------------------- | :----: | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fontSize`                                                                                               |   ✅   |                                                                                                                                                                |
-| `color`                                                                                                  |   ✅   |                                                                                                                                                                |
-| `fontWeight`                                                                                             |   ✅   |                                                                                                                                                                |
-| `fontFamily`                                                                                             |   ✅   |                                                                                                                                                                |
-| `lineHeight`                                                                                             |   ✅   |                                                                                                                                                                |
-| `fontStyle`                                                                                              |   ✅   | `'normal' \| 'italic'`                                                                                                                                         |
-| `textAlign`                                                                                              |   ✅   |                                                                                                                                                                |
-| `textDecorationLine`                                                                                     |   ✅   | `'none' \| 'underline' \| 'line-through' \| 'underline line-through'`                                                                                          |
-| `letterSpacing`                                                                                          |   ✅   |                                                                                                                                                                |
-| `verticalAlign` / `textAlignVertical`                                                                    |   ✅   | Android-only, matching RN `<Text>`; iOS top-aligns like `<Text>`. `'auto' \| 'top' \| 'bottom' \| 'center'` (`verticalAlign`'s `'middle'` maps to `'center'`). |
-| `textDecorationColor` / `textDecorationStyle`                                                            |   🔜   | Follow-on to `textDecorationLine`. Costs more on Android, which needs a `SpannableString` since plain `TextView` underline ignores color.                      |
-| `textShadowColor` / `textShadowOffset` / `textShadowRadius`                                              |   🔜   | For text-over-image legibility. Ship as one unit since the three props only make sense together.                                                               |
-| `includeFontPadding` (Android)                                                                           |   🔜   |                                                                                                                                                                |
-| `fontVariant`                                                                                            |   🔜   | Small-caps, tabular-nums, and similar OpenType feature toggles.                                                                                                |
-| `fontVariationSettings`                                                                                  |   🔜   | Variable-font axis control. Not part of RN `<Text>`'s own style API today, so this would go beyond RN parity rather than match it.                             |
-| All other `ViewStyle` props (`width`, `height`, `margin`, `padding`, `backgroundColor`, `opacity`, etc.) |   ✅   | Forwarded to the native view as-is.                                                                                                                            |
+## Planned
 
-#### Component props
+- `textDecorationColor` / `textDecorationStyle`
+- `textShadowColor` / `textShadowOffset` / `textShadowRadius`
+- `includeFontPadding` (Android)
+- `fontVariant`, `fontVariationSettings`
+- `adjustsFontSizeToFit` / `minimumFontScale`: no native Android equivalent, so
+  this is the most expensive item on the list
 
-| Prop                                                       | Status | Notes                                                                                                                                                                                                  |
-| ---------------------------------------------------------- | :----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `children`                                                 |   ✅   | Plain `string` only, no nested `<Text>`/styled fragments.                                                                                                                                              |
-| `numberOfLines`                                            |   ✅   |                                                                                                                                                                                                        |
-| `ellipsizeMode`                                            |   ✅   | `'head' \| 'middle' \| 'tail' \| 'clip'`                                                                                                                                                               |
-| `allowFontScaling` / `maxFontSizeMultiplier`               |   ✅   | Accessibility text scaling.                                                                                                                                                                            |
-| `adjustsFontSizeToFit` / `minimumFontScale`                |   🔜   | Shrink-to-fit, for matching fixed-size design frames exactly. No native Android equivalent to `adjustsFontSizeToFit`, so this is the most expensive item on the list.                                  |
-| `testID` / `accessibilityRole` / other accessibility props |   ✅   | The full RN `<Text>` accessibility surface (`accessibilityLabel`, `accessibilityHint`, `accessibilityState`, `accessibilityRole`, `nativeID`, etc.), forwarded through `ViewProps` to the native view. |
+No committed order. Open an issue for the one you need; real-world usage sets
+the priority.
 
-> Want a prop or style bumped up the list? Open an issue, since real-world usage drives what gets built next.
+## Not supported
 
-#### Intentionally excluded
+Deliberate scope calls, given `PlainText`'s job as a flat, single-style,
+non-interactive label. Reconsidered only on strong real-world demand.
 
-These are real `<Text>` props and styles that `PlainText` does **not** plan to support. They're not oversights, but deliberate scope calls given `PlainText`'s job as a flat, single-style, non-interactive label. Reconsider only on strong real-world demand.
+Text selection is the exception: `selectable`, `selectionColor` and
+`suppressHighlighting` are missing because `UILabel` isn't selectable by design,
+not because of a scope call. Use RN's `<Text>` where you need it.
 
-- **`onPress` / `onLongPress` / `onPressIn` / `onPressOut` / `onResponder*` / `pressRetentionOffset`**: Full gesture-responder wiring is out of scope. `PlainText` renders text, it doesn't handle touch. It's still a plain view, so wrap it in `Pressable` if you need this.
-- **`selectable` / `selectionColor` (Android) / `suppressHighlighting` (iOS)**: `UILabel` isn't selectable by design. Supporting this would mean swapping the underlying widget or bolting on a custom selection UI, exactly the complexity this library exists to avoid. Use RN's own `<Text>` if you need selectable text.
-- **`dataDetectorType` (Android)**: Auto-linking phone numbers, emails, and URLs requires attributed-text spans (`NSDataDetector` / `Linkify`). That's rich, interactive text, which conflicts with the "flat, single-style" scope.
-- **`textTransform`**: Trivially done in plain JS by the caller (`children.toUpperCase()`), so it doesn't earn a native prop.
-- **`writingDirection`**: RTL is virtually always handled globally via `I18nManager`, not per-text-node overrides.
-- **`textBreakStrategy` (Android) / `lineBreakStrategyIOS` / `android_hyphenationFrequency`**: Real knobs, but almost nobody overrides the defaults in practice.
-- **`onTextLayout`**: Useful for custom "read more" UX, but it carries a nontrivial line-metrics payload for a "lite" library. Defer until there's demonstrated demand.
-- **`dynamicTypeRamp` (iOS)**: Overlaps with `allowFontScaling`/`maxFontSizeMultiplier` at a much higher cost, and it's iOS-only, which cuts against the both-platforms policy.
-- **`disabled` (Android)**: RN's own docs mark this as a testing-only hook, not a real feature.
-- **`userSelect`**: Web-only CSS alias. The web fallback already gets this for free via `react-native-web`'s own `<Text>`.
+## Performance
 
-> **Sizing:** `PlainText` measures and sizes itself to its content automatically (no need to set an explicit `width`/`height`), matching how RN's `<Text>` behaves.
+Compared with RN `<Text>` rendering the same content on the same device:
+
+|                          | iOS           | Android     |
+| ------------------------ | ------------- | ----------- |
+| Time to mount 1000 views | 13–21% faster | ~30% faster |
+| Memory per mounted view  | 15–25% less   | ~33% less   |
+
+Time to mount covers input dispatch, React render, Fabric commit, Yoga layout
+with text measurement, and native view creation, but not rasterization. It is
+the `event` entry duration reported by `PerformanceObserver`, the RN metric
+closest to INP on the web. Self-measured from the example app: see
+[measuring.md](docs/agent/measuring.md) for the method and
+[performance.md](docs/agent/performance.md) for per-run data.
+
+<details>
+<summary>Measured numbers behind the percentages</summary>
+
+Time to mount 1000 views, release builds:
+
+|                            | `PlainText` | RN `Text` | Difference |
+| -------------------------- | ----------- | --------- | ---------- |
+| Android, small (Pixel 3)   | 502 ms      | 716 ms    | 30% faster |
+| Android, regular (Pixel 3) | 505 ms      | 724 ms    | 30% faster |
+| Android, large (Pixel 3)   | 504 ms      | 718 ms    | 30% faster |
+| iOS, small (iPhone 16)     | 142 ms      | 164 ms    | 13% faster |
+| iOS, regular (iPhone 16)   | 144 ms      | 171 ms    | 16% faster |
+| iOS, large (iPhone 16)     | 165 ms      | 210 ms    | 21% faster |
+
+Memory per mounted view:
+
+| Text size        | `PlainText` | RN `Text` | Difference |
+| ---------------- | ----------- | --------- | ---------- |
+| iOS, small       | 34.5 KB     | 42.6 KB   | 19% less   |
+| iOS, regular     | 49.6 KB     | 58.4 KB   | 15% less   |
+| iOS, large       | 148.6 KB    | 197.6 KB  | 25% less   |
+| Android, small   | 35.1 KB     | 52.9 KB   | 34% less   |
+| Android, regular | 35.4 KB     | 52.7 KB   | 33% less   |
+| Android, large   | 35.3 KB     | 53.2 KB   | 34% less   |
+
+Each figure is a mean of 3 runs.
+
+</details>
+
+## Known limitations
+
+Places where `PlainText` behaves differently from RN `<Text>`.
+
+- Default text color is hardcoded black on both platforms, so iOS and Android
+  match. It is not theme-aware, so set `color` explicitly for dark mode.
+- iOS: wrapped text can break one word earlier than RN `<Text>` at the same
+  width. `UILabel` needs slightly more horizontal space per character than RN's
+  TextKit, so near a width limit a word can land on the next line where RN keeps
+  it.
+- iOS: a bare hyphen is a wrap point, so `"text-size"` can split as `"text-"` /
+  `"size"`. Use a non-breaking hyphen (U+2011, `‑`) where that split is
+  unwanted.
 
 ## Contributing
 
-- [Measuring performance](docs/agent/measuring.md) · [Performance notes](docs/agent/performance.md)
+- [Measuring performance](docs/agent/measuring.md) ·
+  [Performance notes](docs/agent/performance.md)
 - [Development workflow](CONTRIBUTING.md#development-workflow)
 - [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request)
 - [Code of conduct](CODE_OF_CONDUCT.md)
@@ -130,7 +165,3 @@ These are real `<Text>` props and styles that `PlainText` does **not** plan to s
 ## License
 
 MIT
-
----
-
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
