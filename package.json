@@ -157,6 +157,10 @@
     ]
   },
   "release-it": {
+    "hooks": {
+      "before:init": "yarn validate",
+      "after:bump": "yarn prepare"
+    },
     "git": {
       "commitMessage": "chore: release ${version}",
       "tagName": "v${version}"
