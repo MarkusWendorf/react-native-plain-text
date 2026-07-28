@@ -1,4 +1,4 @@
-# react-native-plain-text
+# React Native Plain Text
 
 [![npm version](https://img.shields.io/npm/v/react-native-plain-text.svg)](https://www.npmjs.com/package/react-native-plain-text)
 [![license](https://img.shields.io/npm/l/react-native-plain-text.svg)](./LICENSE)
