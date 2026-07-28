@@ -1,10 +1,11 @@
 # react-native-plain-text
 
-A lighter-weight `<Text>` for React Native. `PlainText` renders straight to
-the platform's native text widget (`UILabel` on iOS, `TextView` on Android)
-instead of going through RN's own text layout pipeline, so it uses less
-memory and renders faster. The tradeoff: no nested or mixed-style text, just
-a single string with one style (see [Compatibility](#compatibility)). That
+A faster, lower-memory `<Text>` alternative for React Native. `PlainText`
+renders straight to the platform's native text widget (`UILabel` on iOS,
+`TextView` on Android) instead of going through RN's own text layout
+pipeline, so it uses less memory and renders faster. The tradeoff: no nested
+or mixed-style text, just a single string with one style (see
+[Compatibility](#compatibility)). That
 covers the large majority of real-world `<Text>` usage (body copy, labels,
 list and feed content), making `PlainText` a drop-in-*shaped* swap for
 perf-conscious apps and design systems alike. It's an early, evolving
@@ -65,7 +66,7 @@ import { PlainText } from "react-native-plain-text";
 
 ### Compatibility
 
-`PlainText` is a drop-in-*shaped* replacement for RN's `<Text>`, but it's an early package and only supports a subset of `<Text>`'s props and styles so far. The tables below track what works today versus what's still on the roadmap.
+`PlainText` is a drop-in-*shaped* alternative to RN's `<Text>`, currently in beta, supporting the most important of `<Text>`'s props and styles. The tables below track what works today versus what's still on the roadmap.
 
 Legend: ✅ supported · 🔜 planned, not yet available
 

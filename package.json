@@ -1,7 +1,7 @@
 {
   "name": "react-native-plain-text",
   "version": "0.1.0",
-  "description": "A lighter, faster native <Text> replacement for React Native",
+  "description": "A faster, lower-memory React Native <Text> alternative for simple, single-style text",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -43,7 +43,15 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "text",
+    "plain-text",
+    "label",
+    "performance",
+    "memory",
+    "fabric",
+    "uilabel",
+    "textview"
   ],
   "repository": {
     "type": "git",
