@@ -64,8 +64,16 @@ Learned the hard way. Most of these cost an afternoon the first time.
   `PlainTextView.kt` handles that in an overridden `requestLayout()`, scoped to
   views that already have a frame. Keep it, and keep the scoping: unscoped, it
   posted thousands of redundant runnables per screen.
-- Text color is hardcoded black on both platforms (Android's theme default is
-  gray) so the platforms match. Not theme-aware, not exposed as a prop.
+- **A bare `TextView` inherits the theme's text color; RN `<Text>` does not.**
+  With `color` unset, RN's Fabric text path adds no `ForegroundColorSpan`
+  (`ReactBaseTextShadowNode`, gated on `isColorSet`) and never sets
+  `paint.color` (`TextLayoutManager.updateTextPaint`), so the text draws with
+  `TextPaint`'s default — black — regardless of theme. `PlainTextView.kt`
+  therefore hardcodes `Color.BLACK` both at construction and as the reset value
+  in `setColor(null)`. Don't "fix" this to `?android:attr/textColor`: it would
+  make `PlainText` turn white in dark mode where a swapped-out `<Text>` stayed
+  black. iOS matches for the same reason — RN's `RCTAttributedTextUtils.mm`
+  falls back to `[UIColor blackColor]`, not `labelColor`.
 
 ## iOS
 

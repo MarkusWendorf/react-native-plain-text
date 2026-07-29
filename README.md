@@ -145,8 +145,6 @@ Each figure is a mean of 3 runs.
 
 Places where `PlainText` behaves differently from RN `<Text>`.
 
-- Default text color is hardcoded black on both platforms, so iOS and Android
-  match. It is not theme-aware, so set `color` explicitly for dark mode.
 - iOS: wrapped text can break one word earlier than RN `<Text>` at the same
   width. `UILabel` needs slightly more horizontal space per character than RN's
   TextKit, so near a width limit a word can land on the next line where RN keeps
