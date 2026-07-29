@@ -30,9 +30,7 @@ const CONFIG_CHANGE = 'fontScale';
 
 const withFontScaleConfigChanges = (config) =>
   withAndroidManifest(config, (cfg) => {
-    const activity = AndroidConfig.Manifest.getMainActivityOrThrow(
-      cfg.modResults
-    );
+    const activity = AndroidConfig.Manifest.getMainActivityOrThrow(cfg.modResults);
 
     const current = activity.$['android:configChanges'] ?? '';
     const values = current.split('|').filter(Boolean);

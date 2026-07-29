@@ -1,9 +1,4 @@
-import {
-  StyleSheet,
-  type AccessibilityProps,
-  type StyleProp,
-  type TextStyle,
-} from 'react-native';
+import { StyleSheet, type AccessibilityProps, type StyleProp, type TextStyle } from 'react-native';
 import PlainTextViewNativeComponent from './PlainTextViewNativeComponent';
 
 // Accessibility, testID, and nativeID/id are all part of RN's ViewProps, which
@@ -73,10 +68,7 @@ export function PlainText({
       fontWeight={fontWeight != null ? String(fontWeight) : undefined}
       fontStyle={fontStyle}
       textAlign={textAlign}
-      textAlignVertical={resolveTextAlignVertical(
-        textAlignVertical,
-        verticalAlign
-      )}
+      textAlignVertical={resolveTextAlignVertical(textAlignVertical, verticalAlign)}
       textDecorationLine={textDecorationLine}
       lineHeight={lineHeight}
       letterSpacing={letterSpacing}

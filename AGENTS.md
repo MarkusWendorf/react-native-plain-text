@@ -16,8 +16,8 @@ Run from the repo root:
 | ------------------------------------------- | ------------------------------------------------ |
 | `yarn validate`                             | All checks: lint, format, typecheck, test, build |
 | `yarn typecheck`                            | TypeScript                                       |
-| `yarn lint`                                 | ESLint + Prettier (`--fix` to autofix)           |
-| `yarn format`                               | Prettier on non-JS files too (md, json, yml)     |
+| `yarn lint`                                 | ESLint (`--fix` to autofix)                      |
+| `yarn format`                               | oxfmt on JS/TS, md, json and yml                 |
 | `yarn test`                                 | Jest (`yarn test path -t "name"` for one case)   |
 | `yarn example ios` / `yarn example android` | Build & run the example app                      |
 | `yarn example start`                        | Metro only — does **not** rebuild native         |

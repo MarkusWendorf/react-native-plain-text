@@ -65,9 +65,7 @@ const withIosBuildSettings = (config, { idSuffix, nameSuffix }) =>
     const baseName = cfg.name;
 
     if (!baseId) {
-      throw new Error(
-        'withDebugVariant: expo.ios.bundleIdentifier is not set in app.json.'
-      );
+      throw new Error('withDebugVariant: expo.ios.bundleIdentifier is not set in app.json.');
     }
 
     const section = cfg.modResults.pbxXCBuildConfigurationSection();
@@ -77,10 +75,7 @@ const withIosBuildSettings = (config, { idSuffix, nameSuffix }) =>
       const settings = entry?.buildSettings;
       if (!settings) continue;
 
-      const current = String(settings.PRODUCT_BUNDLE_IDENTIFIER ?? '').replace(
-        /"/g,
-        ''
-      );
+      const current = String(settings.PRODUCT_BUNDLE_IDENTIFIER ?? '').replace(/"/g, '');
       if (current !== baseId && current !== `${baseId}${idSuffix}`) continue;
 
       const isDebug = entry.name === 'Debug';
@@ -123,8 +118,7 @@ const withAndroidApplicationIdSuffix = (config, { idSuffix }) =>
 
     cfg.modResults.contents = contents.replace(
       anchor,
-      (match, block, indent) =>
-        `${block}${indent}    applicationIdSuffix '${idSuffix}'\n`
+      (match, block, indent) => `${block}${indent}    applicationIdSuffix '${idSuffix}'\n`
     );
 
     return cfg;
@@ -141,10 +135,7 @@ const withAndroidDebugAppName = (config, { nameSuffix }) =>
     'android',
     async (cfg) => {
       const name = `${cfg.name}${nameSuffix}`;
-      const dir = path.join(
-        cfg.modRequest.platformProjectRoot,
-        'app/src/debug/res/values'
-      );
+      const dir = path.join(cfg.modRequest.platformProjectRoot, 'app/src/debug/res/values');
 
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(

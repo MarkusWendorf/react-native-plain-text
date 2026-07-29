@@ -26,18 +26,12 @@ export interface NativeProps extends ViewProps {
   // Points. 0 means unset/no extra tracking (RN <Text> default), matching the
   // platform default, so it doubles as the sentinel for "not provided".
   letterSpacing?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
-  textAlign?: CodegenTypes.WithDefault<
-    'auto' | 'left' | 'right' | 'center' | 'justify',
-    'auto'
-  >;
+  textAlign?: CodegenTypes.WithDefault<'auto' | 'left' | 'right' | 'center' | 'justify', 'auto'>;
   // Vertical alignment of the text within the view's box. Android-only (matches
   // RN <Text>: iOS ignores it). RN's cross-platform `verticalAlign` style maps
   // onto this on the JS side ('middle' -> 'center'), so the native prop only
   // ever sees the textAlignVertical value set.
-  textAlignVertical?: CodegenTypes.WithDefault<
-    'auto' | 'top' | 'bottom' | 'center',
-    'auto'
-  >;
+  textAlignVertical?: CodegenTypes.WithDefault<'auto' | 'top' | 'bottom' | 'center', 'auto'>;
   // A free string rather than a literal union: the 'underline line-through'
   // value contains a space, which codegen would turn into an invalid C++ enum
   // member (getEnumName only splits on '-'), so it's parsed on the native side
@@ -46,10 +40,7 @@ export interface NativeProps extends ViewProps {
   // 0 means unlimited (matches RN <Text>). Caps rendered lines and the
   // intrinsic height computed by the shadow node's measure pass.
   numberOfLines?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;
-  ellipsizeMode?: CodegenTypes.WithDefault<
-    'head' | 'middle' | 'tail' | 'clip',
-    'tail'
-  >;
+  ellipsizeMode?: CodegenTypes.WithDefault<'head' | 'middle' | 'tail' | 'clip', 'tail'>;
   // Whether the font scales with the OS accessibility text-size setting
   // (Dynamic Type on iOS, font scale on Android). Matches RN <Text>'s default
   // of true; when false the text renders at its literal point size.

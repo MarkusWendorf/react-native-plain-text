@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Button,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // unstable_NativeText is RN's bare RCTText host component (no <Text> JS wrapper).
 import { unstable_NativeText as NativeText } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -80,11 +73,7 @@ type EventTimingEntry = {
 };
 
 type PerformanceObserverLike = {
-  observe(options: {
-    type: string;
-    buffered?: boolean;
-    durationThreshold?: number;
-  }): void;
+  observe(options: { type: string; buffered?: boolean; durationThreshold?: number }): void;
   disconnect(): void;
 };
 
@@ -264,10 +253,7 @@ export default function PerformanceScreen() {
     // The JS thread only — React render, Fabric commit, Yoga layout. Mounting
     // happens on the UI thread after this fires, so `interaction - commit` is
     // roughly what mounting cost.
-    const commitMs = performance.measure(
-      COMMIT_MEASURE,
-      COMMIT_START_MARK
-    ).duration;
+    const commitMs = performance.measure(COMMIT_MEASURE, COMMIT_START_MARK).duration;
 
     const timer = setTimeout(() => {
       const memAfter = getMemoryFootprint();
@@ -303,10 +289,7 @@ export default function PerformanceScreen() {
     if (label == null) return;
     updatePending.current = null;
 
-    const commitMs = performance.measure(
-      UPDATE_MEASURE,
-      UPDATE_START_MARK
-    ).duration;
+    const commitMs = performance.measure(UPDATE_MEASURE, UPDATE_START_MARK).duration;
 
     updateRun.current = { label, commitMs };
     // Covers the case where the entry beat this effect: the observer saw no
@@ -317,10 +300,7 @@ export default function PerformanceScreen() {
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + 40, paddingBottom: 40 },
-      ]}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: 40 }]}
     >
       <View style={styles.selector}>
         {FONT_SIZES.map(({ label, value }) => {
@@ -331,12 +311,7 @@ export default function PerformanceScreen() {
               onPress={() => changeFontSize(value)}
               style={[styles.option, selected && styles.optionSelected]}
             >
-              <Text
-                style={[
-                  styles.optionLabel,
-                  selected && styles.optionLabelSelected,
-                ]}
-              >
+              <Text style={[styles.optionLabel, selected && styles.optionLabelSelected]}>
                 {`${label} (${value})`}
               </Text>
             </Pressable>
@@ -369,28 +344,16 @@ export default function PerformanceScreen() {
         </Text>
       )}
 
-      <Button
-        title={`Add ${COUNT} PlainText`}
-        onPress={() => startMeasure('plain')}
-      />
+      <Button title={`Add ${COUNT} PlainText`} onPress={() => startMeasure('plain')} />
       <StatsRow label="PlainText" stats={plainStats} />
 
-      <Button
-        title={`Add ${COUNT} NativePlainText`}
-        onPress={() => startMeasure('nativePlain')}
-      />
+      <Button title={`Add ${COUNT} NativePlainText`} onPress={() => startMeasure('nativePlain')} />
       <StatsRow label="NativePlainText" stats={nativePlainStats} />
 
-      <Button
-        title={`Add ${COUNT} Text`}
-        onPress={() => startMeasure('text')}
-      />
+      <Button title={`Add ${COUNT} Text`} onPress={() => startMeasure('text')} />
       <StatsRow label="Text" stats={textStats} />
 
-      <Button
-        title={`Add ${COUNT} NativeText`}
-        onPress={() => startMeasure('nativeText')}
-      />
+      <Button title={`Add ${COUNT} NativeText`} onPress={() => startMeasure('nativeText')} />
       <StatsRow label="NativeText" stats={nativeTextStats} />
 
       {Array.from({ length: plainCount }, (_, n) => (
@@ -435,9 +398,7 @@ function StatsRow({ label, stats }: { label: string; stats: Stats | null }) {
     <Text style={styles.stats}>
       {`${label}: ${formatBytes(stats.perViewBytes)}/view · ` +
         `${formatBytes(stats.totalBytes)} total\n` +
-        `initial ${formatBytes(stats.memBefore)} → final ${formatBytes(
-          stats.memAfter
-        )}\n` +
+        `initial ${formatBytes(stats.memBefore)} → final ${formatBytes(stats.memAfter)}\n` +
         `${formatTiming(stats)}`}
     </Text>
   );
@@ -445,8 +406,7 @@ function StatsRow({ label, stats }: { label: string; stats: Stats | null }) {
 
 // Shared by both readouts so the mount and font-size numbers stay comparable.
 function formatTiming({ interactionMs, commitMs }: Timing) {
-  const interaction =
-    interactionMs == null ? '—' : `${interactionMs.toFixed(0)} ms`;
+  const interaction = interactionMs == null ? '—' : `${interactionMs.toFixed(0)} ms`;
   return `${interaction} interaction · ${commitMs.toFixed(0)} ms commit`;
 }
 

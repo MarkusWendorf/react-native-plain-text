@@ -25,14 +25,8 @@ export default function FeaturesScreen({ navigation }: Props) {
     navigation.setOptions({
       // eslint-disable-next-line react/no-unstable-nested-components
       headerRight: () => (
-        <Pressable
-          onPress={() => setShowText((v) => !v)}
-          hitSlop={8}
-          style={styles.headerButton}
-        >
-          <Text style={styles.headerButtonLabel}>
-            {showText ? 'Hide Text' : 'Compare Text'}
-          </Text>
+        <Pressable onPress={() => setShowText((v) => !v)} hitSlop={8} style={styles.headerButton}>
+          <Text style={styles.headerButtonLabel}>{showText ? 'Hide Text' : 'Compare Text'}</Text>
         </Pressable>
       ),
     });
@@ -96,13 +90,9 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
       </Section>
       <Section title="Multiline">
-        <TextItem
-          showText={showText}
-          style={styles.multiline}
-          containerStyle={styles.wideRow}
-        >
-          This is a longer piece of text that should wrap onto multiple lines
-          and size its height automatically.
+        <TextItem showText={showText} style={styles.multiline} containerStyle={styles.wideRow}>
+          This is a longer piece of text that should wrap onto multiple lines and size its height
+          automatically.
         </TextItem>
       </Section>
       {/*
@@ -144,8 +134,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
         {/* Both a hard break and a soft wrap → full constraint width. */}
         <TextItem showText={showText} style={styles.wrapProbe}>
-          {'Break then wrap:\nthis second line is long enough that it also ' +
-            'has to wrap.'}
+          {'Break then wrap:\nthis second line is long enough that it also ' + 'has to wrap.'}
         </TextItem>
       </Section>
       <Section title="Number of Lines">
@@ -206,18 +195,10 @@ export default function FeaturesScreen({ navigation }: Props) {
         <TextItem showText={showText} style={{ fontSize: 18 }}>
           Default: scales with the OS text-size setting.
         </TextItem>
-        <TextItem
-          showText={showText}
-          style={{ fontSize: 18 }}
-          allowFontScaling={false}
-        >
+        <TextItem showText={showText} style={{ fontSize: 18 }} allowFontScaling={false}>
           allowFontScaling false: never scales.
         </TextItem>
-        <TextItem
-          showText={showText}
-          style={{ fontSize: 18 }}
-          maxFontSizeMultiplier={1.5}
-        >
+        <TextItem showText={showText} style={{ fontSize: 18 }} maxFontSizeMultiplier={1.5}>
           maxFontSizeMultiplier 1.5: scales up to 1.5x.
         </TextItem>
       </Section>
@@ -231,34 +212,18 @@ export default function FeaturesScreen({ navigation }: Props) {
         ))}
       </Section>
       <Section title="Text Align">
-        <TextItem
-          showText={showText}
-          style={styles.alignLeft}
-          containerStyle={styles.wideRow}
-        >
+        <TextItem showText={showText} style={styles.alignLeft} containerStyle={styles.wideRow}>
           This text is left-aligned within a wider fixed-width box.
         </TextItem>
-        <TextItem
-          showText={showText}
-          style={styles.alignCenter}
-          containerStyle={styles.wideRow}
-        >
+        <TextItem showText={showText} style={styles.alignCenter} containerStyle={styles.wideRow}>
           This text is center-aligned within a wider fixed-width box.
         </TextItem>
-        <TextItem
-          showText={showText}
-          style={styles.alignRight}
-          containerStyle={styles.wideRow}
-        >
+        <TextItem showText={showText} style={styles.alignRight} containerStyle={styles.wideRow}>
           This text is right-aligned within a wider fixed-width box.
         </TextItem>
-        <TextItem
-          showText={showText}
-          style={styles.alignJustify}
-          containerStyle={styles.wideRow}
-        >
-          This text is justify-aligned within a wider fixed-width box so every
-          line but the last stretches to fill it.
+        <TextItem showText={showText} style={styles.alignJustify} containerStyle={styles.wideRow}>
+          This text is justify-aligned within a wider fixed-width box so every line but the last
+          stretches to fill it.
         </TextItem>
       </Section>
       {/* Vertical alignment is Android-only (matches RN <Text>); on iOS it's a
@@ -499,15 +464,7 @@ const COLORS = [
   { label: 'Blue', color: '#3e63dd' },
 ];
 
-const FONT_WEIGHTS = [
-  'normal',
-  'bold',
-  '100',
-  '300',
-  '500',
-  '700',
-  '900',
-] as const;
+const FONT_WEIGHTS = ['normal', 'bold', '100', '300', '500', '700', '900'] as const;
 
 // Font family names aren't portable across platforms, so pick the equivalent
 // built-in for each — mirrors how RN's own <Text> docs demo fontFamily.
