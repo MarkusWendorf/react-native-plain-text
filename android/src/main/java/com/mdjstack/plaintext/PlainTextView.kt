@@ -1,6 +1,7 @@
 package com.mdjstack.plaintext
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -76,6 +77,30 @@ class PlainTextView : AppCompatTextView {
       MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
     )
     layout(left, top, right, bottom)
+  }
+
+  // What one sp was worth in pixels when the sp-derived values below were last applied,
+  // i.e. density * the OS text-size setting. The same probe ReactHostImpl uses to spot a
+  // font scale change, and it catches a density change too. Read by
+  // reapplyScaledSizes; see onConfigurationChanged.
+  private var scaledPixelsPerSp: Float = PixelUtil.toPixelFromSP(1f)
+
+  // Every value derived from the OS text-size setting is applied as raw pixels, so a
+  // change to that setting leaves them all stale. Re-derives them from the current
+  // props, mirroring iOS's traitCollectionDidChange.
+  //
+  // Posted rather than run inline because PixelUtil reads a snapshot,
+  // DisplayMetricsHolder, that is refreshed by ReactHostImpl.onConfigurationChanged —
+  // and ReactActivity gets there only *after* super.onConfigurationChanged has walked
+  // the view hierarchy, so the snapshot is still stale while our callback runs. Posting
+  // lands us after the whole Activity callback, whichever message the hierarchy walk
+  // arrived on.
+  private val reapplyScaledSizes = Runnable {
+    val current = PixelUtil.toPixelFromSP(1f)
+    if (current == scaledPixelsPerSp) return@Runnable
+    scaledPixelsPerSp = current
+    markScaledSizesDirty()
+    flushPendingUpdates()
   }
 
   private var dirtyFontSize = false
@@ -172,6 +197,10 @@ class PlainTextView : AppCompatTextView {
   }
 
   // dirtyText too, because the lineHeight span is scaled as well.
+  //
+  // SYNC: everything derived from the OS text-size setting has to be reachable from
+  // here, since this is also how onConfigurationChanged re-derives it — and iOS's
+  // traitCollectionDidChange has to cover the same set. See docs/agent/sync-points.md.
   private fun markScaledSizesDirty() {
     dirtyFontSize = true
     dirtyText = true
@@ -312,6 +341,27 @@ class PlainTextView : AppCompatTextView {
       "clip" -> null
       else -> TextUtils.TruncateAt.END
     }
+  }
+
+  // A text-size setting change alone doesn't touch any prop — the scale is read
+  // ambiently through PixelUtil inside toEffectivePixel — so Fabric's props diff never
+  // fires and textSize, letterSpacing and the lineHeight span stay at their old pixel
+  // values. Android calls this on every attached view when the configuration changes,
+  // independent of Fabric, so re-derive from the current props here.
+  //
+  // Only reached when the host Activity declares fontScale in android:configChanges;
+  // otherwise Android recreates the Activity and the views are rebuilt from scratch.
+  // Re-measurement is RN's job either way: it dirties every MeasurableYogaNode when the
+  // surface's fontSizeMultiplier changes, which is what re-runs
+  // PlainTextViewManager.measure and gives this view its new frame.
+  override fun onConfigurationChanged(newConfig: Configuration?) {
+    super.onConfigurationChanged(newConfig)
+    // The measuring instance is never attached, so it never gets here — and it re-reads
+    // the scale on every measure() anyway. Guarded regardless: a post on an unattached
+    // view queues forever.
+    if (isMeasureOnly) return
+    removeCallbacks(reapplyScaledSizes)
+    post(reapplyScaledSizes)
   }
 
   override fun requestLayout() {

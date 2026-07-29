@@ -46,6 +46,33 @@ These must all agree, per prop:
 The C++ side omits props still at their default, so an absent key means
 "default", not "unset". A mismatch silently measures at the wrong size.
 
+## Anything derived from the OS text-size setting
+
+The scale is never a prop. Both platforms read it ambiently while applying props
+— `RCTFontSizeMultiplier()` on iOS, `PixelUtil` on Android — and store the
+result as absolute points/pixels. So when the user changes the setting, no prop
+changes, Fabric's props diff never fires, and every derived value is stale until
+something else remounts the view. Each platform re-derives from an OS callback
+instead:
+
+| Site                                          | Fires on                                          |
+| --------------------------------------------- | ------------------------------------------------- |
+| `RNPlainText.mm` → `traitCollectionDidChange` | a Dynamic Type change                             |
+| `PlainTextView.kt` → `onConfigurationChanged` | a font scale change, if the Activity declares it¹ |
+
+A new value that scales — a second span, a padding, anything multiplied by the
+multiplier — has to be reachable from both, or it holds its old size on one
+platform only. On Android that means `markScaledSizesDirty()` must mark its
+dirty flag; on iOS `applyContentFromProps` already covers everything it builds.
+
+Re-measurement is not part of this contract: RN dirties every
+`MeasurableYogaNode` when the surface's `fontSizeMultiplier` changes, so the
+shadow node re-measures on its own. Only the mounted view needs the callback.
+
+¹ Otherwise Android recreates the Activity and the views are rebuilt anyway.
+`example/plugins/withFontScaleConfigChanges.js` declares it so the no-recreate
+path is the one you exercise while developing.
+
 ## The reused measuring view
 
 `PlainTextViewManager.measure()` sizes one shared off-screen view rather than a

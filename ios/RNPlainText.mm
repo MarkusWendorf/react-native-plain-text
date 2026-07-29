@@ -199,6 +199,31 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
 }
 
+// A Dynamic Type change alone doesn't touch any prop — RCTFontSizeMultiplier()
+// is read ambiently inside applyContentFromProps — so Fabric's props diff in
+// updateProps below never fires and _label.font is left stale until something
+// else causes a remount. UIKit calls this on every view when the OS text size
+// changes, independent of Fabric, so re-derive the content from the current
+// props here to pick it up immediately.
+//
+// SYNC: PlainTextView.onConfigurationChanged is the Android counterpart, and the
+// two have to cover the same set of scaled values. See
+// docs/agent/sync-points.md.
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection
+{
+    [super traitCollectionDidChange:previousTraitCollection];
+
+    if ([self.traitCollection.preferredContentSizeCategory
+            isEqualToString:previousTraitCollection.preferredContentSizeCategory]) {
+        return;
+    }
+
+    const auto &props = *std::static_pointer_cast<RNPlainTextProps const>(_props);
+    if (props.allowFontScaling) {
+        [self applyContentFromProps:props];
+    }
+}
+
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
     const auto &oldViewProps = *std::static_pointer_cast<RNPlainTextProps const>(_props);
