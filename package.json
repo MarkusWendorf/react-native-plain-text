@@ -169,12 +169,31 @@
       "publish": true
     },
     "github": {
-      "release": true
+      "release": true,
+      "releaseName": "v${version}"
     },
     "plugins": {
       "@release-it/conventional-changelog": {
         "preset": {
-          "name": "angular"
+          "name": "conventionalcommits",
+          "types": [
+            {
+              "type": "feat",
+              "section": "✨ Features"
+            },
+            {
+              "type": "fix",
+              "section": "🐛 Bug Fixes"
+            },
+            {
+              "type": "refactor",
+              "section": "♻️ Code Refactoring"
+            },
+            {
+              "type": "docs",
+              "section": "📝 Documentation"
+            }
+          ]
         }
       }
     }
