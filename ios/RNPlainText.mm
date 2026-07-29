@@ -104,6 +104,14 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     _label = [[RNPlainTextLabel alloc] init];
     _label.numberOfLines = 0;
     _label.textColor = [UIColor blackColor];
+    // UILabel defaults to NSLineBreakStrategyStandard (the "avoid orphans"
+    // look-ahead added in iOS 14), which can wrap a word to the next line
+    // earlier than plain greedy wrapping would. measureContent's
+    // boundingRectWithSize: call has no such behavior — NSParagraphStyle's own
+    // default is .none — so it predicts a plain wrap; matching the label to
+    // that keeps the mounted view's wrap points in sync with what was
+    // measured (and with RN <Text>, which wraps the same way).
+    _label.lineBreakStrategy = NSLineBreakStrategyNone;
     // Seed the label's font from the prop defaults so the diff in updateProps
     // (which compares against defaultProps on first mount) is valid. Without
     // this, a view whose fontSize equals the default is never applied and the

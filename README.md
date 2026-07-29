@@ -141,18 +141,6 @@ Each figure is a mean of 3 runs.
 
 </details>
 
-## Known limitations
-
-Places where `PlainText` behaves differently from RN `<Text>`.
-
-- iOS: wrapped text can break one word earlier than RN `<Text>` at the same
-  width. `UILabel` needs slightly more horizontal space per character than RN's
-  TextKit, so near a width limit a word can land on the next line where RN keeps
-  it.
-- iOS: a bare hyphen is a wrap point, so `"text-size"` can split as `"text-"` /
-  `"size"`. Use a non-breaking hyphen (U+2011, `‑`) where that split is
-  unwanted.
-
 ## Contributing
 
 - [Measuring performance](docs/agent/measuring.md) ·

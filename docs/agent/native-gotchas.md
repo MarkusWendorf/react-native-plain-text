@@ -84,6 +84,13 @@ Learned the hard way. Most of these cost an afternoon the first time.
   TextKit, not a sizing bug — the box already gets the correct full width.
   Fixing it would mean rendering through TextKit, defeating the point of the
   library.
+- **`UILabel` defaults to `NSLineBreakStrategyStandard`, which can push a word
+  (or several) to the next line for last-line balance even when it would fit.**
+  `RNPlainText.mm` sets `_label.lineBreakStrategy = NSLineBreakStrategyNone` at
+  construction to disable it, matching `measureContent`'s
+  `boundingRectWithSize:` — `NSParagraphStyle`'s own default is `.none`, so
+  without this the mounted label and the measured size can wrap differently
+  even though the box width is correct.
 - **A bare hyphen (`-`) is a wrap point for `UILabel` but not for RN `<Text>`**,
   so `"text-size"` can split as `"text-"` / `"size"` on iOS. Use a non-breaking
   hyphen (U+2011, `‑`) where that split is unwanted — see the "Non-breaking

@@ -206,14 +206,6 @@ export default function FeaturesScreen({ navigation }: Props) {
         <TextItem showText={showText} style={{ fontSize: 18 }}>
           Default: scales with the OS text-size setting.
         </TextItem>
-        {/* iOS known discrepancy: UILabel's line breaker treats a plain "-"
-            as a wrap point, while RN <Text> (TextKit's NSLayoutManager)
-            doesn't — see the "Font scaling / line-wrapping" note in
-            AGENTS.md. Swapping in a non-breaking hyphen (U+2011) works
-            around it on both platforms. */}
-        <TextItem showText={showText} style={{ fontSize: 18 }}>
-          {'Workaround: scales the OS text‑size setting.'}
-        </TextItem>
         <TextItem
           showText={showText}
           style={{ fontSize: 18 }}
