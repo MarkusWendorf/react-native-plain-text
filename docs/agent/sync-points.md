@@ -144,6 +144,27 @@ constructor calls it before any initializer runs, so `measureAndLayout` is null
 there. The `width == 0 || height == 0` guard is what makes that safe — it is not
 only about Fabric's initial mount.
 
+## Padding and border width, which are not props
+
+Neither ever reaches a prop setter. Yoga resolves them into the shadow view's
+`contentInsets`, and each platform inflates the view's frame by them — so the box
+grows whether or not anything insets the text inside it. That is the failure
+mode: the size is right and only the glyphs are in the wrong place.
+
+| Platform | How the text gets inset                                                                                                                                           |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| iOS      | Free. `RCTViewComponentView` lays `contentView` out at `layoutMetrics.getContentFrame()`, the frame already inset by the same insets.                             |
+| Android  | `PlainTextViewManager.setPadding` → `view.setPadding`. Fabric emits a separate `UpdatePadding` mount item; `ViewManager`'s base implementation is an empty no-op. |
+
+So the Android half is opt-in and silent when missing — the same override RN's
+own `ReactTextViewManager` carries.
+
+Measurement needs no counterpart on either platform: Yoga hands the measure
+callback the content box, already minus padding and border, and adds them back
+to the result. The shared off-screen view in `PlainTextViewManager.measure()`
+must therefore stay padding-free, unlike every other size-affecting value, which
+has to be set on every call.
+
 ## Both platforms' shadow nodes
 
 `ios/PlainTextShadowNode.h` and `android/.../PlainTextShadowNode.h` are separate

@@ -45,6 +45,25 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     view.flushPendingUpdates()
   }
 
+  // Padding (and border width) never arrives as a prop: Yoga resolves it into
+  // the shadow view's contentInsets, and Fabric turns a change there into a
+  // separate UpdatePadding mount item — SurfaceMountingManager.updatePadding ->
+  // ViewManager.setPadding, in px, already scaled. The base implementation is an
+  // empty no-op, so without this override Yoga reserves the space (the view's
+  // frame grows) but nothing insets the text inside it. RN's own
+  // ReactTextViewManager overrides it exactly like this.
+  //
+  // The measure pass needs no counterpart: Yoga hands the measure callback the
+  // content box, already minus padding and border, and adds them back to the
+  // result — so the off-screen view in measure() must stay padding-free.
+  //
+  // SYNC: iOS gets this for free and has nothing matching — RCTViewComponentView
+  // lays the contentView out at layoutMetrics.getContentFrame(), which is the
+  // frame inset by the same contentInsets.
+  override fun setPadding(view: PlainTextView, left: Int, top: Int, right: Int, bottom: Int) {
+    view.setPadding(left, top, right, bottom)
+  }
+
   @ReactProp(name = "text")
   override fun setText(view: PlainTextView?, text: String?) {
     view?.setPlainText(text)

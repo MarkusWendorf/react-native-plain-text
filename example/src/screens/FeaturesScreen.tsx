@@ -43,6 +43,15 @@ export default function FeaturesScreen({ navigation }: Props) {
           >{`${fontSize}pt font size`}</TextItem>
         ))}
       </Section>
+      <Section title="Font Family">
+        {FONT_FAMILIES.map(({ label, fontFamily }) => (
+          <TextItem
+            key={label}
+            showText={showText}
+            style={{ fontSize: 18, fontFamily }}
+          >{`${label} font family`}</TextItem>
+        ))}
+      </Section>
       <Section title="Color">
         {COLORS.map(({ label, color }) => (
           <TextItem
@@ -59,15 +68,6 @@ export default function FeaturesScreen({ navigation }: Props) {
         >
           White text on a dark background
         </TextItem>
-      </Section>
-      <Section title="Font Family">
-        {FONT_FAMILIES.map(({ label, fontFamily }) => (
-          <TextItem
-            key={label}
-            showText={showText}
-            style={{ fontSize: 18, fontFamily }}
-          >{`${label} font family`}</TextItem>
-        ))}
       </Section>
       <Section title="Font Weight">
         {FONT_WEIGHTS.map((fontWeight) => (
@@ -89,11 +89,191 @@ export default function FeaturesScreen({ navigation }: Props) {
           Bold italic font style
         </TextItem>
       </Section>
+      <Section title="Text Align">
+        <TextItem showText={showText} style={styles.alignLeft} containerStyle={styles.wideRow}>
+          This text is left-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem showText={showText} style={styles.alignCenter} containerStyle={styles.wideRow}>
+          This text is center-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem showText={showText} style={styles.alignRight} containerStyle={styles.wideRow}>
+          This text is right-aligned within a wider fixed-width box.
+        </TextItem>
+        <TextItem showText={showText} style={styles.alignJustify} containerStyle={styles.wideRow}>
+          This text is justify-aligned within a wider fixed-width box so every line but the last
+          stretches to fill it.
+        </TextItem>
+      </Section>
+      {/* padding isn't a text-style prop: it stays in the style handed to the
+          native view, so Yoga lays it out around the self-measured text. What to
+          look at is the grey box growing while the glyphs move down with it — a
+          box that grew but glyphs that stayed put means the space was reserved
+          and nothing insetted the text. */}
+      <Section title="Padding">
+        <TextItem showText={showText} style={styles.spacingBase} containerStyle={styles.wideRow}>
+          Baseline: no padding.
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={[styles.spacingBase, { paddingVertical: 16 }]}
+          containerStyle={styles.wideRow}
+        >
+          paddingVertical 16
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={[styles.spacingBase, { paddingTop: 28, paddingBottom: 4 }]}
+          containerStyle={styles.wideRow}
+        >
+          paddingTop 28, paddingBottom 4
+        </TextItem>
+        {/* On a wrapping string: padding shrinks the width left for text, so
+            this is where a padding-blind measure pass shows up as a clipped or
+            overflowing last line. */}
+        <TextItem
+          showText={showText}
+          style={[styles.spacingBase, { paddingVertical: 12 }]}
+          containerStyle={styles.wideRow}
+        >
+          paddingVertical 12, on a longer string that has to wrap onto more than one line.
+        </TextItem>
+      </Section>
+      {/* Borders are view styles too, and border width joins padding in the
+          contentInsets Yoga reserves — so the same two questions apply: is the
+          border drawn at all, and is the text inset by it. The last row pairs
+          both so the insets have to add up. */}
+      <Section title="Borders">
+        <TextItem
+          showText={showText}
+          style={[styles.borderBase, { borderWidth: 2, borderColor: '#3e63dd' }]}
+          containerStyle={styles.wideRow}
+        >
+          borderWidth 2, borderColor blue
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={[styles.borderBase, { borderWidth: 2, borderColor: '#3e63dd', borderRadius: 12 }]}
+          containerStyle={styles.wideRow}
+        >
+          borderRadius 12
+        </TextItem>
+        {/* Per-side, the accent-bar shape: only the left edge is inset. */}
+        <TextItem
+          showText={showText}
+          style={[styles.borderBase, { borderLeftWidth: 6, borderLeftColor: '#e5484d' }]}
+          containerStyle={styles.wideRow}
+        >
+          borderLeftWidth 6 only
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={[
+            styles.borderBase,
+            { borderWidth: 2, borderColor: '#30a46c', borderStyle: 'dashed' },
+          ]}
+          containerStyle={styles.wideRow}
+        >
+          borderStyle dashed
+        </TextItem>
+        <TextItem
+          showText={showText}
+          style={[styles.borderBase, { borderWidth: 4, borderColor: '#3e63dd', padding: 12 }]}
+          containerStyle={styles.wideRow}
+        >
+          borderWidth 4 + padding 12, on a longer string that has to wrap onto more than one line.
+        </TextItem>
+      </Section>
       <Section title="Multiline">
         <TextItem showText={showText} style={styles.multiline} containerStyle={styles.wideRow}>
           This is a longer piece of text that should wrap onto multiple lines and size its height
           automatically.
         </TextItem>
+      </Section>
+      <Section title="Number of Lines">
+        {[1, 2, 3].map((numberOfLines) => (
+          <TextItem
+            key={numberOfLines}
+            showText={showText}
+            numberOfLines={numberOfLines}
+            style={styles.multiline}
+            containerStyle={styles.wideRow}
+          >
+            {`Clamped to ${numberOfLines} line${numberOfLines === 1 ? '' : 's'}: ` +
+              'this is a longer piece of text that should truncate with an ' +
+              'ellipsis once it exceeds the allotted number of lines.'}
+          </TextItem>
+        ))}
+      </Section>
+      <Section title="Line Height">
+        {LINE_HEIGHTS.map((lineHeight) => (
+          <TextItem
+            key={lineHeight}
+            showText={showText}
+            style={{ fontSize: 18, lineHeight }}
+            containerStyle={styles.wideRow}
+          >
+            {`lineHeight ${lineHeight}: this is a longer piece of text that wraps ` +
+              'onto multiple lines so the spacing between lines is visible.'}
+          </TextItem>
+        ))}
+      </Section>
+      <Section title="Letter Spacing">
+        {LETTER_SPACINGS.map((letterSpacing) => (
+          <TextItem
+            key={letterSpacing}
+            showText={showText}
+            style={{ fontSize: 18, letterSpacing }}
+          >{`letterSpacing ${letterSpacing}`}</TextItem>
+        ))}
+      </Section>
+      <Section title="Ellipsize Mode">
+        {ELLIPSIZE_MODES.map((ellipsizeMode) => (
+          <TextItem
+            key={ellipsizeMode}
+            showText={showText}
+            numberOfLines={1}
+            ellipsizeMode={ellipsizeMode}
+            style={styles.multiline}
+            containerStyle={styles.wideRow}
+          >
+            {`ellipsizeMode "${ellipsizeMode}": this single line of text is too long to fit and gets truncated.`}
+          </TextItem>
+        ))}
+      </Section>
+      <Section title="Text Decoration Line">
+        {TEXT_DECORATION_LINES.map((textDecorationLine) => (
+          <TextItem
+            key={textDecorationLine}
+            showText={showText}
+            style={{ fontSize: 18, textDecorationLine }}
+          >{`textDecorationLine "${textDecorationLine}"`}</TextItem>
+        ))}
+      </Section>
+      {/* Font scaling follows the OS accessibility text-size setting (Dynamic
+          Type on iOS, Font size on Android). Change it in Settings to see the
+          first row grow while the clamped/disabled rows hold their size. */}
+      <Section title="Font Scaling">
+        <TextItem showText={showText} style={{ fontSize: 18 }}>
+          Default: scales with the OS text-size setting.
+        </TextItem>
+        <TextItem showText={showText} style={{ fontSize: 18 }} allowFontScaling={false}>
+          allowFontScaling false: never scales.
+        </TextItem>
+        <TextItem showText={showText} style={{ fontSize: 18 }} maxFontSizeMultiplier={1.5}>
+          maxFontSizeMultiplier 1.5: scales up to 1.5x.
+        </TextItem>
+      </Section>
+      {/* Vertical alignment is Android-only (matches RN <Text>); on iOS it's a
+          no-op. Each box is taller than its text so the position is visible. */}
+      <Section title="Vertical Align (Android)">
+        {VERTICAL_ALIGNS.map((verticalAlign) => (
+          <TextItem
+            key={verticalAlign}
+            showText={showText}
+            style={{ width: '100%', height: 72, fontSize: 18, verticalAlign }}
+            containerStyle={styles.wideRow}
+          >{`verticalAlign "${verticalAlign}"`}</TextItem>
+        ))}
       </Section>
       {/*
         Measured *width*, which is the one thing wrap detection decides. RN
@@ -136,107 +316,6 @@ export default function FeaturesScreen({ navigation }: Props) {
         <TextItem showText={showText} style={styles.wrapProbe}>
           {'Break then wrap:\nthis second line is long enough that it also ' + 'has to wrap.'}
         </TextItem>
-      </Section>
-      <Section title="Number of Lines">
-        {[1, 2, 3].map((numberOfLines) => (
-          <TextItem
-            key={numberOfLines}
-            showText={showText}
-            numberOfLines={numberOfLines}
-            style={styles.multiline}
-            containerStyle={styles.wideRow}
-          >
-            {`Clamped to ${numberOfLines} line${numberOfLines === 1 ? '' : 's'}: ` +
-              'this is a longer piece of text that should truncate with an ' +
-              'ellipsis once it exceeds the allotted number of lines.'}
-          </TextItem>
-        ))}
-      </Section>
-      <Section title="Ellipsize Mode">
-        {ELLIPSIZE_MODES.map((ellipsizeMode) => (
-          <TextItem
-            key={ellipsizeMode}
-            showText={showText}
-            numberOfLines={1}
-            ellipsizeMode={ellipsizeMode}
-            style={styles.multiline}
-            containerStyle={styles.wideRow}
-          >
-            {`ellipsizeMode "${ellipsizeMode}": this single line of text is too long to fit and gets truncated.`}
-          </TextItem>
-        ))}
-      </Section>
-      <Section title="Line Height">
-        {LINE_HEIGHTS.map((lineHeight) => (
-          <TextItem
-            key={lineHeight}
-            showText={showText}
-            style={{ fontSize: 18, lineHeight }}
-            containerStyle={styles.wideRow}
-          >
-            {`lineHeight ${lineHeight}: this is a longer piece of text that wraps ` +
-              'onto multiple lines so the spacing between lines is visible.'}
-          </TextItem>
-        ))}
-      </Section>
-      <Section title="Letter Spacing">
-        {LETTER_SPACINGS.map((letterSpacing) => (
-          <TextItem
-            key={letterSpacing}
-            showText={showText}
-            style={{ fontSize: 18, letterSpacing }}
-          >{`letterSpacing ${letterSpacing}`}</TextItem>
-        ))}
-      </Section>
-      {/* Font scaling follows the OS accessibility text-size setting (Dynamic
-          Type on iOS, Font size on Android). Change it in Settings to see the
-          first row grow while the clamped/disabled rows hold their size. */}
-      <Section title="Font Scaling">
-        <TextItem showText={showText} style={{ fontSize: 18 }}>
-          Default: scales with the OS text-size setting.
-        </TextItem>
-        <TextItem showText={showText} style={{ fontSize: 18 }} allowFontScaling={false}>
-          allowFontScaling false: never scales.
-        </TextItem>
-        <TextItem showText={showText} style={{ fontSize: 18 }} maxFontSizeMultiplier={1.5}>
-          maxFontSizeMultiplier 1.5: scales up to 1.5x.
-        </TextItem>
-      </Section>
-      <Section title="Text Decoration Line">
-        {TEXT_DECORATION_LINES.map((textDecorationLine) => (
-          <TextItem
-            key={textDecorationLine}
-            showText={showText}
-            style={{ fontSize: 18, textDecorationLine }}
-          >{`textDecorationLine "${textDecorationLine}"`}</TextItem>
-        ))}
-      </Section>
-      <Section title="Text Align">
-        <TextItem showText={showText} style={styles.alignLeft} containerStyle={styles.wideRow}>
-          This text is left-aligned within a wider fixed-width box.
-        </TextItem>
-        <TextItem showText={showText} style={styles.alignCenter} containerStyle={styles.wideRow}>
-          This text is center-aligned within a wider fixed-width box.
-        </TextItem>
-        <TextItem showText={showText} style={styles.alignRight} containerStyle={styles.wideRow}>
-          This text is right-aligned within a wider fixed-width box.
-        </TextItem>
-        <TextItem showText={showText} style={styles.alignJustify} containerStyle={styles.wideRow}>
-          This text is justify-aligned within a wider fixed-width box so every line but the last
-          stretches to fill it.
-        </TextItem>
-      </Section>
-      {/* Vertical alignment is Android-only (matches RN <Text>); on iOS it's a
-          no-op. Each box is taller than its text so the position is visible. */}
-      <Section title="Vertical Align (Android)">
-        {VERTICAL_ALIGNS.map((verticalAlign) => (
-          <TextItem
-            key={verticalAlign}
-            showText={showText}
-            style={{ width: '100%', height: 72, fontSize: 18, verticalAlign }}
-            containerStyle={styles.wideRow}
-          >{`verticalAlign "${verticalAlign}"`}</TextItem>
-        ))}
       </Section>
       {/* Accessibility props are part of RN's ViewProps, so they pass straight
           through to the native view. They're not visually distinct — turn on
@@ -435,6 +514,19 @@ const styles = StyleSheet.create({
   // Deliberately no width: the row shrink-wraps to the measured intrinsic
   // width, which is the thing the Wrap Detection section is checking.
   wrapProbe: {
+    fontSize: 18,
+  },
+  // No background of its own: the row's grey is the control, same as every other
+  // section. Full width so the vertical padding is the only thing that changes
+  // between rows.
+  spacingBase: {
+    width: '100%',
+    fontSize: 18,
+  },
+  // No background of its own, like spacingBase: the row's grey is the control,
+  // and the border colors read against it on their own.
+  borderBase: {
+    width: '100%',
     fontSize: 18,
   },
   alignLeft: {
