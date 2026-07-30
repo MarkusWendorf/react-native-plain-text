@@ -104,6 +104,27 @@ export default function FeaturesScreen({ navigation }: Props) {
           stretches to fill it.
         </TextItem>
       </Section>
+      <Section title="Multiline">
+        <TextItem showText={showText} style={styles.multiline} containerStyle={styles.wideRow}>
+          This is a longer piece of text that should wrap onto multiple lines and size its height
+          automatically.
+        </TextItem>
+      </Section>
+      <Section title="Number of Lines">
+        {[1, 2, 3].map((numberOfLines) => (
+          <TextItem
+            key={numberOfLines}
+            showText={showText}
+            numberOfLines={numberOfLines}
+            style={styles.multiline}
+            containerStyle={styles.wideRow}
+          >
+            {`Clamped to ${numberOfLines} line${numberOfLines === 1 ? '' : 's'}: ` +
+              'this is a longer piece of text that should truncate with an ' +
+              'ellipsis once it exceeds the allotted number of lines.'}
+          </TextItem>
+        ))}
+      </Section>
       {/* padding isn't a text-style prop: it stays in the style handed to the
           native view, so Yoga lays it out around the self-measured text. What to
           look at is the grey box growing while the glyphs move down with it — a
@@ -182,27 +203,6 @@ export default function FeaturesScreen({ navigation }: Props) {
         >
           borderWidth 4 + padding 12, on a longer string that has to wrap onto more than one line.
         </TextItem>
-      </Section>
-      <Section title="Multiline">
-        <TextItem showText={showText} style={styles.multiline} containerStyle={styles.wideRow}>
-          This is a longer piece of text that should wrap onto multiple lines and size its height
-          automatically.
-        </TextItem>
-      </Section>
-      <Section title="Number of Lines">
-        {[1, 2, 3].map((numberOfLines) => (
-          <TextItem
-            key={numberOfLines}
-            showText={showText}
-            numberOfLines={numberOfLines}
-            style={styles.multiline}
-            containerStyle={styles.wideRow}
-          >
-            {`Clamped to ${numberOfLines} line${numberOfLines === 1 ? '' : 's'}: ` +
-              'this is a longer piece of text that should truncate with an ' +
-              'ellipsis once it exceeds the allotted number of lines.'}
-          </TextItem>
-        ))}
       </Section>
       <Section title="Line Height">
         {LINE_HEIGHTS.map((lineHeight) => (
