@@ -159,6 +159,14 @@ mode: the size is right and only the glyphs are in the wrong place.
 So the Android half is opt-in and silent when missing — the same override RN's
 own `ReactTextViewManager` carries.
 
+_Drawing_ the border is a separate, also Android-only, piece of opt-in:
+`PlainTextViewManagerDelegate` (Java, and it explains why) forwards the border
+props to `BackgroundStyleApplicator`, because `BaseViewManager` has no border
+setters worth inheriting. Its other job is the reason a new view-style prop may
+have nowhere to land: a view manager with a delegate is driven **only** through
+that delegate, so a `@ReactProp` for anything the codegen spec doesn't declare is
+never called.
+
 Measurement needs no counterpart on either platform: Yoga hands the measure
 callback the content box, already minus padding and border, and adds them back
 to the result. The shared off-screen view in `PlainTextViewManager.measure()`

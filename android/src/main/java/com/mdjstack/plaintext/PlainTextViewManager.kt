@@ -11,7 +11,6 @@ import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.viewmanagers.RNPlainTextManagerInterface
-import com.facebook.react.viewmanagers.RNPlainTextManagerDelegate
 import com.facebook.yoga.YogaMeasureMode
 import com.facebook.yoga.YogaMeasureOutput
 import java.lang.ref.WeakReference
@@ -22,7 +21,11 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
   private val mDelegate: ViewManagerDelegate<PlainTextView>
 
   init {
-    mDelegate = RNPlainTextManagerDelegate(this)
+    // A subclass of the generated delegate rather than the generated delegate
+    // itself: props Fabric sends that our codegen spec doesn't declare — the
+    // border styles — have nowhere else to be handled. See
+    // PlainTextViewManagerDelegate.
+    mDelegate = PlainTextViewManagerDelegate(this)
   }
 
   override fun getDelegate(): ViewManagerDelegate<PlainTextView>? {
