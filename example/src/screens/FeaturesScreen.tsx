@@ -331,21 +331,15 @@ function TextItem({
   children: string;
 }) {
   return (
-    <View style={[styles.row, containerStyle]}>
-      {/* No explicit height: the native text measures its own size. */}
-      <PlainText
-        style={style}
-        numberOfLines={numberOfLines}
-        ellipsizeMode={ellipsizeMode}
-        allowFontScaling={allowFontScaling}
-        maxFontSizeMultiplier={maxFontSizeMultiplier}
-        {...accessibilityProps}
-      >
-        {children}
-      </PlainText>
-      {showText && (
-        <Text
-          style={[style, styles.overlay]}
+    // Full width, and the overlay's containing block. The grey row inside
+    // shrink-wraps to PlainText; the overlay must NOT, or it would be handed
+    // PlainText's width as its own constraint and could only ever wrap where
+    // the real difference is that RN wanted a wider box.
+    <View style={styles.rowContainer}>
+      <View style={[styles.row, containerStyle]}>
+        {/* No explicit height: the native text measures its own size. */}
+        <PlainText
+          style={style}
           numberOfLines={numberOfLines}
           ellipsizeMode={ellipsizeMode}
           allowFontScaling={allowFontScaling}
@@ -353,7 +347,25 @@ function TextItem({
           {...accessibilityProps}
         >
           {children}
-        </Text>
+        </PlainText>
+      </View>
+      {showText && (
+        // `alignItems: flex-start` leaves the Text a normal flex child, so it
+        // shrink-wraps to its own measured width but still wraps at the same
+        // available width PlainText was measured against — which is what makes
+        // the red box edge comparable to the grey one.
+        <View style={styles.overlay}>
+          <Text
+            style={[style, styles.overlayText]}
+            numberOfLines={numberOfLines}
+            ellipsizeMode={ellipsizeMode}
+            allowFontScaling={allowFontScaling}
+            maxFontSizeMultiplier={maxFontSizeMultiplier}
+            {...accessibilityProps}
+          >
+            {children}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -375,9 +387,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 22,
   },
+  rowContainer: {
+    alignSelf: 'stretch',
+  },
   row: {
-    // Sized to the PlainText; the overlay Text is absolutely positioned to
-    // fill this same box, so the two share a top-left origin.
+    // Sized to the PlainText. The overlay shares this box's top-left origin but
+    // not its width — see rowContainer.
     alignSelf: 'flex-start',
     alignItems: 'flex-start',
     backgroundColor: '#d0d0d0',
@@ -392,8 +407,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    opacity: 0.5,
+    alignItems: 'flex-start',
     pointerEvents: 'none',
+  },
+  overlayText: {
+    opacity: 0.5,
     // Transparent so the PlainText underneath stays visible for comparison.
     backgroundColor: '#ff000020',
     color: 'red',
