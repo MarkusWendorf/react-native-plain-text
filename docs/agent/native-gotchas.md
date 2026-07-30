@@ -62,8 +62,10 @@ Learned the hard way. Most of these cost an afternoon the first time.
   prop change on an already-laid-out view whose size doesn't change emits no
   `updateLayout`, and nothing else rebuilds the `Layout` that `TextView` draws.
   `PlainTextView.kt` handles that in an overridden `requestLayout()`, scoped to
-  views that already have a frame. Keep it, and keep the scoping: unscoped, it
-  posted thousands of redundant runnables per screen.
+  views that already have a frame and, in the posted runnable, to views Fabric
+  did not re-lay-out after all (`isLayoutRequested`). Keep it, and keep both
+  scopes: unscoped, it posted thousands of redundant runnables per screen, each
+  rebuilding a `Layout` Fabric had just rebuilt.
 - **A bare `TextView` inherits the theme's text color; RN `<Text>` does not.**
   With `color` unset, RN's Fabric text path adds no `ForegroundColorSpan`
   (`ReactBaseTextShadowNode`, gated on `isColorSet`) and never sets

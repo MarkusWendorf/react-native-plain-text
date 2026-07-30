@@ -180,9 +180,43 @@ already calls `measure()` + `layout()` itself after applying props
 (`SurfaceMountingManager.updateLayout`). With ~18 prop setters each triggering a
 `requestLayout`, that was ~18,000 wasted runnables per 1000 views.
 
-Now guarded on `width`/`height` being non-zero, with `removeCallbacks` to
-coalesce. What the hack actually covers is the other case: a prop change on a
-laid-out view whose size doesn't change, where Fabric emits no `updateLayout`.
+Now guarded on `width`/`height` being non-zero. What the hack actually covers is
+the other case: a prop change on a laid-out view whose size doesn't change, where
+Fabric emits no `updateLayout`.
+
+The update path had the same redundancy the `width`/`height` guard removed from
+the mount path, and the guard can't see it: at `post` time nothing yet says
+whether a size change is coming, and the mount items that would say so —
+`UpdatePadding`, then `UpdateLayout` — are ordered after props deliberately
+(`FabricMountingManager.cpp`). So any prop change that _did_ resize the view
+rebuilt its `Layout` twice: once in Fabric's `measure()` + `layout()`, once more
+in the runnable a message loop turn later.
+
+The runnable now re-checks at the point where the answer exists, by reading
+`isLayoutRequested`. `View.layout()` clears `PFLAG_FORCE_LAYOUT` unconditionally,
+so a still-set flag means no `updateLayout` arrived — and nothing else can clear
+it behind Fabric's back, since `ReactRootView.requestLayout()` is a no-op
+terminator and no ancestor drives a layout pass over these views. Mount is
+unaffected; the `width == 0` guard already bailed there.
+
+### Coalesce the re-layout post without `removeCallbacks` (`PlainTextView.kt`)
+
+Coalescing the ~18 `requestLayout`s a transaction produces into one runnable used
+to be `removeCallbacks` + `post`. `View.removeCallbacks` walks the entire
+`MessageQueue` under its lock looking for the runnable, then walks the
+`HandlerActionQueue` too — a linear scan per call, so re-rendering 1000 laid-out
+views meant thousands of queue traversals to schedule at most 1000 runnables.
+
+A `relayoutPosted` boolean gives the same coalescing for a field read. It is
+cleared at the _start_ of the runnable rather than the end, so a `requestLayout`
+raised from inside `measure()`/`layout()` can queue a fresh one instead of being
+swallowed; that can't spin, because the trailing `layout()` clears
+`PFLAG_FORCE_LAYOUT` and the re-posted runnable falls out at the
+`isLayoutRequested` check above.
+
+If the view is detached with a runnable pending, `post` has already parked it in
+the `HandlerActionQueue`, which Android drains on re-attach — so the flag clears
+on the next attach, or never, on a view that is never coming back.
 
 ### Batch prop application (`PlainTextView.kt` + `onAfterUpdateTransaction`)
 

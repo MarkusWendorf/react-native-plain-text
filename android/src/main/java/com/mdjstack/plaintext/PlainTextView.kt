@@ -69,9 +69,33 @@ class PlainTextView : AppCompatTextView {
   // window, so measureAndLayout would queue forever, once per prop set.
   internal var isMeasureOnly: Boolean = false
 
+  // Whether measureAndLayout is already queued, so requestLayout() can coalesce without
+  // removeCallbacks — which walks the whole MessageQueue under its lock, and again the
+  // HandlerActionQueue, on every one of the ~18 setters that requestLayout per
+  // transaction. Read and written on the UI thread only.
+  private var relayoutPosted = false
+
   // Fabric assigns this view's frame directly and never runs Android's measure/layout
   // pass, but TextView builds the text Layout it draws during onMeasure.
   private val measureAndLayout = Runnable {
+    // Cleared before the pass, not after: measure()/layout() can requestLayout() again,
+    // and that has to be able to queue a fresh runnable rather than be swallowed. It
+    // can't spin — the layout() below clears PFLAG_FORCE_LAYOUT, so the re-posted
+    // runnable falls out at the check underneath.
+    relayoutPosted = false
+
+    // Only the case requestLayout() below can't tell apart at post time: whether Fabric
+    // will re-lay-out this view later in the same mount batch. It does its own measure()
+    // + layout() in SurfaceMountingManager.updateLayout, which rebuilds the same Layout
+    // — and whose layout() clears the PFLAG_FORCE_LAYOUT this reads, so a still-set flag
+    // means no updateLayout arrived. Nothing else can clear it behind Fabric's back:
+    // ReactRootView.requestLayout() is a no-op, so no ancestor drives a layout pass over
+    // these views.
+    //
+    // What survives the check is exactly what the hack is for: a prop change on a
+    // laid-out view whose size doesn't change, where Fabric emits no updateLayout.
+    if (!isLayoutRequested) return@Runnable
+
     measure(
       MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
       MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
@@ -373,7 +397,10 @@ class PlainTextView : AppCompatTextView {
     // measureAndLayout exists. What this hack covers is neither: a prop change on a
     // laid-out view whose size doesn't change, where Fabric emits no updateLayout.
     if (width == 0 || height == 0) return
-    removeCallbacks(measureAndLayout)
+    // Already queued: the pending runnable will see the state this call is part of, so
+    // re-posting would only do the same work twice.
+    if (relayoutPosted) return
+    relayoutPosted = true
     post(measureAndLayout)
   }
 }

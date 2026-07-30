@@ -105,8 +105,9 @@ does nothing; a new read path that doesn't flush first sees stale state.
 Props that map onto a single cheap independent write apply inline — there is
 nothing to coalesce, and a dirty flag would only add state to keep in sync. Some
 of them (`maxLines`, `justificationMode`) call `requestLayout()` unconditionally,
-which the `removeCallbacks`/`post` in `PlainTextView.requestLayout()` collapses to
-one re-layout per transaction.
+which the `relayoutPosted` guard in `PlainTextView.requestLayout()` collapses to
+one re-layout per transaction — and often to none, since the posted runnable
+drops out when Fabric re-laid-out the view itself.
 
 Flush happens in `PlainTextViewManager.onAfterUpdateTransaction` and before the
 off-screen `measure` — never in the view's `init`, for the reason below.

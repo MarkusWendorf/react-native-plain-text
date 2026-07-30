@@ -39,6 +39,7 @@ exists.
 | Adding or changing any prop                                                   | [architecture.md](docs/agent/architecture.md) — the four-layer prop flow, naming, prop conventions, example app, RN sources            |
 | **Before** adding a size-affecting prop                                       | [sync-points.md](docs/agent/sync-points.md) — the files that must change together and that nothing verifies                            |
 | Implementing a feature                                                        | [workflow.md](docs/agent/workflow.md) — parity policy, order of work, build policy                                                     |
+| Looking for what to work on next                                              | [todo.md](docs/agent/todo.md) — known behavior/API gaps against RN `<Text>`, already investigated                                      |
 | Touching measurement, shadow nodes, JNI or CMake                              | [intrinsic-sizing.md](docs/agent/intrinsic-sizing.md) — how self-sizing works on each platform                                         |
 | A native change "does nothing", or builds misbehave                           | [native-gotchas.md](docs/agent/native-gotchas.md)                                                                                      |
 | Quoting or producing a performance number                                     | [measuring.md](docs/agent/measuring.md) — metrics and procedure                                                                        |
