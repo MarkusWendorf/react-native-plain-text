@@ -81,8 +81,17 @@ Via `style={{ ... }}`:
 - `textShadowColor` / `textShadowOffset` / `textShadowRadius`
 - `includeFontPadding` (Android)
 - `fontVariant`, `fontVariationSettings`
-- `adjustsFontSizeToFit` / `minimumFontScale`: no native Android equivalent, so
-  this is the most expensive item on the list
+- `adjustsFontSizeToFit` / `minimumFontScale`: the most expensive item on the
+  list, and the only one that is more than a prop. Shrinking text to fit needs
+  the view's final frame, which the measurement pass — the thing that decides
+  that frame — never sees. Neither platform's built-in autoshrink helps: both
+  work off the view's assigned bounds and neither reports the size it picked, so
+  the measurement pass cannot predict either. RN's `<Text>` runs its own shrink
+  loop twice, once while measuring and once at draw time, and lets the second
+  win; `PlainText` has no channel to pass anything from measurement to the view,
+  which is part of why it is faster. Note also that `minimumFontScale` has no
+  effect in RN's `<Text>` under the New Architecture, so this is one prop where
+  matching RN would mean matching a no-op.
 
 No committed order. Open an issue for the one you need; real-world usage sets
 the priority.
