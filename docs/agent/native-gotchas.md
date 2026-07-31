@@ -45,14 +45,38 @@ Learned the hard way. Most of these cost an afternoon the first time.
   where the final line fragment of a multi-fragment layout has its trailing
   whitespace trimmed — and a single-line string never enters that path.
 
-  **RN `<Text>` does exactly the same thing** — verified on device with the
-  Features screen's _Wrap Detection_ rows and the Compare Text overlay, on both
-  platforms. So this is inherited from the platforms' text engines via RN, not
-  something this library introduces.
+  **On Android, RN `<Text>` does exactly the same thing** (both go through
+  `Layout.getDesiredWidth`) — verified on device with the Features screen's
+  _Wrap Detection_ rows and the Compare Text overlay.
 
-  Deliberately not normalized. The contract is per-platform parity with
-  `<Text>`; "fixing" it would mean differing from `<Text>` on one platform to
-  agree with the other, which is the worse trade for a drop-in replacement.
+  **On iOS, RN `<Text>` does NOT drop it.** The row above only holds for
+  `-boundingRectWithSize:options:context:`, the API `measureContent` calls
+  (`PlainTextShadowNode.mm:75`) because it matches what `UILabel`/CoreText
+  will actually render. RN's `RCTTextLayoutManager` measures differently
+  (`_measureTextStorage`, `RCTTextLayoutManager.mm:527-570`): it builds its own
+  `NSLayoutManager`/`NSTextContainer` and reads `usedRectForTextContainer:`,
+  which does **not** trim the trailing whitespace in this shape. Confirmed
+  directly (AppKit, 18pt, `lineFragmentPadding = 0`, `usesFontLeading = NO`, no
+  wrap) — `"Short\nthis line is longest   "`:
+
+  |                                     |          |
+  | ----------------------------------- | -------- |
+  | `boundingRectWithSize:` (PlainText) | 142.93pt |
+  | `usedRectForTextContainer:` (RN)    | 156.61pt |
+
+  13.68pt apart — exactly the three trailing spaces. So on iOS this is a real,
+  visible parity gap in the _Wrap Detection_ section (row 2: `PlainText`'s grey
+  box is narrower than `<Text>`'s red overlay by the trailing-space width),
+  not a harness bug and not something Android's numbers can be used to excuse.
+
+  Deliberately not "fixed" by switching `measureContent` to the
+  `NSLayoutManager` approach: that was tried and rejected on performance
+  grounds, and for a different reason too — `PlainText` renders through
+  `UILabel` (CoreText), so `boundingRectWithSize:` is the measurement that
+  matches what actually gets drawn; matching `NSLayoutManager`/TextKit instead
+  would fix this one shape while risking disagreement with the mounted label
+  everywhere else. See
+  [performance.md](performance.md#L459-468) for the rejected alternative.
 
 ## Android
 

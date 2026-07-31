@@ -70,13 +70,21 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 // is why textAlignVertical is not applied on iOS: RN's iOS text has no vertical
 // alignment knob — it is always pinned to the top.
 @interface RNPlainTextLabel : UILabel
+// When lineHeight is larger than the font's natural line height, the extra
+// space UILabel/TextKit adds per line falls entirely below the glyphs, so the
+// text sits high in its line box. verticalTextShift (set in
+// applyContentFromProps) moves the whole drawn block — glyphs, underline and
+// strikethrough together — up by half that extra, centering each line without
+// touching NSBaselineOffsetAttributeName (which only shifts glyphs, leaving
+// decorations drawn at the untouched line-fragment baseline).
+@property (nonatomic) CGFloat verticalTextShift;
 @end
 
 @implementation RNPlainTextLabel
 - (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
 {
     CGRect rect = [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
-    rect.origin.y = bounds.origin.y;
+    rect.origin.y = bounds.origin.y - self.verticalTextShift;
     return rect;
 }
 
@@ -87,7 +95,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 @end
 
 @implementation RNPlainText {
-    UILabel * _label;
+    RNPlainTextLabel * _label;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -152,6 +160,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         _label.textColor = color;
         _label.textAlignment = alignment;
         _label.text = text;
+        _label.verticalTextShift = 0;
         return;
     }
 
@@ -180,6 +189,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     // ellipsize mode into it to keep truncation working with attributed text.
     paragraphStyle.lineBreakMode = RNPlainTextLineBreakModeFromProp(props.ellipsizeMode);
 
+    CGFloat verticalTextShift = 0;
     if (hasLineHeight) {
         // lineHeight is in points, scaled by the same accessibility multiplier
         // as the font (mirrors RN <Text>, which multiplies lineHeight by the
@@ -187,13 +197,17 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         CGFloat lineHeight = props.lineHeight * fontSizeMultiplier;
         paragraphStyle.minimumLineHeight = lineHeight;
         paragraphStyle.maximumLineHeight = lineHeight;
-        // Vertically center the glyphs within the enlarged line box, matching
-        // RN <Text>'s RCTApplyBaselineOffset: shift the baseline by half the
-        // difference between the requested and the font's natural line height.
+        // Center the text within the enlarged line box by shifting the whole
+        // drawn block up by half the extra space (see verticalTextShift).
+        // NSBaselineOffsetAttributeName was tried here first — it shifts
+        // glyphs only, so UILabel drew underline/strikethrough at the
+        // untouched line-fragment baseline, near the bottom of the box, far
+        // below the (shifted-up) glyphs.
         if (lineHeight >= font.lineHeight) {
-            attributes[NSBaselineOffsetAttributeName] = @((lineHeight - font.lineHeight) / 2.0);
+            verticalTextShift = (lineHeight - font.lineHeight) / 2.0;
         }
     }
+    _label.verticalTextShift = verticalTextShift;
 
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
     _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
