@@ -53,6 +53,7 @@ Via `style={{ ... }}`:
 - `fontWeight`
 - `fontFamily`
 - `fontStyle`: `'normal' | 'italic'`
+- `fontVariant`
 - `lineHeight`
 - `letterSpacing`
 - `textAlign`
@@ -80,7 +81,7 @@ Via `style={{ ... }}`:
 - `textDecorationColor` / `textDecorationStyle`
 - `textShadowColor` / `textShadowOffset` / `textShadowRadius`
 - `includeFontPadding` (Android)
-- `fontVariant`, `fontVariationSettings`
+- `fontVariationSettings`
 - `adjustsFontSizeToFit` / `minimumFontScale`: the most expensive item on the
   list, and the only one that is more than a prop. Shrinking text to fit needs
   the view's final frame, which the measurement pass — the thing that decides
