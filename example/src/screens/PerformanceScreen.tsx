@@ -1,10 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 // unstable_NativeText is RN's bare RCTText host component (no <Text> JS wrapper).
 import { unstable_NativeText as NativeText } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { ParamListBase } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getMemoryFootprint } from 'react-native-memory-footprint';
 import { PlainText } from 'react-native-plain-text';
+import { Section, screenStyles } from '../components/Specimen';
+import { useSessionState } from '../useSessionState';
+import { COLOR, MONO, SERIF } from '../theme';
 // The library's bare codegen host component — the analogue of the
 // NativeText-vs-Text pair, which prices the JS wrapper. Imported by path
 // because it is deliberately not public API.
@@ -12,48 +25,72 @@ import NativePlainText from '../../../src/PlainTextViewNativeComponent';
 
 const COUNT = 1000;
 
-const FONT_SIZES = [
-  { label: 'Large', value: 56 },
-  { label: 'Regular', value: 20 },
-  { label: 'Small', value: 14 },
-] as const;
-
 // Native allocations (CoreText layout, CALayer backing stores, JS heap growth)
-// are deferred past the React commit, so sampling immediately undercounts. Only
-// the mount runs wait on this — they sample memory, which has no completion
-// signal. The update runs publish off the PerformanceObserver instead.
+// are deferred past the React commit, so sampling immediately undercounts. Every
+// run waits this out before sampling, because memory has no completion signal to
+// observe the way the timings do. An unmount needs it at least as much as a
+// mount: releasing is lazier than allocating.
 //
 // One value for both platforms, deliberately generous. Neither platform's
 // settle curve has been sampled, and undercounting memory fails *silently* —
 // a short window yields a plausible-looking smaller number, not a visible gap.
 // Too long only costs waiting.
-const SETTLE_MS = 3000;
+const SETTLE_MS = 10_000;
 
 type Kind = 'plain' | 'nativePlain' | 'text' | 'nativeText';
+
+// `short` is what the selector shows: the four full names do not fit on one
+// line of a phone, and a wrapped selector reads as two groups. The full name
+// still goes in the fingerprint line, which is what gets recorded.
+const VARIANTS: { kind: Kind; label: string; short: string }[] = [
+  { kind: 'plain', label: 'PlainText', short: 'Plain' },
+  { kind: 'nativePlain', label: 'NativePlainText', short: 'NativePlain' },
+  { kind: 'text', label: 'Text', short: 'Text' },
+  { kind: 'nativeText', label: 'NativeText', short: 'NativeText' },
+];
+
+function labelFor(kind: Kind) {
+  return VARIANTS.find((v) => v.kind === kind)?.label ?? kind;
+}
 
 // How far an Event Timing entry may sit from the press timestamp and still
 // count as this run's: the native event is stamped before the JS handler runs,
 // so the entry always starts a little earlier.
 const EVENT_MATCH_SLACK_MS = 1_000;
 
-const COMMIT_START_MARK = 'plaintext-bench:press';
-const COMMIT_MEASURE = 'plaintext-bench:commit';
+const START_MARK = 'plaintext-bench:press';
 
-// Distinct names from the mount benchmark above so the two runs stay separable
-// in React Native DevTools' Performance panel.
-const UPDATE_START_MARK = 'plaintext-bench:update-press';
-const UPDATE_MEASURE = 'plaintext-bench:update-commit';
+// Every scenario. `mount` and `unmount` change what is on screen, the other
+// three update what is already there.
+type Scenario = 'mount' | 'unmount' | 'parent' | 'color' | 'layout';
 
-type Timing = {
+// The two colors the "Color" scenario alternates between. A toggle rather than
+// an absolute value so every press commits something, and so the run never
+// needs a value picker. Both from the palette: the page's ink, and the pigment
+// the rest of the app already uses when something has to read as changed.
+const COLORS = [COLOR.ink, COLOR.oxblood];
+
+// The "Layout" scenario alternates fontSize by half a point: every item has to
+// re-measure, while the drawn area changes by ~2%. That isolates measurement
+// invalidation from re-draw and re-composite cost, which a full font-size step
+// mixes together.
+const SIZE_BUMP = 0.5;
+
+// One shape for every scenario, so the readouts stay directly comparable and a
+// new scenario needs no new plumbing.
+type RunStats = {
   commitMs: number;
   interactionMs: number | null;
-};
-
-type Stats = Timing & {
   memBefore: number;
   memAfter: number;
-  totalBytes: number;
-  perViewBytes: number;
+  // Signed: positive for a mount, negative for an unmount that actually
+  // released, near zero for an update that allocated nothing. The readout also
+  // shows this over COUNT — only meaningful where the run created or destroyed
+  // the views, and ~0 per view for the update runs.
+  deltaBytes: number;
+  // Unmount only: how far the settled footprint sits above the pre-mount
+  // baseline. A large value is the leak signal.
+  retainedBytes: number | null;
 };
 
 // Measured with RN's own Web Performance APIs, stable since 0.83, rather than
@@ -67,13 +104,12 @@ type Stats = Timing & {
 // Typed locally: tsconfig has no DOM lib and RN's strict TS API doesn't declare
 // these globals, though the runtime installs them.
 type EventTimingEntry = {
-  name: string;
   startTime: number;
   duration: number;
 };
 
 type PerformanceObserverLike = {
-  observe(options: { type: string; buffered?: boolean; durationThreshold?: number }): void;
+  observe(options: { type: string; durationThreshold: number }): void;
   disconnect(): void;
 };
 
@@ -87,61 +123,112 @@ const PerformanceObserverGlobal = (
   }
 ).PerformanceObserver;
 
-export default function PerformanceScreen() {
-  const insets = useSafeAreaInsets();
-  const [plainCount, setPlainCount] = useState(0);
-  const [nativePlainCount, setNativePlainCount] = useState(0);
-  const [textCount, setTextCount] = useState(0);
-  const [nativeTextCount, setNativeTextCount] = useState(0);
-  const [plainStats, setPlainStats] = useState<Stats | null>(null);
-  const [nativePlainStats, setNativePlainStats] = useState<Stats | null>(null);
-  const [textStats, setTextStats] = useState<Stats | null>(null);
-  const [nativeTextStats, setNativeTextStats] = useState<Stats | null>(null);
-  const [fontSize, setFontSize] = useState<number>(56);
-  // Bumped by the Re-render button. Rendered into its label on purpose — see
-  // the comment there.
+type Props = NativeStackScreenProps<ParamListBase>;
+
+export default function PerformanceScreen({ navigation }: Props) {
+  // Persisted for the session: the run procedure says kill the app between
+  // runs, so a config that reset on launch could never be held constant across
+  // the runs being compared.
+  const [config, setConfig] = useSessionState<AttrConfig>('perf-attrs', DEFAULT_CONFIG);
+  const [sheetVisible, setSheetVisible] = useState(false);
+
+  // Which component the next mount will use. Persisted for the same reason the
+  // config is: the run procedure kills the app between runs, and re-picking the
+  // variant every launch is friction on the one control pressed most.
+  const [variant, setVariant] = useSessionState<Kind>('perf-variant', 'plain');
+
+  // Which variant is currently on screen, if any. One at a time: mounting a
+  // second variant into a tree that already holds 1000 of another is not a
+  // scenario worth a number.
+  const [mounted, setMounted] = useState<Kind | null>(null);
+
+  // One entry per scenario, each rendered under the button that produced it and
+  // kept there until the next mount clears the board. Only a re-run of the same
+  // scenario overwrites its own entry, so the five numbers of one session stay
+  // on screen together.
+  const [stats, setStats] = useState<Partial<Record<Scenario, RunStats>>>({});
+
+  // The component and config the numbers on screen were taken against, frozen
+  // at mount time. Without this the header tracked the live selection, so
+  // picking a different component after an unmount relabelled results that had
+  // been measured against the previous one.
+  const [captured, setCaptured] = useState<string | null>(null);
+
+  // The scenario whose settle window is still open, if any. Every action is
+  // disabled meanwhile: a second commit inside the window would land in the
+  // middle of the memory sample it is about to invalidate.
+  const [running, setRunning] = useState<Scenario | null>(null);
+  const settling = running != null;
+
+  // The three update scenarios. `rerenders` is rendered into its own button
+  // label on purpose — see runParentRerender.
   const [rerenders, setRerenders] = useState(0);
-  const [updateTiming, setUpdateTiming] = useState<{
-    label: string;
-    timing: Timing;
-  } | null>(null);
+  const [colorIndex, setColorIndex] = useState(0);
+  const [sizeBump, setSizeBump] = useState(0);
 
   // In-flight measurement. Only one runs at a time, so a single ref is enough.
-  const pending = useRef<{
-    kind: Kind;
-    memBefore: number;
-    startTime: number;
-  } | null>(null);
+  const pending = useRef<{ scenario: Scenario; memBefore: number } | null>(null);
 
-  // Same, for the update runs (font size, forced re-render). Separate from
-  // `pending` because the two measure different things: mounting N new views
-  // vs. updating the ones already on screen. No memory sampling here — nothing
-  // is allocated, only how long an update to mounted text takes. Carries the
-  // label rather than just a flag, so the readout can say which run it was.
-  const updatePending = useRef<string | null>(null);
-
-  // The armed run once its commit has been measured. Held in a ref because the
-  // Event Timing entry lands later, off the observer, and has to be paired back
-  // up with the commit number from the same press.
-  const updateRun = useRef<{ label: string; commitMs: number } | null>(null);
+  // The footprint sampled before the mount, kept so the unmount run can say how
+  // much never came back rather than only how much was freed.
+  const mountBaseline = useRef<number | null>(null);
 
   // Event Timing arrives after mount, later than the effect that clears
-  // `pending`, so the press timestamp it matches against has to outlive it.
+  // `pending`, so the press timestamp it matches against has to outlive it. Read
+  // when the settle timer fires, by which point every entry for that press has
+  // long since landed.
   const interactionMs = useRef<number | null>(null);
   const runStartTime = useRef<number | null>(null);
 
-  // Publishes the update readout from whatever is known so far. Called twice
-  // per run: from the commit effect, where the commit number is already final
-  // and interaction is usually still missing, and again from the observer once
-  // the entry for that press lands.
-  const publishUpdate = useCallback(() => {
-    const run = updateRun.current;
-    if (run == null) return;
-    setUpdateTiming({
-      label: run.label,
-      timing: { commitMs: run.commitMs, interactionMs: interactionMs.current },
+  // Not memoized: every render rebuilds all COUNT elements anyway, so a stable
+  // object here would save nothing.
+  const applied = buildApplied(config, colorIndex, sizeBump);
+  const fingerprint = formatFingerprint(config);
+  // What the next mount would run.
+  const live = `${labelFor(variant)} · ${fingerprint}`;
+
+  // Props are edited from the native header, which keeps the panel out of the
+  // measured tree entirely: the tree the benchmark commits into is the same
+  // whether one prop is set or ten.
+  useLayoutEffect(() => {
+    const button = (
+      <Pressable
+        onPress={() => setSheetVisible(true)}
+        disabled={mounted != null}
+        hitSlop={8}
+        style={styles.headerButton}
+      >
+        {/*
+          Short, and `numberOfLines` set: on iOS the page title is a custom left
+          bar button item, which UIKit lays out before the right one and lets take
+          the width it asks for. "Unmount to edit" beside a 23pt title left this
+          item so little room that it came back as a bare "…". So the locked state
+          says the same thing in two words, and neither label is allowed to wrap.
+        */}
+        <PlainText
+          numberOfLines={1}
+          style={[styles.headerButtonLabel, mounted != null && styles.headerButtonDisabled]}
+        >
+          {mounted != null ? 'Props locked' : `Props (${countChangedProps(config)})`}
+        </PlainText>
+      </Pressable>
+    );
+
+    navigation.setOptions({
+      // Same split as the Compare Text toggle: Android draws `headerRight`, iOS
+      // takes the item form so the bar's iOS 26 glass capsule can be turned off.
+      //
+      // The rule cannot tell a header-slot render callback from a component; the
+      // element it returns is built once above, outside the callback. The same
+      // pattern in CompareText sits in a hook rather than a component, which is
+      // why only this one needs the exemption.
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerRight: () => button,
+      unstable_headerRightItems: () => [
+        { type: 'custom', element: button, hidesSharedBackground: true },
+      ],
     });
-  }, []);
+  }, [navigation, config, mounted]);
 
   useEffect(() => {
     if (PerformanceObserverGlobal == null) return;
@@ -150,7 +237,6 @@ export default function PerformanceScreen() {
       const start = runStartTime.current;
       if (start == null) return;
 
-      let raised = false;
       for (const entry of list.getEntries()) {
         if (Math.abs(entry.startTime - start) > EVENT_MATCH_SLACK_MS) continue;
         // A press emits several entries (touchstart, touchend, click…); only
@@ -158,74 +244,52 @@ export default function PerformanceScreen() {
         // by far the longest.
         if (entry.duration <= (interactionMs.current ?? -1)) continue;
         interactionMs.current = entry.duration;
-        raised = true;
       }
-
-      // Those entries can arrive across several flushes, so the readout is
-      // republished whenever the max grows rather than after a fixed wait.
-      if (raised) publishUpdate();
     });
 
     // 0 overrides the spec's default, which drops short events.
     observer.observe({ type: 'event', durationThreshold: 0 });
     return () => observer.disconnect();
-  }, [publishUpdate]);
-
-  const startMeasure = useCallback((kind: Kind) => {
-    // Memory is sampled before the render that mounts the views. The commit
-    // start is a User Timing mark rather than a bare timestamp so the span also
-    // shows up in React Native DevTools' Performance panel.
-    const memBefore = getMemoryFootprint();
-    performance.mark(COMMIT_START_MARK);
-    const startTime = performance.now();
-    pending.current = { kind, memBefore, startTime };
-
-    interactionMs.current = null;
-    runStartTime.current = startTime;
-
-    // Disarms the update readout. This press's own Event Timing entries match
-    // the observer's window, and a live `updateRun` would have it publish them
-    // — a setState that re-renders every mounted item in the middle of the
-    // settle window, perturbing the memory sample this run exists to take.
-    updateRun.current = null;
-
-    if (kind === 'plain') {
-      setPlainCount(COUNT);
-    } else if (kind === 'nativePlain') {
-      setNativePlainCount(COUNT);
-    } else if (kind === 'text') {
-      setTextCount(COUNT);
-    } else {
-      setNativeTextCount(COUNT);
-    }
   }, []);
 
-  // Arms an update measurement. The caller must then trigger a state change
-  // that actually commits, otherwise the armed run leaks into the next press.
-  const startUpdateMeasure = useCallback((label: string) => {
-    performance.mark(UPDATE_START_MARK);
-    updatePending.current = label;
-    // Dropped now, not in the commit effect: an entry landing in between would
-    // otherwise be published against the previous run's commit number.
-    updateRun.current = null;
+  // Arms a run. The caller must then trigger a state change that actually
+  // commits, otherwise the armed run leaks into the next press.
+  //
+  // Memory is sampled here, before the render. The commit start is a User Timing
+  // mark rather than a bare timestamp so the span also shows up in React Native
+  // DevTools' Performance panel.
+  const beginRun = useCallback((scenario: Scenario) => {
+    const memBefore = getMemoryFootprint();
+    performance.mark(START_MARK);
+    pending.current = { scenario, memBefore };
 
     interactionMs.current = null;
     runStartTime.current = performance.now();
+    setRunning(scenario);
+    return memBefore;
   }, []);
 
-  const changeFontSize = useCallback(
-    (value: number) => {
-      // Re-pressing the selected size renders nothing, so there would be no
-      // commit to measure — and the armed run would leak into the next press.
-      if (value === fontSize) return;
-      startUpdateMeasure('font size');
-      setFontSize(value);
+  const runMount = useCallback(
+    (kind: Kind) => {
+      mountBaseline.current = beginRun('mount');
+      // Every number on screen belongs to the previous mount, which may have
+      // used a different variant or config.
+      setStats({});
+      setCaptured(`${labelFor(kind)} · ${fingerprint}`);
+      setMounted(kind);
     },
-    [fontSize, startUpdateMeasure]
+    [beginRun, fingerprint]
   );
 
-  // The control for the font-size run: re-render the screen *without* touching
-  // any prop the mounted text receives. This is what isolates
+  const runUnmount = useCallback(() => {
+    // memBefore is sampled at press time, so for this run it is the peak:
+    // everything the mount allocated is still live.
+    beginRun('unmount');
+    setMounted(null);
+  }, [beginRun]);
+
+  // The control for the other two update runs: re-render the screen *without*
+  // touching any prop the mounted text receives. This is what isolates
   // `shouldNewRevisionDirtyMeasurement`'s `fragment.props == nullptr` early
   // return — the ancestor-re-render path, where Fabric clones every child of a
   // changed parent purely to re-own its Yoga node
@@ -234,180 +298,787 @@ export default function PerformanceScreen() {
   // The counter has to be *rendered* somewhere for this to test anything: a
   // state change that produces an identical tree makes React bail out, Fabric
   // commits no clones, and the run measures nothing at all rather than
-  // measuring a cheap re-own. Showing it in the label changes one sibling
-  // inside the same content container, which forces that container to be
-  // cloned with a new children list — and that is what re-owns all ~1000
-  // mounted items.
-  const forceRerender = useCallback(() => {
-    startUpdateMeasure('re-render');
+  // measuring a cheap re-own. Showing it in the button label changes something
+  // inside the same content container as the items, which forces that container
+  // to be cloned with a new children list — and that is what re-owns all ~1000
+  // mounted items. Keep the counter somewhere under that container; how deeply
+  // nested does not matter. Moving it into the header or into a view outside the
+  // ScrollView silently turns this run into a no-op.
+  const runParentRerender = useCallback(() => {
+    beginRun('parent');
     setRerenders((n) => n + 1);
-  }, [startUpdateMeasure]);
+  }, [beginRun]);
 
-  // Runs after React has committed the new views; memory is sampled SETTLE_MS
-  // later, once native allocations have caught up.
+  const runColorChange = useCallback(() => {
+    beginRun('color');
+    setColorIndex((n) => (n + 1) % COLORS.length);
+  }, [beginRun]);
+
+  const runLayoutChange = useCallback(() => {
+    beginRun('layout');
+    setSizeBump((n) => (n === 0 ? SIZE_BUMP : 0));
+  }, [beginRun]);
+
+  // One pipeline for all five scenarios. Runs after React has committed; memory
+  // is sampled SETTLE_MS later, once native allocation (or release) has caught
+  // up, and the interaction number is read at the same moment because every
+  // Event Timing entry for that press has landed well before then.
+  //
+  // The dependency list is every piece of state a scenario touches, so exactly
+  // one of them changing is what runs this.
   useEffect(() => {
-    const m = pending.current;
-    if (!m) return;
+    const run = pending.current;
+    if (!run) return;
     pending.current = null;
 
     // The JS thread only — React render, Fabric commit, Yoga layout. Mounting
     // happens on the UI thread after this fires, so `interaction - commit` is
-    // roughly what mounting cost.
-    const commitMs = performance.measure(COMMIT_MEASURE, COMMIT_START_MARK).duration;
+    // roughly what mounting cost. Named per scenario so the runs stay separable
+    // in React Native DevTools' Performance panel.
+    const commitMs = performance.measure(`${START_MARK}:${run.scenario}`, START_MARK).duration;
 
     const timer = setTimeout(() => {
       const memAfter = getMemoryFootprint();
-      const totalBytes = memAfter - m.memBefore;
-      const stats: Stats = {
-        memBefore: m.memBefore,
-        memAfter,
-        totalBytes,
-        perViewBytes: totalBytes / COUNT,
+      const deltaBytes = memAfter - run.memBefore;
+      const result: RunStats = {
         commitMs,
         interactionMs: interactionMs.current,
+        memBefore: run.memBefore,
+        memAfter,
+        deltaBytes,
+        retainedBytes:
+          run.scenario === 'unmount' ? memAfter - (mountBaseline.current ?? run.memBefore) : null,
       };
-      if (m.kind === 'plain') {
-        setPlainStats(stats);
-      } else if (m.kind === 'nativePlain') {
-        setNativePlainStats(stats);
-      } else if (m.kind === 'text') {
-        setTextStats(stats);
-      } else {
-        setNativeTextStats(stats);
-      }
+      setRunning(null);
+      setStats((prev) => ({ ...prev, [run.scenario]: result }));
     }, SETTLE_MS);
 
     return () => clearTimeout(timer);
-  }, [plainCount, nativePlainCount, textCount, nativeTextCount]);
-
-  // The update counterpart. Nothing is sampled here, so there is nothing to
-  // wait for: commit is final the moment this fires, and interaction is filled
-  // in by the observer when the entry arrives — the readout shows the commit
-  // number immediately and gains the interaction number a frame or two later.
-  useEffect(() => {
-    const label = updatePending.current;
-    if (label == null) return;
-    updatePending.current = null;
-
-    const commitMs = performance.measure(UPDATE_MEASURE, UPDATE_START_MARK).duration;
-
-    updateRun.current = { label, commitMs };
-    // Covers the case where the entry beat this effect: the observer saw no
-    // armed run and skipped publishing, but the value is already in the ref.
-    publishUpdate();
-  }, [fontSize, rerenders, publishUpdate]);
+  }, [mounted, rerenders, colorIndex, sizeBump]);
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: 40 }]}
-    >
-      <View style={styles.selector}>
-        {FONT_SIZES.map(({ label, value }) => {
-          const selected = value === fontSize;
-          return (
-            <Pressable
-              key={value}
-              onPress={() => changeFontSize(value)}
-              style={[styles.option, selected && styles.optionSelected]}
+    <>
+      {/*
+        The control block scrolls with the content. It stays a child of the same
+        content container as the items, which is what runParentRerender depends
+        on, but it is deliberately not a sticky header: a sticky child gets extra
+        native handling of its own, and that is chrome inside the tree every run
+        commits into. Cost: reaching the actions after a mount means scrolling
+        back to the top.
+      */}
+      <ScrollView style={screenStyles.scroll} contentContainerStyle={styles.container}>
+        <View style={styles.controls}>
+          {/* No cover: the other two pages open with a blurb about what they
+              hold, and this one's first line is the build warning, which no
+              amount of prose above it should push down the page.
+
+              Debug numbers are not comparable to anything, so say so before the
+              first press rather than in a doc nobody reads mid-run. Set as the
+              banner shape the Use Cases page uses for the same job — a tinted
+              wash with the pigment as a left rule — rather than as a pill,
+              because this is a note about the whole page.
+
+              Two PlainTexts in a row rather than one string with a bold span in
+              it: PlainText is one style per node by design, which is the point of
+              the library. They are set to wrap, so on a narrow phone the note
+              drops below the tag instead of being clipped. */}
+          <View style={[styles.build, __DEV__ ? styles.buildDebug : styles.buildRelease]}>
+            <PlainText
+              style={[styles.buildTag, __DEV__ ? styles.buildDebugInk : styles.buildReleaseInk]}
             >
-              <Text style={[styles.optionLabel, selected && styles.optionLabelSelected]}>
-                {`${label} (${value})`}
-              </Text>
-            </Pressable>
-          );
-        })}
+              {__DEV__ ? '⚠️ DEBUG BUILD' : '✅ RELEASE BUILD'}
+            </PlainText>
+            <PlainText
+              style={[styles.buildNote, __DEV__ ? styles.buildDebugInk : styles.buildReleaseInk]}
+            >
+              {__DEV__ ? 'Results are not reliable!' : 'Results are reliable'}
+            </PlainText>
+          </View>
 
-        {/*
-          `rerenders` is in the label deliberately: it is what makes this press
-          commit anything at all. See `forceRerender`.
-        */}
-        <Pressable onPress={forceRerender} style={styles.option}>
-          <Text style={styles.optionLabel}>{`Re-render (${rerenders})`}</Text>
-        </Pressable>
-      </View>
+          <Section title="Component" spacedRows>
+            {/*
+              The full component name, never the chips' abbreviation, and no
+              instance count, which is fixed and already named on the mount
+              button. Frozen at mount time rather than following the live
+              selection, so it never relabels results measured against something
+              else; until the first mount it shows what the next one will run.
 
-      {/*
-        Update cost for text already on screen, as opposed to the mount cost the
-        buttons below report. The pair is the point:
+              Set in the mono face the page uses for every recorded value: it is
+              a record to be read character by character and quoted, not prose.
+            */}
+            <PlainText style={styles.fingerprint}>{captured ?? live}</PlainText>
 
-        - `font size` changes a size-affecting prop on every mounted item, so
-          all of them must re-measure. It reads near zero when measurement
-          invalidation is broken — and the labels keep their old size.
-        - `re-render` changes nothing those items receive, so none of them
-          should re-measure. It reads close to the `font size` number when the
-          invalidation is too eager.
-      */}
-      {updateTiming != null && (
-        <Text style={styles.stats}>
-          {`${updateTiming.label}: ${formatTiming(updateTiming.timing)}`}
-        </Text>
-      )}
+            {/* Selecting a variant is only meaningful for the next mount, so the
+                chips lock as soon as one is on screen. */}
+            <View style={styles.row}>
+              {VARIANTS.map(({ kind, short }) => (
+                <Chip
+                  key={kind}
+                  label={short}
+                  selected={kind === variant}
+                  disabled={settling || mounted != null}
+                  onPress={() => setVariant(kind)}
+                />
+              ))}
+            </View>
+          </Section>
 
-      <Button title={`Add ${COUNT} PlainText`} onPress={() => startMeasure('plain')} />
-      <StatsRow label="PlainText" stats={plainStats} />
+          {/*
+            All five actions stay on screen in a fixed order, each with its own
+            result pinned underneath it, so a press never moves the numbers that
+            are already there. Which ones are enabled is the whole state
+            machine: mount when nothing is up, the other four when something is.
 
-      <Button title={`Add ${COUNT} NativePlainText`} onPress={() => startMeasure('nativePlain')} />
-      <StatsRow label="NativePlainText" stats={nativePlainStats} />
+            `rerenders` is in its own label deliberately: it is what makes that
+            press commit anything at all. See runParentRerender.
+          */}
+          <Section title="Scenarios" spacedRows>
+            <Action
+              title={`Mount ${COUNT} Instances`}
+              scenario="mount"
+              stats={stats}
+              running={running}
+              disabled={settling || mounted != null}
+              onPress={() => runMount(variant)}
+            />
+            <Action
+              title={`Parent Re-render (${rerenders})`}
+              scenario="parent"
+              stats={stats}
+              running={running}
+              disabled={settling || mounted == null}
+              onPress={runParentRerender}
+            />
+            <Action
+              title="Re-render Color"
+              scenario="color"
+              stats={stats}
+              running={running}
+              disabled={settling || mounted == null}
+              onPress={runColorChange}
+            />
+            <Action
+              title="Re-render Layout"
+              scenario="layout"
+              stats={stats}
+              running={running}
+              disabled={settling || mounted == null}
+              onPress={runLayoutChange}
+            />
+            <Action
+              title="Unmount All Instances"
+              scenario="unmount"
+              stats={stats}
+              running={running}
+              disabled={settling || mounted == null}
+              onPress={runUnmount}
+            />
+          </Section>
+        </View>
 
-      <Button title={`Add ${COUNT} Text`} onPress={() => startMeasure('text')} />
-      <StatsRow label="Text" stats={textStats} />
+        {/* The items are physically mounted, last, inside the same content
+            container as the controls above. */}
+        {mounted != null && renderItems(mounted, applied)}
+      </ScrollView>
 
-      <Button title={`Add ${COUNT} NativeText`} onPress={() => startMeasure('nativeText')} />
-      <StatsRow label="NativeText" stats={nativeTextStats} />
-
-      {Array.from({ length: plainCount }, (_, n) => (
-        <PlainText key={n} style={[styles.listItem, { fontSize }]}>
-          {`List Item ${n + 1}`}
-        </PlainText>
-      ))}
-
-      {/*
-        Same rendered result as the PlainText block above, but with props already
-        in native shape — no StyleSheet.flatten, no rest destructure, and only
-        the props actually set. The delta is the JS wrapper's cost.
-      */}
-      {Array.from({ length: nativePlainCount }, (_, n) => (
-        <NativePlainText
-          key={n}
-          text={`List Item ${n + 1}`}
-          fontSize={fontSize}
-          style={styles.listItem}
-        />
-      ))}
-
-      {Array.from({ length: textCount }, (_, n) => (
-        <Text key={n} style={[styles.listItem, { fontSize }]}>
-          {`List Item ${n + 1}`}
-        </Text>
-      ))}
-
-      {Array.from({ length: nativeTextCount }, (_, n) => (
-        // Bare RCTText host component, bypassing the <Text> JS wrapper.
-        <NativeText key={n} style={[styles.listItem, { fontSize }]}>
-          {`List Item ${n + 1}`}
-        </NativeText>
-      ))}
-    </ScrollView>
+      <PropsSheet
+        visible={sheetVisible}
+        config={config}
+        onChange={setConfig}
+        onClose={() => setSheetVisible(false)}
+      />
+    </>
   );
 }
 
-function StatsRow({ label, stats }: { label: string; stats: Stats | null }) {
-  if (!stats) return null;
+// ---------------------------------------------------------------------------
+// Items
+// ---------------------------------------------------------------------------
+
+function renderItems(kind: Kind, applied: Applied) {
+  const { textStyle, viewStyle, props, text } = applied;
+  const extra = props as object;
+
+  if (kind === 'nativePlain') {
+    // Same rendered result as the PlainText branch, but with props already in
+    // native shape — no StyleSheet.flatten, no rest destructure, and only the
+    // props actually set. The delta is the JS wrapper's cost. Every key in
+    // textStyle is also a native prop name, so it spreads straight through.
+    return Array.from({ length: COUNT }, (_, n) => (
+      <NativePlainText
+        key={n}
+        text={text(n)}
+        style={[styles.listItem, viewStyle]}
+        {...(textStyle as object)}
+        {...extra}
+      />
+    ));
+  }
+
+  const style = [styles.listItem, textStyle, viewStyle];
+
+  if (kind === 'plain') {
+    return Array.from({ length: COUNT }, (_, n) => (
+      <PlainText key={n} style={style} {...extra}>
+        {text(n)}
+      </PlainText>
+    ));
+  }
+
+  if (kind === 'text') {
+    return Array.from({ length: COUNT }, (_, n) => (
+      <Text key={n} style={style} {...extra}>
+        {text(n)}
+      </Text>
+    ));
+  }
+
+  return Array.from({ length: COUNT }, (_, n) => (
+    // Bare RCTText host component, bypassing the <Text> JS wrapper.
+    <NativeText key={n} style={style} {...extra}>
+      {text(n)}
+    </NativeText>
+  ));
+}
+
+// Zero-based and padded to three digits, so every label is the same character
+// count (000 through 999) and the grey boxes are uniform in size. An unpadded
+// counter makes the box width jump at 10, 100 and 1000, which reads as a layout
+// bug and makes the measured-area comparison harder than it needs to be.
+const SHORT_TEXT = (n: number) => `Text Item ${pad(n)}`;
+const WRAPPING_TEXT = (n: number) =>
+  `Text Item ${pad(n)}: a longer string that has to wrap onto more than one line on a phone.`;
+
+const pad = (n: number) => String(n).padStart(3, '0');
+
+// ---------------------------------------------------------------------------
+// Tunable props
+//
+// Named Attr* throughout rather than Prop*, so nothing in here reads as the
+// screen's own React props (see `type Props` above).
+// ---------------------------------------------------------------------------
+
+// Where a chosen value goes. `text` values are text-style props (native props
+// on NativePlainText, style entries everywhere else), `view` values are view
+// styles Yoga lays out around the self-measured text, `prop` values are
+// component props, `content` picks the string.
+type Target = 'text' | 'view' | 'prop' | 'content';
+
+type AttrOption = {
+  label: string;
+  // undefined means "not set": the attribute is left off entirely.
+  value?: unknown;
+};
+
+type AttrDef = {
+  // Doubles as the style entry / prop name the chosen value is written to, so
+  // every row but `content` needs nothing else to be applied.
+  key: string;
+  // Only where the row is not named after a real prop. Otherwise the key is the
+  // label.
+  label?: string;
+  section: string;
+  // Fingerprint prefix, e.g. 'fs' + '20'.
+  fp: string;
+  target: Target;
+  options: AttrOption[];
+  // Which option counts as the default. Omitted means the first one, which is
+  // what every row with an 'off' state uses. Rows whose options read naturally
+  // in another order (fontSize, largest first) set it explicitly.
+  defaultIndex?: number;
+  // Always name this row in the fingerprint, even at its default value. For a
+  // row with no unset state, "absent from the line" and "left at the default"
+  // look identical, and the value is too load-bearing to leave implied.
+  alwaysInFingerprint?: boolean;
+};
+
+// Deliberately not every prop the library supports: these are the ones that
+// plausibly cost something (an extra native attribute to set, or a re-measure
+// to force). No sliders and no free text, because a discrete value is what makes
+// two runs comparable and quotable, and it keeps the persisted shape trivial.
+//
+// Every row starts with `(none)`, which leaves the attribute unset, and then
+// lists the real values explicitly — including the ones that equal the platform
+// default (`fontStyle normal`, `textDecorationLine none`, `allowFontScaling
+// true`). That distinction is the point: unset means the prop never reaches the
+// native view, while an explicit default-valued prop still costs a diff, a
+// bridge entry and, on Android, sometimes a span. Pricing that gap is a thing
+// the harness should be able to do.
+const ATTRIBUTES: AttrDef[] = [
+  {
+    key: 'fontSize',
+    section: 'Text',
+    fp: 'fs',
+    target: 'text',
+    // No `(none)`: there is always a font size, and 20 is the baseline every
+    // recorded number is taken at.
+    options: [
+      { label: '56', value: 56 },
+      { label: '20', value: 20 },
+      { label: '14', value: 14 },
+    ],
+    defaultIndex: 1,
+    alwaysInFingerprint: true,
+  },
+  {
+    key: 'fontWeight',
+    section: 'Text',
+    fp: 'fw',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'normal', value: 'normal' },
+      { label: '100', value: '100' },
+      { label: '300', value: '300' },
+      { label: '500', value: '500' },
+      { label: 'bold', value: 'bold' },
+      { label: '900', value: '900' },
+    ],
+  },
+  {
+    key: 'fontFamily',
+    section: 'Text',
+    fp: 'ff',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'serif', value: SERIF },
+      { label: 'mono', value: MONO },
+    ],
+  },
+  {
+    key: 'fontStyle',
+    section: 'Text',
+    fp: 'fst',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'normal', value: 'normal' },
+      { label: 'italic', value: 'italic' },
+    ],
+  },
+  {
+    key: 'letterSpacing',
+    section: 'Text',
+    fp: 'ls',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: '0', value: 0 },
+      { label: '-1', value: -1 },
+      { label: '0.5', value: 0.5 },
+      { label: '3', value: 3 },
+    ],
+  },
+  {
+    key: 'lineHeight',
+    section: 'Text',
+    fp: 'lh',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: '16', value: 16 },
+      { label: '24', value: 24 },
+      { label: '40', value: 40 },
+    ],
+  },
+  {
+    key: 'fontVariant',
+    section: 'Text',
+    fp: 'fv',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'tabular', value: ['tabular-nums'] },
+      { label: 'proportional', value: ['proportional-nums'] },
+      { label: 'small-caps', value: ['small-caps'] },
+      { label: 'oldstyle', value: ['oldstyle-nums'] },
+      { label: 'two', value: ['small-caps', 'oldstyle-nums'] },
+    ],
+  },
+  {
+    key: 'textDecorationLine',
+    section: 'Text',
+    fp: 'td',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'none', value: 'none' },
+      { label: 'underline', value: 'underline' },
+      { label: 'line-through', value: 'line-through' },
+      { label: 'both', value: 'underline line-through' },
+    ],
+  },
+  {
+    key: 'textAlign',
+    section: 'Text',
+    fp: 'ta',
+    target: 'text',
+    options: [
+      { label: '(none)' },
+      { label: 'auto', value: 'auto' },
+      { label: 'left', value: 'left' },
+      { label: 'center', value: 'center' },
+      { label: 'right', value: 'right' },
+      { label: 'justify', value: 'justify' },
+    ],
+  },
+  {
+    key: 'numberOfLines',
+    section: 'Layout',
+    fp: 'nol',
+    target: 'prop',
+    options: [
+      { label: '(none)' },
+      { label: '0', value: 0 },
+      { label: '1', value: 1 },
+      { label: '2', value: 2 },
+      { label: '3', value: 3 },
+    ],
+  },
+  {
+    key: 'ellipsizeMode',
+    section: 'Layout',
+    fp: 'em',
+    target: 'prop',
+    options: [
+      { label: '(none)' },
+      { label: 'head', value: 'head' },
+      { label: 'middle', value: 'middle' },
+      { label: 'tail', value: 'tail' },
+      { label: 'clip', value: 'clip' },
+    ],
+  },
+  {
+    key: 'padding',
+    section: 'Layout',
+    fp: 'p',
+    target: 'view',
+    options: [
+      { label: '(none)' },
+      { label: '0', value: 0 },
+      { label: '8', value: 8 },
+      { label: '20', value: 20 },
+    ],
+  },
+  {
+    key: 'borderWidth',
+    section: 'Layout',
+    fp: 'bw',
+    target: 'view',
+    options: [
+      { label: '(none)' },
+      { label: '0', value: 0 },
+      { label: '1', value: 1 },
+      { label: '4', value: 4 },
+    ],
+  },
+  {
+    key: 'borderRadius',
+    section: 'Layout',
+    fp: 'br',
+    target: 'view',
+    options: [
+      { label: '(none)' },
+      { label: '0', value: 0 },
+      { label: '8', value: 8 },
+      { label: '999', value: 999 },
+    ],
+  },
+  {
+    key: 'allowFontScaling',
+    section: 'Layout',
+    fp: 'afs',
+    target: 'prop',
+    options: [
+      { label: '(none)' },
+      { label: 'true', value: true },
+      { label: 'false', value: false },
+    ],
+  },
+  {
+    key: 'maxFontSizeMultiplier',
+    section: 'Layout',
+    fp: 'mfm',
+    target: 'prop',
+    options: [
+      { label: '(none)' },
+      { label: '1', value: 1 },
+      { label: '1.5', value: 1.5 },
+      { label: '4', value: 4 },
+    ],
+  },
+  {
+    key: 'content',
+    label: 'text length',
+    section: 'Content',
+    fp: 'text',
+    target: 'content',
+    // The builder itself rather than a name for it, so nothing downstream has to
+    // map one to the other.
+    options: [
+      { label: 'short', value: SHORT_TEXT },
+      { label: 'wrapping', value: WRAPPING_TEXT },
+    ],
+  },
+];
+
+// Derived, so adding an attribute above is the only edit: a hardcoded list is one
+// more place to forget, and forgetting means the new row renders nowhere.
+// Insertion-ordered, so the sheet's section order is ATTRIBUTES' own order.
+const SECTIONS = [...new Set(ATTRIBUTES.map((attr) => attr.section))];
+
+// Option index per attribute key. Anything missing falls back to the
+// attribute's default, so a config persisted before an attribute existed still
+// loads.
+type AttrConfig = Record<string, number>;
+
+const DEFAULT_CONFIG: AttrConfig = {};
+
+function defaultIndex(attr: AttrDef) {
+  return attr.defaultIndex ?? 0;
+}
+
+function selectedIndex(config: AttrConfig, attr: AttrDef) {
+  const index = config[attr.key] ?? defaultIndex(attr);
+  return attr.options[index] == null ? defaultIndex(attr) : index;
+}
+
+// selectedIndex only ever returns an index that exists, so the fallback is
+// unreachable; it is here because noUncheckedIndexedAccess cannot see that.
+function selectedOption(config: AttrConfig, attr: AttrDef): AttrOption {
+  return attr.options[selectedIndex(config, attr)] ?? { label: '(none)' };
+}
+
+// What the header badge counts. Rows that always name themselves in the
+// fingerprint are excluded: they are visible on the line whatever their value,
+// so counting them too would double-report them.
+function countChangedProps(config: AttrConfig) {
+  return ATTRIBUTES.filter(
+    (attr) => !attr.alwaysInFingerprint && selectedIndex(config, attr) !== defaultIndex(attr)
+  ).length;
+}
+
+// What deviates from the default, plus the rows that always name themselves. A
+// row left at an unset default contributes nothing, so the line stays a record
+// of what this run changed rather than a dump of every row.
+function formatFingerprint(config: AttrConfig) {
+  return ATTRIBUTES.filter(
+    (attr) => attr.alwaysInFingerprint || selectedIndex(config, attr) !== defaultIndex(attr)
+  )
+    .map((attr) => `${attr.fp}:${selectedOption(config, attr).label}`)
+    .join(' · ');
+}
+
+type TextBuilder = (n: number) => string;
+
+type Applied = {
+  textStyle: TextStyle;
+  viewStyle: ViewStyle;
+  // numberOfLines, ellipsizeMode, allowFontScaling, maxFontSizeMultiplier —
+  // whichever of them are set. Kept as a bag rather than named fields so adding
+  // a row to ATTRIBUTES is the only edit needed, and so a prop that is `(none)`
+  // is genuinely absent from the element rather than passed as undefined.
+  props: Record<string, unknown>;
+  text: TextBuilder;
+};
+
+function buildApplied(config: AttrConfig, colorIndex: number, sizeBump: number): Applied {
+  const textStyle: Record<string, unknown> = {};
+  const viewStyle: Record<string, unknown> = {};
+  const props: Record<string, unknown> = {};
+  let text: TextBuilder = SHORT_TEXT;
+
+  for (const attr of ATTRIBUTES) {
+    const option = selectedOption(config, attr);
+    if (option.value === undefined) continue;
+    if (attr.target === 'text') textStyle[attr.key] = option.value;
+    else if (attr.target === 'view') viewStyle[attr.key] = option.value;
+    else if (attr.target === 'prop') props[attr.key] = option.value;
+    else text = option.value as TextBuilder;
+  }
+
+  // A border with no color draws nothing on either platform. Indigo, the same
+  // accent the Features page draws its border rows in.
+  if (viewStyle.borderWidth != null) viewStyle.borderColor = COLOR.indigo;
+
+  // The two update scenarios, applied last so they win over the config.
+  textStyle.color = COLORS[colorIndex];
+  textStyle.fontSize = (textStyle.fontSize as number) + sizeBump;
+
+  return {
+    textStyle: textStyle as TextStyle,
+    viewStyle: viewStyle as ViewStyle,
+    props,
+    text,
+  };
+}
+
+function PropsSheet({
+  visible,
+  config,
+  onChange,
+  onClose,
+}: {
+  visible: boolean;
+  config: AttrConfig;
+  onChange: (config: AttrConfig) => void;
+  onClose: () => void;
+}) {
   return (
-    <Text style={styles.stats}>
-      {`${label}: ${formatBytes(stats.perViewBytes)}/view · ` +
-        `${formatBytes(stats.totalBytes)} total\n` +
-        `initial ${formatBytes(stats.memBefore)} → final ${formatBytes(stats.memAfter)}\n` +
-        `${formatTiming(stats)}`}
-    </Text>
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheet}>
+        <View style={styles.sheetBar}>
+          <Pressable onPress={() => onChange(DEFAULT_CONFIG)} hitSlop={8}>
+            <PlainText style={styles.sheetAction}>Reset all</PlainText>
+          </Pressable>
+          <PlainText style={styles.sheetTitle}>Props</PlainText>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <PlainText style={styles.sheetAction}>Done</PlainText>
+          </Pressable>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.sheetBody}>
+          {/* The screens' own section furniture — tracked caps and a rule out to
+              the margin — so the sheet reads as a page of the same book rather
+              than as a settings dialog bolted to it. */}
+          {SECTIONS.map((section) => (
+            <Section key={section} title={section} spacedRows>
+              {ATTRIBUTES.filter((attr) => attr.section === section).map((attr) => {
+                const index = selectedIndex(config, attr);
+                return (
+                  <View key={attr.key} style={styles.attrRow}>
+                    <PlainText style={styles.attrLabel}>{attr.label ?? attr.key}</PlainText>
+                    <View style={styles.attrOptions}>
+                      {attr.options.map((option, i) => (
+                        <Chip
+                          key={option.label}
+                          label={option.label}
+                          selected={i === index}
+                          onPress={() => onChange({ ...config, [attr.key]: i })}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                );
+              })}
+            </Section>
+          ))}
+        </ScrollView>
+
+        <PlainText style={styles.sheetFingerprint}>{formatFingerprint(config)}</PlainText>
+      </View>
+    </Modal>
   );
 }
 
-// Shared by both readouts so the mount and font-size numbers stay comparable.
-function formatTiming({ interactionMs, commitMs }: Timing) {
+function Chip({
+  label,
+  selected,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  selected?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[styles.chip, selected && styles.chipSelected, disabled && styles.chipDisabled]}
+    >
+      <PlainText style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
+        {label}
+      </PlainText>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Actions and readouts
+// ---------------------------------------------------------------------------
+
+const SETTLING_LABEL = `Settling ${SETTLE_MS / 1000}s…`;
+
+// One action and the result it produced, as a unit. Grouping them means the
+// result cannot drift away from its own button when a sibling's result appears
+// or changes height.
+function Action({
+  title,
+  scenario,
+  stats,
+  running,
+  disabled,
+  onPress,
+}: {
+  title: string;
+  scenario: Scenario;
+  stats: Partial<Record<Scenario, RunStats>>;
+  running: Scenario | null;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const result = stats[scenario];
+  return (
+    <View style={styles.action}>
+      {/*
+        Not RN's <Button>: it renders differently per platform (a bare text link
+        on iOS, a filled surface with its own grey disabled state and elevation
+        on Android), and its internal label padding is not adjustable, which the
+        card layout has to reason about. A Pressable is the same box everywhere.
+      */}
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={[styles.button, disabled && styles.buttonDisabled]}
+      >
+        <PlainText style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>
+          {title}
+        </PlainText>
+      </Pressable>
+      {running === scenario ? (
+        <PlainText style={[styles.readout, styles.settling]}>{SETTLING_LABEL}</PlainText>
+      ) : result != null ? (
+        <StatsBlock stats={result} />
+      ) : null}
+    </View>
+  );
+}
+
+// One readout for every scenario: same lines, same order, same units, so a
+// mount number and a re-render number can be read against each other without
+// re-learning the format.
+function StatsBlock({ stats }: { stats: RunStats }) {
+  const { deltaBytes, retainedBytes, memBefore, memAfter } = stats;
+  // No scenario label: the block sits under the button that produced it.
+  const lines = [
+    formatTiming(stats),
+    `${formatSignedBytes(deltaBytes)} · ${formatSignedBytes(deltaBytes / COUNT)}/view`,
+    `${formatBytes(memBefore)} → ${formatBytes(memAfter)}` +
+      (retainedBytes == null ? '' : ` · ${formatSignedBytes(retainedBytes)} retained`),
+  ];
+  return <PlainText style={[styles.readout, styles.stats]}>{lines.join('\n')}</PlainText>;
+}
+
+// Shared by every readout so the numbers stay comparable across scenarios.
+function formatTiming({
+  interactionMs,
+  commitMs,
+}: {
+  interactionMs: number | null;
+  commitMs: number;
+}) {
   const interaction = interactionMs == null ? '—' : `${interactionMs.toFixed(0)} ms`;
   return `${interaction} interaction · ${commitMs.toFixed(0)} ms commit`;
+}
+
+// Signed, because half these numbers are supposed to be negative (an unmount
+// that released) or zero (an update that allocated nothing), and an unsigned
+// delta hides both.
+function formatSignedBytes(bytes: number) {
+  return `${bytes >= 0 ? '+' : '−'}${formatBytes(Math.abs(bytes))}`;
 }
 
 function formatBytes(bytes: number) {
@@ -418,44 +1089,250 @@ function formatBytes(bytes: number) {
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
+  // `screenStyles.container` with its `gap` dropped and `alignItems` set: the
+  // gap between sections is 40pt there, and this content container also holds
+  // the 1000 items, which would each take that gap in place of their own
+  // margin. Everything else — the margins, the top and bottom padding — is the
+  // same page as the other two screens, so the control block above the items
+  // sits on the same measure as a specimen row.
   container: {
     flexGrow: 1,
+    // Keeps the items shrink-wrapped to their own measured width, on the left
+    // margin with the rest of the page, rather than stretched to the container.
+    alignItems: 'flex-start',
+    paddingTop: 28,
+    paddingHorizontal: 18,
+    paddingBottom: 48,
+  },
+  // Carries the 40pt section gap the page style would have given it, so the
+  // items below are free to space themselves. Opaque, and closed with the same
+  // hairline the section rules use: below it the page stops being prose and
+  // becomes 1000 specimens.
+  controls: {
+    alignSelf: 'stretch',
+    backgroundColor: COLOR.paper,
+    gap: 40,
+    paddingBottom: 28,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLOR.line,
+  },
+  // No card. The action's own 6pt against the section's row gap is what binds a
+  // result to the button that produced it — the same ratio the specimen rows
+  // use to bind a caption to its specimen — and the readout carries a wash of
+  // its own, so the pairing survives without a box drawn around it.
+  action: {
+    alignSelf: 'stretch',
+    gap: 6,
+  },
+  // Tinted rather than filled: five of these stacked in solid indigo drowned out
+  // the numbers, which are the thing being read.
+  button: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    gap: 10,
+    backgroundColor: COLOR.indigoWash,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    borderRadius: 10,
   },
-  stats: {
-    fontSize: 13,
-    color: '#333',
-    textAlign: 'center',
+  buttonDisabled: {
+    backgroundColor: COLOR.wash,
   },
-  listItem: {
-    backgroundColor: '#f0f0f0',
+  buttonLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLOR.indigo,
   },
-  selector: {
+  buttonLabelDisabled: {
+    color: COLOR.disabled,
+  },
+  // The error-banner shape from the Use Cases page: wash, the pigment as a left
+  // rule, and text in the same pigment rather than in ink.
+  // Now the box only, with the type in the two children: the tag and the note are
+  // separate nodes, so size, weight and colour move down to them.
+  build: {
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'center',
-    // One line on a normal phone; wraps rather than overflowing on narrow ones.
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    // What the two spaces between the tag and the note used to be.
+    columnGap: 7,
+    overflow: 'hidden',
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderLeftWidth: 4,
+    borderRadius: 6,
+    // The banner is a note on the page rather than a section of it, so it does
+    // not take the page's top margin or a full 40pt section gap below it. The box
+    // carries its own padding, which reads as space of its own on both sides.
+    marginTop: -8,
+    marginBottom: -16,
+  },
+  // Caps, tracked, bold: the register the page gives every other label.
+  buildTag: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  buildNote: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  buildDebug: {
+    backgroundColor: COLOR.ochreWash,
+    borderLeftColor: COLOR.ochre,
+  },
+  buildDebugInk: {
+    color: COLOR.ochre,
+  },
+  buildRelease: {
+    backgroundColor: COLOR.mossWash,
+    borderLeftColor: COLOR.moss,
+  },
+  buildReleaseInk: {
+    color: COLOR.mossInk,
+  },
+  fingerprint: {
+    width: '100%',
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: MONO,
+    color: COLOR.muted,
+  },
+  // The box under a button, whatever it currently holds: the same wash the
+  // specimen rows put behind their type.
+  readout: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLOR.inkSoft,
+    // Centered under the button's own centered label, so the pair reads as one
+    // block. The page is left-aligned everywhere else, but these lines are a
+    // caption on the control above them rather than another row of prose.
+    textAlign: 'center',
+    backgroundColor: COLOR.wash,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  // Tabular figures rather than a mono face: the readout is three short
+  // sentences of units and arrows, not a code listing, and mono made a block of
+  // it. Tabular is what the column of five actually needs — the digits still
+  // line up run to run, in the page's own face.
+  stats: {
+    fontVariant: ['tabular-nums'],
+  },
+  // The waiting line is a sentence rather than a value, so it reads quiet and
+  // italic like a caption instead.
+  settling: {
+    color: COLOR.muted,
+    fontStyle: 'italic',
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  // marginTop rather than marginBottom, so the first item is also clear of the
+  // control block above it. Margin is a view style: Yoga lays it out around the
+  // self-measured text and it never reaches the text measurement itself.
+  listItem: {
+    marginTop: 10,
+    // The ramp's rule grey: dark enough to read against the white page in the
+    // 10pt gaps, where the wash the specimen rows use only has to hold an edge
+    // rather than separate 1000 stacked items.
+    backgroundColor: COLOR.line,
+  },
+  headerButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  // Matches the toggle the other two screens put in the same slot.
+  headerButtonLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLOR.indigo,
+  },
+  headerButtonDisabled: {
+    color: COLOR.disabled,
+  },
+  // Unselected chips sit on the neutral ramp rather than in outlined indigo:
+  // there are up to seven in a row, and seven blue outlines read as seven things
+  // asking to be pressed. Only the chosen one takes the accent, filled, which is
+  // also the one piece of state the row carries.
+  chip: {
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLOR.line,
+  },
+  chipSelected: {
+    backgroundColor: COLOR.indigo,
+    borderColor: COLOR.indigo,
+  },
+  chipDisabled: {
+    opacity: 0.4,
+  },
+  chipLabel: {
+    fontSize: 12,
+    color: COLOR.inkSoft,
+  },
+  chipLabelSelected: {
+    color: COLOR.paper,
+  },
+  sheet: {
+    flex: 1,
+    backgroundColor: COLOR.paper,
+  },
+  sheetBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingBottom: 12,
+    paddingHorizontal: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLOR.line,
+  },
+  // The sheet is its own screen, so its title takes the register the nav bar
+  // titles take, a size down: this bar has two actions beside it.
+  sheetTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLOR.ink,
+  },
+  // Same indigo as the header buttons on every screen, which is what these are.
+  sheetAction: {
+    fontSize: 16,
+    color: COLOR.indigo,
+  },
+  // The page's margins, and the section gap the specimen pages use.
+  sheetBody: {
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    gap: 40,
+  },
+  attrRow: {
+    gap: 6,
+  },
+  attrLabel: {
+    fontSize: 14,
+    color: COLOR.ink,
+  },
+  attrOptions: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  option: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#007aff',
-  },
-  optionSelected: {
-    backgroundColor: '#007aff',
-  },
-  optionLabel: {
-    fontSize: 13,
-    color: '#007aff',
-  },
-  optionLabelSelected: {
-    color: '#fff',
+  sheetFingerprint: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: MONO,
+    color: COLOR.muted,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLOR.line,
   },
 });

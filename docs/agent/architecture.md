@@ -55,10 +55,20 @@ versioned Expo docs before touching Expo config). It consumes the library from
 source via `example/react-native.config.js`, which points the dependency at the
 repo root.
 
-Two screens:
+Three screens, sharing the specimen furniture in `src/components/Specimen.tsx`
+(cover, section headings, the row that overlays RN's `<Text>` in red), the
+palette in `src/theme.ts`, and the "Compare Text" flag in
+`src/components/CompareText.tsx` — one state above the tab navigator, so the
+toggle is the same setting on every screen that offers it.
 
-- **Features** (`src/screens/FeaturesScreen.tsx`) — per-prop coverage. Every new
-  feature must add a section here.
+- **Features** (`src/screens/FeaturesScreen.tsx`) — per-prop coverage, one prop
+  per section and one value per row. Every new feature must add a section here.
+- **Use Cases** (`src/screens/UseCasesScreen.tsx`) — rows that stack three to six
+  props at once. Realistic UI shapes first, one section per kind
+  (`USE_CASE_GROUPS`, commonest shape first: headings, body copy, labels, buttons
+  and links, code, numerals, badges, status and feedback), then
+  `RANDOM_USE_CASES` — arbitrary combinations that catch interactions the
+  realistic rows avoid.
 - **Performance** (`src/screens/PerformanceScreen.tsx`) — the benchmark harness.
   See [measuring.md](measuring.md).
 
