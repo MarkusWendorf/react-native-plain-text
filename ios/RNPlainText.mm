@@ -103,6 +103,24 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     return concreteComponentDescriptorProvider<PlainTextComponentDescriptor>();
 }
 
+// Opt out of RCTComponentViewRegistry's per-type recycle pool (RN reads this
+// selector when it builds the view's RCTComponentViewClassDescriptor; the pool
+// is opt-out, default YES), so every mount gets a fresh view.
+//
+// A dequeued view backs an unrelated component instance, and -updateProps here
+// diffs against _props (the ivar, matching RCTViewComponentView) rather than the
+// oldProps parameter — so _props has to always describe what _label is actually
+// showing. Recycling breaks that: the base -prepareForRecycle resets the
+// props/layers it owns but knows nothing about _label's content, so the next
+// instance can diff against props whose content the label no longer has, see no
+// change, and never reapply — leaving stale or truncated text. Reuse buys
+// nothing measurable for a UILabel, and every prop added would be one more thing
+// that has to be reset exactly right, so we take the allocation.
++ (BOOL)shouldBeRecycled
+{
+    return NO;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
