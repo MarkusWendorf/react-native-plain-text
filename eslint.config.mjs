@@ -25,12 +25,14 @@ export default defineConfig([
   {
     // The example app uses inline styles on purpose: each demo shows the exact
     // style being exercised right next to the element it applies to.
-    files: ['example/**'],
+    // `**/` so the rule is also off inside git worktrees (.claude/worktrees/…),
+    // where the same files sit under a nested path.
+    files: ['**/example/**'],
     rules: {
       'react-native/no-inline-styles': 'off',
     },
   },
   {
-    ignores: ['node_modules/', 'lib/', 'references/'],
+    ignores: ['node_modules/', 'lib/', 'references/', '.claude/'],
   },
 ]);
