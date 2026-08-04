@@ -174,6 +174,92 @@ to the result. The shared off-screen view in `PlainTextViewManager.measure()`
 must therefore stay padding-free, unlike every other size-affecting value, which
 has to be set on every call.
 
+## Recycled view state
+
+Fabric recycles component views by type (`RCTComponentViewRegistry` on iOS;
+`enableViewRecyclingForText`/`ForView`, on by default, on Android): an unmounted
+view is handed straight back out to back an unrelated component instance's first
+mount.
+
+`RNPlainText.mm`'s `updateProps` diffs against `_props` (the ivar), not the
+`oldProps` parameter — matching the base `RCTViewComponentView`. `_props` is
+supposed to describe what `_label` is _actually_ showing. On construction it
+doesn't: the base class seeds `_props` with a plain `ViewProps`, and separately
+`_label` itself starts out with UILabel's own factory defaults (e.g. its
+built-in 17pt font), which don't match what `RNPlainTextProps`' defaults render
+as. A first-mount view whose real props happen to equal those defaults would
+diff as "no change" and never apply, keeping UILabel's mismatched look — the
+exact "correct on first render, wrong after an update, silent in between" shape
+this whole document is about, just triggered on construction instead of by a
+prop update.
+
+`_forceApplyProps` (`ios/RNPlainText.mm`) closes that: set in `-initWithFrame:`,
+checked and cleared on the first `-updateProps`, it makes that one call apply
+the content build, `numberOfLines` and `lineBreakMode` unconditionally,
+regardless of the diff.
+
+Recycling turns out not to need the same treatment. A recycled view is handed
+straight back out to back an unrelated instance's first mount with `_props`
+still holding the previous instance's real values (the base
+`-prepareForRecycle` resets the layers and state it owns, not `_props`) — but
+nothing between that instance's last `-updateProps` and this one touches
+`_label`, so `_label` still genuinely matches `_props`. The plain diff is
+therefore already correct on recycle: real prop differences apply normally, and
+if the new instance's props happen to equal the leftovers, that's not a bug —
+`_label` already shows the right thing. An earlier version of this fix also
+re-armed `_forceApplyProps` in `-prepareForRecycle`, modeled on
+`RCTViewComponentView`'s own diff-blind safety net for its `_props`-diffed
+properties (`-updateLayoutMetrics` sets `_needsInvalidateLayer = YES`
+unconditionally, rebuilding background/border layers every layout pass no
+matter what the diff concluded). It was removed: the recycling bug actually hit
+occurred _with_ that re-arm in place (the logs show `_forceApplyProps` forcing
+`applyContentFromProps` to run) and the real cause was inside
+`applyContentFromProps` itself — see below — so the re-arm was never doing
+anything for that failure, and speculative insurance against an undemonstrated
+one isn't worth the extra state.
+
+**This is why there is no "reset every `_label` property to its default"
+routine**, and why a new prop doesn't need one. `applyContentFromProps` fully
+determines the label's state (font, color, alignment, `text`/`attributedText`,
+`verticalTextShift`), and the forced apply on first mount runs it before
+anything is on screen, so a fresh view needs no separate seeding. An earlier
+version also reset `_label` directly in `-prepareForRecycle`; it made
+correctness depend on that reset staying prop-for-prop in step with
+`applyContentFromProps` forever, which is exactly the kind of silent sync point
+this document exists to avoid. If a `_label` property is ever set outside
+`applyContentFromProps`/`updateProps`, that reasoning breaks and it needs its
+own handling.
+
+One property does need explicit handling within `applyContentFromProps`
+itself: `attributedText`. `numberOfLines`/`ellipsizeMode`/`textColor`/etc. are
+plain properties with one obvious value, so setting them always overwrites
+whatever the recycled-from instance left. Text content isn't — it's carried on
+either `.text` (the plain path, when nothing needs an attributed string) or
+`.attributedText` (letterSpacing, lineHeight, underline/strikethrough), and
+only one of the two is ever set per call. Apple documents that setting `.text`
+also clears `.attributedText` to an equivalent, attribute-free string, but a
+real repro (a view recycled from an instance with `letterSpacing` — the
+attributed path, `NSKernAttributeName` — into one without) showed the old
+kerning surviving: the label kept the previous instance's spacing and
+truncation even though every prop, and `_label.text` itself, were already
+correct. The plain path now sets `_label.attributedText = nil` explicitly
+before `.text`, rather than relying on that documented side effect. A future
+rewrite of `applyContentFromProps` must keep doing this — the failure is
+invisible until something is recycled from the attributed path into the plain
+one.
+
+**Android likely doesn't share this specific hazard** — `PlainTextView.applyText()`
+has the same plain-vs-spanned duality (`setText(value)` vs a `SpannableString`
+carrying the `lineHeight` span), but both branches go through the single
+`setText()` entry point rather than two separate properties, so there's no
+second backing store for a stale span to hide in. **It still has no recycling
+reset of any kind, though**: `PlainTextView`/`PlainTextViewManager` reset
+nothing on reuse. RN's own `ReactTextView` does (`recycleView()`, called from
+`ReactTextViewManager.createViewInstance` when a view comes from the pool) —
+ours doesn't yet, so the construction-time hazard above (a first-mount view at
+all-default props never getting seeded) is reachable there. Not yet
+implemented.
+
 ## Both platforms' shadow nodes
 
 `ios/PlainTextShadowNode.h` and `android/.../PlainTextShadowNode.h` are separate

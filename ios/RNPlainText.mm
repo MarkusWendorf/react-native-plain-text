@@ -96,6 +96,19 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
 @implementation RNPlainText {
     RNPlainTextLabel * _label;
+    // Forces the first -updateProps after construction to apply _label's
+    // content/numberOfLines/lineBreakMode unconditionally, bypassing the props
+    // diff. Needed once: _props starts out holding defaultProps (so the diff
+    // has something to compare against — see -initWithFrame:), but _label
+    // itself starts out with UILabel's own factory defaults, which don't match
+    // what defaultProps renders as (e.g. UILabel's built-in 17pt font vs
+    // defaultProps.fontSize). A view whose real props equal the defaults would
+    // otherwise see "no change" and never apply, keeping the mismatched look.
+    //
+    // Recycling doesn't need this: nothing between one instance's last
+    // -updateProps and the next touches _label, so _label already matches
+    // _props exactly, and the plain diff below is sufficient on its own.
+    BOOL _forceApplyProps;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -106,12 +119,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
-    static const auto defaultProps = std::make_shared<const RNPlainTextProps>();
-    _props = defaultProps;
-
     _label = [[RNPlainTextLabel alloc] init];
-    _label.numberOfLines = 0;
-    _label.textColor = [UIColor blackColor];
     // UILabel defaults to NSLineBreakStrategyStandard (the "avoid orphans"
     // look-ahead added in iOS 14), which can wrap a word to the next line
     // earlier than plain greedy wrapping would. measureContent's
@@ -120,12 +128,18 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     // that keeps the mounted view's wrap points in sync with what was
     // measured (and with RN <Text>, which wraps the same way).
     _label.lineBreakStrategy = NSLineBreakStrategyNone;
-    // Seed the label's font from the prop defaults so the diff in updateProps
-    // (which compares against defaultProps on first mount) is valid. Without
-    // this, a view whose fontSize equals the default is never applied and the
-    // label keeps UILabel's built-in 17pt — larger than the measured size, so
-    // the text truncates.
-    _label.font = [UIFont systemFontOfSize:defaultProps->fontSize];
+
+    // _props must hold RNPlainTextProps from the start: -updateProps and
+    // -traitCollectionDidChange both static_pointer_cast it, and the base class
+    // seeds it with a plain ViewProps.
+    static const auto defaultProps = std::make_shared<const RNPlainTextProps>();
+    _props = defaultProps;
+
+    // Nothing else about _label is seeded here — _forceApplyProps (see its
+    // declaration above) makes the first -updateProps apply the whole content
+    // unconditionally, so there is nothing for a diff against defaultProps to
+    // get wrong in the meantime.
+    _forceApplyProps = YES;
 
     self.contentView = _label;
   }
@@ -156,6 +170,15 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
     if (!hasLineHeight && !hasLetterSpacing && !hasTextDecoration) {
         // Plain path: let the label carry font/color/alignment directly.
+        //
+        // Explicitly nil attributedText instead of relying on UIKit to clear
+        // it as a side effect of setting .text below — confirmed by repro
+        // that it doesn't reliably: a view recycled from an instance that had
+        // letterSpacing set (attributed path, NSKernAttributeName) into one
+        // that doesn't kept the old kerning, spacing and truncating text that
+        // should have been plain, even though every prop and _label.text were
+        // by then correct. This line is the fix.
+        _label.attributedText = nil;
         _label.font = font;
         _label.textColor = color;
         _label.textAlignment = alignment;
@@ -247,7 +270,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     // content build (see applyContentFromProps) since they may share an
     // attributed string; ellipsizeMode does too because it lands in that
     // string's paragraph style when one is used.
-    if (oldViewProps.text != newViewProps.text ||
+    if (_forceApplyProps ||
+        oldViewProps.text != newViewProps.text ||
         oldViewProps.fontSize != newViewProps.fontSize ||
         oldViewProps.fontFamily != newViewProps.fontFamily ||
         oldViewProps.fontWeight != newViewProps.fontWeight ||
@@ -264,13 +288,15 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         [self applyContentFromProps:newViewProps];
     }
 
-    if (oldViewProps.numberOfLines != newViewProps.numberOfLines) {
+    if (_forceApplyProps || oldViewProps.numberOfLines != newViewProps.numberOfLines) {
         _label.numberOfLines = newViewProps.numberOfLines;
     }
 
-    if (oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
+    if (_forceApplyProps || oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
         _label.lineBreakMode = RNPlainTextLineBreakModeFromProp(newViewProps.ellipsizeMode);
     }
+
+    _forceApplyProps = NO;
 
     [super updateProps:props oldProps:oldProps];
 }

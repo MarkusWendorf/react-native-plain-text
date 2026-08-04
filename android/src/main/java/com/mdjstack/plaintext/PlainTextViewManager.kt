@@ -37,6 +37,13 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     return NAME
   }
 
+  // SYNC: does not reset a recycled view. Fabric's recycle pool
+  // (enableViewRecyclingForText/ForView, on by default) can hand createViewInstance's
+  // caller a previously-used PlainTextView instead of calling this, and nothing here
+  // clears its prior text/font/color before the new instance's props are applied. RN's
+  // own ReactTextViewManager.createViewInstance calls PreparedLayoutTextView.recycleView()
+  // for exactly this reason. See docs/agent/sync-points.md#recycled-view-state — same
+  // failure as the iOS fix in RNPlainText.mm, not yet ported here.
   public override fun createViewInstance(context: ThemedReactContext): PlainTextView {
     return PlainTextView(context)
   }
