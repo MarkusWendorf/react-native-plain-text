@@ -521,6 +521,12 @@ const styles = StyleSheet.create({
   // demonstrates — the alignment, the padding, the border geometry, the clamp — is
   // set on top of this at the row, so the column differs only in the one thing it
   // is about.
+  //
+  // Anything that sets a width obliges every row using it to pass
+  // `containerStyle={screenStyles.wideRow}` as well, so the percentage resolves
+  // against a definite row width rather than against the overlay's full-width box
+  // on one side and a shrink-wrapping row on the other. A section that is not
+  // about layout should set no width at all instead — see `a11yRow`.
   body: {
     width: '100%',
     fontSize: 18,
@@ -543,8 +549,15 @@ const styles = StyleSheet.create({
   },
   // Accessibility rows carry no visual difference at all, so they are set below
   // body size: the label above the row is the content here.
+  //
+  // No width, like `wrapProbe`: these rows demonstrate props that do not affect
+  // layout at all, so both boxes should just hug their text. A `width: '100%'`
+  // here resolved against two different containing blocks — the shrink-wrapping
+  // row under the PlainText, the full-width overlay box over it — and showed a
+  // brass box running to the margin over a grey one hugging the glyphs, which is
+  // a difference in the harness rather than in anything either component
+  // measured.
   a11yRow: {
-    width: '100%',
     fontSize: 15,
     color: COLOR.inkSoft,
   },

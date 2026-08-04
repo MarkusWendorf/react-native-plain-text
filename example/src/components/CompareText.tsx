@@ -41,7 +41,13 @@ export function useCompareText(navigation: NativeStackNavigationProp<ParamListBa
 
   useLayoutEffect(() => {
     const button = (
-      <Pressable onPress={toggle} hitSlop={8} style={styles.headerButton}>
+      <Pressable
+        onPress={toggle}
+        hitSlop={8}
+        // Dimmed while held, the way TouchableOpacity does it: the label is the
+        // whole button, so there is no background to darken instead.
+        style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}
+      >
         {/* Off state says what tapping gets you (a comparison against RN's own
             <Text>); on state says how to get out of it. */}
         <PlainText style={styles.headerButtonLabel}>
@@ -70,6 +76,9 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingVertical: 4,
     paddingHorizontal: 8,
+  },
+  headerButtonPressed: {
+    opacity: 0.4,
   },
   // Indigo keeps it reading as the one tappable thing in the bar; semibold and a
   // few points down from the title is what keeps it subordinate to it, rather

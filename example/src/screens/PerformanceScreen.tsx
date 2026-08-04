@@ -196,7 +196,13 @@ export default function PerformanceScreen({ navigation }: Props) {
         onPress={() => setSheetVisible(true)}
         disabled={mounted != null}
         hitSlop={8}
-        style={styles.headerButton}
+        // Dimmed while held, the way TouchableOpacity does it. Only when it can
+        // actually be pressed: the locked state already reads as unavailable
+        // through its color, and dimming it further would suggest it responded.
+        style={({ pressed }) => [
+          styles.headerButton,
+          pressed && mounted == null && styles.headerButtonPressed,
+        ]}
       >
         {/*
           Short, and `numberOfLines` set: on iOS the page title is a custom left
@@ -388,11 +394,13 @@ export default function PerformanceScreen({ navigation }: Props) {
             >
               {__DEV__ ? '⚠️ DEBUG BUILD' : '✅ RELEASE BUILD'}
             </PlainText>
-            <PlainText
-              style={[styles.buildNote, __DEV__ ? styles.buildDebugInk : styles.buildReleaseInk]}
-            >
-              {__DEV__ ? 'Results are not reliable!' : 'Results are reliable'}
-            </PlainText>
+            {__DEV__ ? (
+              <PlainText
+                style={[styles.buildNote, __DEV__ ? styles.buildDebugInk : styles.buildReleaseInk]}
+              >
+                Results are not reliable!
+              </PlainText>
+            ) : null}
           </View>
 
           <Section title="Component" spacedRows>
@@ -1246,6 +1254,9 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingVertical: 4,
     paddingHorizontal: 8,
+  },
+  headerButtonPressed: {
+    opacity: 0.4,
   },
   // Matches the toggle the other two screens put in the same slot.
   headerButtonLabel: {
