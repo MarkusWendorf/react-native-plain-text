@@ -1,6 +1,6 @@
 {
   "name": "react-native-plain-text",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "A faster, lower-memory React Native <Text> alternative for simple, single-style text",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
