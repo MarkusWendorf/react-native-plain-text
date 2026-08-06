@@ -12,7 +12,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel runs on main: they gate merges and publish coverage.
+  cancel-in-progress: ${{ !contains(github.ref, 'main') }}
 
 jobs:
   lint:
