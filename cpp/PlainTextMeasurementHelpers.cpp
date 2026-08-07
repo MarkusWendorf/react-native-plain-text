@@ -23,10 +23,8 @@ bool shouldRevisionDirtyMeasurement(
     const ShadowNodeFragment &fragment,
     const RNPlainTextProps &newProps) {
   // No new props means Fabric is only re-owning this node's Yoga node after an
-  // ancestor re-render — `adoptYogaChild` clones every child of a changed
-  // parent, since a Yoga node can have one owner. RN's `ParagraphShadowNode`
-  // stops here; we go further, because a screen re-render recreates elements
-  // with equal values far more often than it changes them.
+  // ancestor re-render (`adoptYogaChild` clones every child of a changed
+  // parent, since a Yoga node can have one owner) — never dirty.
   if (fragment.props == nullptr) {
     return false;
   }

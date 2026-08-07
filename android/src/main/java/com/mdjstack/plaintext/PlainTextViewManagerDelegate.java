@@ -11,38 +11,21 @@ import com.facebook.react.uimanager.style.LogicalEdge;
 import com.facebook.react.viewmanagers.RNPlainTextManagerDelegate;
 
 /**
- * The generated delegate, plus the border styles.
+ * The generated delegate, plus the border styles: borders are view styles, not text styles, so
+ * they arrive as flattened raw props rather than through our codegen spec, and every Android view
+ * family forwards them to {@code BackgroundStyleApplicator} itself since {@code BaseViewManager}
+ * has no border setters.
  *
- * <p>Borders are view styles, not text styles, so nothing about them appears in our codegen spec —
- * they arrive as flattened raw props alongside our own. Getting them <em>drawn</em> is Android-only
- * work:
+ * <p>This lives in the delegate rather than {@code @ReactProp} setters because a delegate-driven
+ * view manager never falls back to reflecting over annotations.
  *
- * <ul>
- *   <li>The insets are free on both platforms: Yoga folds border width into the shadow view's
- *       contentInsets exactly like padding, so the text is already inset by {@code
- *       PlainTextViewManager.setPadding}. Only the drawing is missing.
- *   <li>iOS draws them for us — {@code RCTViewComponentView} owns the border layer.
- *   <li>Android draws nothing unless the view manager asks it to. {@code BaseViewManager} has no
- *       borderWidth/borderColor/borderStyle setters at all, and its {@code setBorderRadius}
- *       overloads only log "unsupported property". Every view family that supports borders declares
- *       its own setters forwarding to {@code BackgroundStyleApplicator}; this is ours.
- * </ul>
- *
- * <p>It lives in a delegate rather than in {@code @ReactProp} setters on the view manager because a
- * view manager that has a delegate is <em>only</em> driven through it: {@code
- * ViewManager.updateProperties} hands every prop to {@code ViewManagerDelegate.setProperty} and
- * never falls back to reflecting over annotations, so a {@code @ReactProp} for a prop the codegen
- * spec doesn't declare would never be called. RN's own {@code ReactTextViewManager} can use
- * annotations precisely because it has no generated delegate.
+ * <p>SYNC: a {@code @ReactProp} for anything the codegen spec doesn't declare is never called —
+ * a new view-style prop belongs here, not as an annotation on {@link PlainTextViewManager}. See
+ * docs/agent/sync-points.md#padding-and-border-width-which-are-not-props.
  *
  * <p>Java rather than Kotlin, unlike the rest of the library: subclassing the generated Java
- * delegate from Kotlin fails to compile, because the two {@code receiveCommand} overloads {@code
- * ViewManagerDelegate} declares for Java/Kotlin compatibility collapse onto one JVM signature
- * across the Java class in between ("inherited platform declarations clash").
- *
- * <p>{@code BackgroundStyleApplicator} composes rather than replaces: it keeps one
- * CompositeBackgroundDrawable per view, which is also what {@code BaseViewManager}'s backgroundColor
- * setter writes into — so a background and a border coexist.
+ * delegate from Kotlin fails to compile (the two {@code receiveCommand} overloads collapse onto
+ * one JVM signature).
  */
 class PlainTextViewManagerDelegate
     extends RNPlainTextManagerDelegate<PlainTextView, PlainTextViewManager> {
@@ -52,16 +35,11 @@ class PlainTextViewManagerDelegate
 
   @Override
   public void setProperty(PlainTextView view, String propName, @Nullable Object value) {
-    // This runs once per prop, per view, per transaction, and the props that
-    // actually flow on a text-heavy screen — text, fontSize, color — are never
-    // border props. So gate on the prefix first: startsWith bails on the first
-    // character for all of them, where reaching the switch below would hash the
-    // whole name (String caches its hash, but these arrive fresh from the props
-    // map each transaction, so it is computed every time).
+    // Gate on the prefix first: non-border props (text, fontSize, color) bail out via
+    // startsWith immediately instead of hashing through the switch below.
     if (propName.startsWith("border")) {
       switch (propName) {
-        // Yoga's seven border widths. There are no block-axis widths to mirror
-        // the block-axis colors — RN has none either.
+        // No block-axis widths exist to mirror the block-axis colors below — RN has none either.
         case "borderWidth":
           applyBorderWidth(view, LogicalEdge.ALL, value);
           return;
@@ -115,8 +93,6 @@ class PlainTextViewManagerDelegate
           applyBorderColor(view, LogicalEdge.BLOCK_END, value);
           return;
 
-        // All thirteen corners RN supports: the four physical ones, the logical
-        // top/bottom-start/end pairs, and the CSS logical-logical set.
         case "borderRadius":
           applyBorderRadius(view, BorderRadiusProp.BORDER_RADIUS, value);
           return;
@@ -163,8 +139,7 @@ class PlainTextViewManagerDelegate
           return;
 
         default:
-          // A border prop we don't handle (borderCurve, say) — let the chain
-          // below have it.
+          // A border prop we don't handle (borderCurve, say) — fall through.
           break;
       }
     }

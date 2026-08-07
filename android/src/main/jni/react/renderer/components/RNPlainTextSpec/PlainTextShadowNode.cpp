@@ -4,10 +4,6 @@
 
 namespace facebook::react {
 
-// Note: `RNPlainTextComponentName` is defined by the generated ShadowNodes.cpp
-// (as "RNPlainText"); we reuse that symbol rather than redefining it so our
-// component handle matches the generated one.
-
 void PlainTextShadowNode::setPlainTextMeasurementsManager(
     const std::shared_ptr<PlainTextMeasurementsManager> &measurementsManager) {
   ensureUnsealed();

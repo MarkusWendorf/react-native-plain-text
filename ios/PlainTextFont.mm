@@ -16,10 +16,7 @@
 
 namespace facebook::react {
 
-// Caching wrapper around +[UIFont fontNamesForFamilyName:], which enumerates the
-// font database — RCTFont.mm calls it expensive and wraps it the same way. The
-// empty answer is cached too: a fontFamily naming a face rather than a family
-// ("OpenRunde-Bold") never produces a list, and would ask on every lookup.
+// Caches +[UIFont fontNamesForFamilyName:], including the empty answer, so a face-only fontFamily isn't re-queried on every lookup.
 static NSArray<NSString *> *cachedFontNamesForFamilyName(NSString *familyName)
 {
   static PlainTextFontCache<NSString *, NSArray<NSString *> *> *familyNamesCache =
@@ -27,23 +24,12 @@ static NSArray<NSString *> *cachedFontNamesForFamilyName(NSString *familyName)
 
   return [familyNamesCache objectForKey:familyName
                                    orSet:^NSArray<NSString *> * {
+                                     // EXPENSIVE: enumerates the font database; only runs on a cache miss, since the block above caches per family.
                                      return [UIFont fontNamesForFamilyName:familyName] ?: @[];
                                    }];
 }
 
-/*
- * Face selection within a font family, taken from React Native's own
- * RCTFont.mm, so that a custom fontFamily resolves to exactly the face RN's
- * <Text> would pick rather than merely a similar one.
- *
- * Based on: https://github.com/facebook/react-native/blob/main/packages/react-native/React/Views/RCTFont.mm
- *
- * The weight lookup is not copied: RCTGetFontWeight is RCT_EXTERN in
- * <React/RCTFont.h>, so it is called directly and cannot drift. isItalicFont
- * and isCondensedFont below are static in RCTFont.mm, and the face loop is
- * inline in +updateFont:withFamily:size:weight:style:variant:scaleMultiplier:,
- * so there is nothing to link against for either.
- */
+// Face selection within a font family, ported from RCTFont.mm so a custom fontFamily resolves to the same face <Text> would pick.
 
 static BOOL isItalicFont(UIFont *font)
 {
@@ -55,36 +41,10 @@ static BOOL isCondensedFont(UIFont *font)
   return (CTFontGetSymbolicTraits((CTFontRef)font) & kCTFontTraitCondensed) != 0;
 }
 
-// Everything the comparison below reads — the PostScript name, the symbolic
-// traits, the weight trait — belongs to the face rather than to the size it was
-// asked for, so the faces can be compared at any size and the winner cached
-// without one.
+// Face properties are size-independent, so faces can be compared at any size and cached without one.
 static constexpr CGFloat kFaceProbeFontSize = 12;
 
-/*
- * The PostScript name of the face in this family closest to the requested weight
- * and slant, or nil if the family has no faces at all.
- *
- * Based on: https://github.com/facebook/react-native/blob/main/packages/react-native/React/Views/RCTFont.mm
- *
- *   - RN's `didFindFont` guard is dropped. It exists so RN can skip the loop
- *     after its system-font special case, which this function is never reached
- *     for — an empty fontFamily takes the systemFontOfSize: path in
- *     plainTextFont instead.
- *   - `isCondensed` is a parameter rather than derived from a "SystemCondensed"
- *     family name, which this library has no equivalent of. The top-level
- *     family lookup in resolvedFaceName passes NO, matching RN's own default
- *     for a fresh (font == nil) update; the face-name fallback below passes
- *     the matched face's actual trait, as RN derives it from that same face.
- *   - RN keeps the winning UIFont; this keeps its name, and the caller
- *     instantiates it at the size actually wanted.
- *
- * Deliberately not UIFontDescriptorFamilyAttribute + UIFontWeightTrait, which
- * is what this replaced: descriptor matching leans on the very weight trait
- * that RCTGetFontWeight goes out of its way to consult last, and an unmatched
- * descriptor resolves to the system font instead of failing — the silent
- * fallback this whole path exists to avoid.
- */
+// The PostScript name of the closest face to the requested weight/slant, or nil if the family has no faces; mirrors RCTFont.mm's selection but returns the name so the caller can instantiate it at the actual size wanted.
 static NSString *closestFaceNameInFamily(
     NSArray<NSString *> *names,
     RCTFontWeight fontWeight,
@@ -95,25 +55,18 @@ static NSString *closestFaceNameInFamily(
     return nil;
   }
 
-  // One face is the answer either way: the loop picks it if it matches, and the
-  // fallback below picks it if it doesn't. Skipping the loop skips the whole cost
-  // of the scan, and one face is the usual shape of a custom or expo font.
+  // Only face in the family — also the common shape of a custom or expo font.
   if (names.count == 1) {
     return names[0];
   }
 
   NSString *name = nil;
 
-  // EXPENSIVE: instantiates a UIFont, queries two symbolic traits and computes a
-  // weight for every candidate face — scales with family size. Not per node:
-  // resolvedFaceName caches the result per family/weight/style, so this only runs
-  // on a cache miss.
-  // Get the closest font that matches the given weight for the fontFamily
+  // EXPENSIVE: instantiates a UIFont and computes traits/weight per candidate face, scaling with family size; only runs on a cache miss, since resolvedFaceName caches per family/weight/style.
   CGFloat closestWeight = INFINITY;
   for (NSString *candidate in names) {
     UIFont *match = [UIFont fontWithName:candidate size:kFaceProbeFontSize];
-    // Guarded, unlike RN, only because the trait calls take a CTFontRef, where
-    // nil crashes rather than returning nil.
+    // Guarded (unlike RN): the trait calls take a CTFontRef, which crashes on nil.
     if (match == nil) {
       continue;
     }
@@ -126,13 +79,11 @@ static NSString *closestFaceNameInFamily(
     }
   }
 
-  // If we still don't have a match at least return the first font in the fontFamily
-  // This is to support built-in font Zapfino and other custom single font families like Impact
+  // Falls back to the first face, for single-face families like Zapfino.
   return name ?: names[0];
 }
 
-// The feature settings for these variant names, or nil when none of them
-// resolve — the caller skips the descriptor round-trip in that case.
+// Feature settings for these variant names, or nil if none resolve, so the caller can skip the descriptor round-trip.
 static NSArray<NSDictionary *> *fontFeatureSettings(const std::vector<std::string> &fontVariant)
 {
   if (fontVariant.empty()) {
@@ -151,21 +102,12 @@ static NSArray<NSDictionary *> *fontFeatureSettings(const std::vector<std::strin
   return features.count > 0 ? features : nil;
 }
 
-// The variation axes for a fontVariationSettings string, in the form
-// kCTFontVariationAttribute takes, or nil when it sets none. Parsing (including
-// the "normal" special case) lives in PlainTextFontVariations.cpp; this only
-// bridges the result.
+// Parses a fontVariationSettings string into the axes kCTFontVariationAttribute takes, or nil when it sets none; parsing itself lives in PlainTextFontVariations.cpp.
 static NSDictionary<NSNumber *, NSNumber *> *fontVariations(const std::string &settings)
 {
   std::optional<std::vector<PlainTextFontVariationAxis>> axes = parseFontVariations(settings);
   if (!axes.has_value()) {
-    // Returning nil is indistinguishable from "this string sets no axes", so
-    // without this the font silently renders at its default instance. Mirrors
-    // the FLog.w Android emits from the same failure.
-    //
-    // Not per render: plainTextFont returns from the cache before reaching here,
-    // so a given bad string warns once per font configuration it appears with,
-    // and again only if the entry is evicted under memory pressure.
+    // Warns because nil is indistinguishable from "sets no axes" and a bad string would otherwise silently render at the font's default instance; mirrors Android's FLog.w.
     RCTLogWarn(@"PlainText: invalid fontVariationSettings: \"%s\"", settings.c_str());
     return nil;
   }
@@ -181,22 +123,12 @@ static NSDictionary<NSNumber *, NSNumber *> *fontVariations(const std::string &s
   return variations;
 }
 
-// The key carries two continuous inputs — fontSize, and any axis in
-// fontVariationSettings — so an app animating or otherwise sweeping either would
-// grow this cache without limit; NSCache's own eviction only arrives with memory
-// pressure, and then drops everything. Well above any real type scale, times
-// weights, styles and variants.
+// fontSize and fontVariationSettings axes are continuous, so an animating app would grow this cache unboundedly without a limit; 256 comfortably covers any real type scale × weight × style × variant combo.
 static constexpr NSUInteger kFontCacheCountLimit = 256;
 
 /*
- * The face name to instantiate for this fontFamily, or nil if it resolves to
- * nothing and the caller should fall back to the system font.
- *
- * `fontWeightProp` is the raw prop string, not just the weight it maps to: an
- * empty string is RN's own signal that fontWeight wasn't set (RCTFont.mm reads
- * it from a possibly-nil JSON value), and the face-name fallback below needs
- * that signal to know whether to keep the caller's weight or take the matched
- * face's own.
+ * The face name to instantiate for this fontFamily, or nil to fall back to the system font.
+ * `fontWeightProp` is the raw prop string (empty means RN's fontWeight was unset), needed below to decide whether to keep the caller's weight or the matched face's.
  */
 static NSString *computeFaceName(
     const std::string &fontFamily,
@@ -215,31 +147,16 @@ static NSString *computeFaceName(
     return faceName;
   }
 
-  // Not a registered family, so take it for the face / PostScript name it
-  // probably is ("OpenRunde-Bold" rather than "Open Runde"). An expo-font
-  // alias lands in the branch above instead: the swizzled
-  // +fontNamesForFamilyName: answers it with a one-element array.
+  // Not a registered family — try it as a face/PostScript name instead.
   UIFont *namedFont = [UIFont fontWithName:familyName size:kFaceProbeFontSize];
   if (namedFont == nil) {
-    // Same message and same level as RCTFont.mm, from the same branch, so a
-    // typo reads identically whether it hit <PlainText> or <Text>. Info
-    // rather than warn keeps it out of LogBox, which is RN's call, not ours.
+    // Same message and level as RCTFont.mm so a typo reads identically for <PlainText> and <Text>; Info, not Warn, deliberately, to keep it out of LogBox.
     RCTLogInfo(@"Unrecognized font family '%@'", familyName);
     return nil;
   }
 
-  // RN doesn't stop here either ("we'll do what was meant, not what was
-  // said"): it re-derives the real family from this face and searches that
-  // family for the closest match to what the props actually ask for, so
-  // "Georgia-Bold" + fontStyle: "italic" lands on the family's real
-  // BoldItalic face instead of a synthesized slant on Georgia-Bold.
-  //
-  // A prop that wasn't set inherits the matched face's own trait rather than
-  // a hardcoded default, exactly as RCTFont.mm's `style ? isItalic :
-  // isItalicFont(font)` / `weight ? fontWeight : RCTGetFontWeight(font)` do.
-  // Both branch on whether the *raw* prop was passed, not on the converted
-  // value, so fontStyleProp/fontWeightProp (empty means "not passed") decide
-  // the fallback rather than isItalic/fontWeight themselves.
+  // RN re-derives the real family from the matched face and re-searches for the closest match, so "Georgia-Bold" + italic lands on the real BoldItalic face rather than a synthesized slant.
+  // An unset prop inherits the matched face's own trait instead of a hardcoded default, matching RCTFont.mm's `style ? isItalic : isItalicFont(font)` / `weight ? fontWeight : RCTGetFontWeight(font)`.
   NSString *realFamilyName = namedFont.familyName;
   BOOL faceIsItalic = isItalicFont(namedFont);
   BOOL faceIsCondensed = isCondensedFont(namedFont);
@@ -251,9 +168,8 @@ static NSString *computeFaceName(
       ?: familyName;
 }
 
-// Cached apart from the font itself because the answer doesn't depend on
-// fontSize (see kFaceProbeFontSize), so a new size costs one font
-// instantiation instead of another scan of the family.
+// Cached separately from the font since face resolution doesn't depend on fontSize, so a new size costs one instantiation, not another family scan.
+// SYNC: `faceKey` (PlainTextFontCacheKey.h) must cover every input this and computeFaceName read.
 static NSString *resolvedFaceName(
     const std::string &fontFamily,
     const std::string &faceKey,
@@ -279,18 +195,12 @@ CGFloat plainTextFontSizeMultiplier(const RNPlainTextProps &props, CGFloat baseM
   return clampFontSizeMultiplier(props.allowFontScaling, props.maxFontSizeMultiplier, baseMultiplier);
 }
 
-// The UIFont for these props at this already-scaled fontSize and faceKey —
-// the resolution plainTextFont's cache wraps. Never nil: an unresolvable
-// fontFamily falls back to the system font, since both of plainTextFont's
-// callers would otherwise silently measure and draw with different defaults.
+// The resolution plainTextFont's cache wraps, for an already-scaled fontSize and faceKey.
 static UIFont *resolvedFont(const RNPlainTextProps &props, const std::string &faceKey, CGFloat fontSize, bool italic)
 {
   RCTFontWeight weight = fontWeightFromProp(props.fontWeight);
   UIFont *font = nil;
-  // "System" is RCTFont.mm's own special case for the system font by name
-  // (RN's <Text> accepts it the same way), so it's excluded here rather than
-  // sent through the family lookup below, where no family is actually
-  // registered as "System" and it would only fail and log.
+  // "System" is RCTFont.mm's special-case name for the system font (no family is actually registered as "System"), so it's excluded here rather than failing the family lookup and logging.
   if (!props.fontFamily.empty() && props.fontFamily != "System") {
     NSString *faceName = resolvedFaceName(props.fontFamily, faceKey, props.fontWeight, weight, props.fontStyle);
     if (faceName != nil) {
@@ -298,51 +208,36 @@ static UIFont *resolvedFont(const RNPlainTextProps &props, const std::string &fa
     }
   }
 
-  // No fontFamily (or "System"), or one naming neither a known family nor a
-  // known face — the latter is RCTFont.mm's fallback too. Everything
-  // downstream needs a real font: the italic round-trip below, and both of
-  // plainTextFont's callers, which read font.lineHeight to cap numberOfLines.
+  // Falls back to the system font when there's no fontFamily (or "System", or an unrecognized name) — matching RCTFont.mm — since a real font is required downstream (the italic round-trip below, and callers reading font.lineHeight).
   if (font == nil) {
     font = [UIFont systemFontOfSize:fontSize weight:weight];
   }
 
-  // Only when the resolved face isn't already italic — closestFaceNameInFamily
-  // prefers the family's real italic cut, which beats a synthesized slant.
+  // Only when the resolved face isn't already italic — a real italic cut
+  // beats a synthesized slant.
   if (italic && !isItalicFont(font)) {
     UIFontDescriptor *italicDescriptor = [font.fontDescriptor
         fontDescriptorWithSymbolicTraits:font.fontDescriptor.symbolicTraits | UIFontDescriptorTraitItalic];
     font = [UIFont fontWithDescriptor:italicDescriptor size:fontSize] ?: font;
   }
 
-  // Last, as in RCTFont.mm: the features are added to whatever descriptor the
-  // family/weight/italic resolution ended up with.
+  // Added last, as in RCTFont.mm, on top of whatever family/weight/italic resolution produced.
   NSArray<NSDictionary *> *features = fontFeatureSettings(props.fontVariant);
   if (features != nil) {
+    // EXPENSIVE: a descriptor round trip (fontVariant's cache-miss cost, docs/agent/performance.md).
     UIFontDescriptor *featureDescriptor = [font.fontDescriptor
         fontDescriptorByAddingAttributes:@{UIFontDescriptorFeatureSettingsAttribute : features}];
     font = [UIFont fontWithDescriptor:featureDescriptor size:fontSize] ?: font;
   }
 
-  // Variable-font axes, three things worth knowing:
-  //
-  // - Last of all, so an axis wins over whatever the family/weight resolution
-  //   picked. CSS gives font-variation-settings the same precedence over
-  //   font-weight, and a variable family's 'wght' axis is the more specific
-  //   answer to the same question.
-  // - UILabel, UIFont and UIFontDescriptor have no variations API between them:
-  //   this lives one layer down, in CoreText, as a font descriptor attribute. Set
-  //   through CTFontCreateCopyWithAttributes rather than
-  //   -[UIFont fontWithDescriptor:size:], which has been reported to drop
-  //   kCTFontVariationAttribute since iOS 14
-  //   (developer.apple.com/forums/thread/669246). CTFont and UIFont are toll-free
-  //   bridged, so the result is a UIFont either way.
-  // - Only a font whose file carries an fvar table can move. The system font's
-  //   own axes are private, so this needs a registered variable family to do
-  //   anything, and silently does nothing without one.
+  // Variable-font axes, applied last so they win over family/weight resolution, matching CSS's font-variation-settings precedence over font-weight.
+  // Set via CTFontCreateCopyWithAttributes, not -[UIFont fontWithDescriptor:size:], which has been reported to drop kCTFontVariationAttribute since iOS 14 (developer.apple.com/forums/thread/669246); CTFont/UIFont are toll-free bridged, so the result is a UIFont either way.
+  // Only a font whose file carries an fvar table can move; the system font's axes are private, so this silently no-ops without a registered variable family.
   NSDictionary<NSNumber *, NSNumber *> *variations = fontVariations(props.fontVariationSettings);
   if (variations != nil) {
     CTFontDescriptorRef variationDescriptor = CTFontDescriptorCreateWithAttributes(
         (__bridge CFDictionaryRef) @{(__bridge id)kCTFontVariationAttribute : variations});
+    // EXPENSIVE: a CTFont copy (fontVariationSettings' cache-miss cost, docs/agent/performance.md).
     UIFont *variedFont = (__bridge_transfer UIFont *)CTFontCreateCopyWithAttributes(
         (__bridge CTFontRef)font, font.pointSize, NULL, variationDescriptor);
     CFRelease(variationDescriptor);
@@ -354,6 +249,7 @@ static UIFont *resolvedFont(const RNPlainTextProps &props, const std::string &fa
   return font;
 }
 
+// SYNC: `fontCacheKey` (PlainTextFontCacheKey.h) must cover every input this and resolvedFont read.
 UIFont *plainTextFont(const RNPlainTextProps &props, CGFloat fontSizeMultiplier)
 {
   static PlainTextFontCache<NSString *, UIFont *> *resolvedFontsCache =

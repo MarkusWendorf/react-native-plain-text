@@ -228,7 +228,8 @@ not by node count. With two live surfaces the `Context` identity check alternate
 per commit rather than per node (Fabric serializes layout per thread, so every
 call within one pass shares a surface), so the reuse win holds there too.
 
-Reuse forced three fixes, all documented as invariants in AGENTS.md: every
+Reuse forced three fixes, all documented as invariants in
+[sync-points.md](sync-points.md#the-reused-measuring-view): every
 size-affecting prop must be set unconditionally on each call; nothing in the
 view may derive new state from its own current state (this is why
 `updateTypeface()` resolves against a fixed `baseTypeface` — it was leaking one
@@ -635,6 +636,8 @@ So the guard would trade a field, and the field-ordering hazard in
 [sync-points.md](sync-points.md#construction-time-state), for a saved
 `nullLayouts()`. Revisit only if a profile shows layout invalidation in this path.
 
+## Open opportunities
+
 Nothing here is blocked; each is waiting on a trigger or on evidence that it
 matters. Ordered by expected value if its trigger fires.
 
@@ -731,15 +734,13 @@ mount cost after the fixes: ~300 µs.
 ## Sync points these optimizations introduced
 
 Three of the changes above traded automatic correctness for speed, and the cost
-is manual coupling that nothing verifies. All are listed with their failure
-modes in AGENTS.md under _Manual sync points_, and marked in code with `// SYNC:`
-comments — `grep -rn "SYNC:" src cpp ios android`.
-
-| Optimization                                  | What must now be kept in sync                                                                                                   |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Serializing only non-default props across JNI | The generated `Props.h` default, the C++ omission condition, and the Kotlin fallback — three places, one value                  |
-| Reusing the off-screen measuring view         | Every size-affecting prop must be set on every `measure()` call, and no view state may derive from the view's own current state |
-| Comparing measurement inputs on clone         | `measurementInputsEqual` must list every prop either `measureContent` reads                                                     |
+is manual coupling that nothing verifies: serializing only non-default props
+across JNI ([the three-way default contract](sync-points.md#the-three-way-default-contract)),
+reusing the off-screen measuring view ([sync-points.md](sync-points.md#the-reused-measuring-view)),
+and comparing measurement inputs on clone
+([intrinsic-sizing.md](intrinsic-sizing.md#measurement-invalidation-both-platforms)).
+Each is marked in code with `// SYNC:` comments —
+`grep -rn "SYNC:" src cpp ios android`.
 
 The shared failure mode is the same in all three: correct on first render, wrong
 after an update, and silent in between. Worth knowing before optimizing further

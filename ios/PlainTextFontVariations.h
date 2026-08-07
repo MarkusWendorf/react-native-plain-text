@@ -1,10 +1,9 @@
 /*
- * The fontVariationSettings parser, split out from PlainTextFont.mm because it
- * is plain C++ that touches nothing Apple: a string in, variable-font axes out.
+ * The fontVariationSettings parser: a string in, variable-font axes out.
+ * Split out from PlainTextFont.mm since it touches nothing Apple.
  *
- * The grammar it accepts is Android's, from
- * FontVariationAxis.fromFontVariationSettings, so the same prop value means the
- * same thing on both platforms. See the .cpp for where that pins the details.
+ * Grammar is Android's (FontVariationAxis.fromFontVariationSettings), so the
+ * same prop value means the same thing on both platforms.
  */
 
 #pragma once
@@ -26,21 +25,16 @@ struct PlainTextFontVariationAxis {
 };
 
 /*
- * The axes `settings` sets, in the order it lists them, or nullopt when it is
- * malformed.
+ * The axes `settings` sets, in order, or nullopt when malformed.
  *
- * All-or-nothing on a malformed string, matching Android, where
- * fromFontVariationSettings throws on the first bad entry and TextView applies
- * nothing rather than the entries that did parse. An empty string is not
- * malformed: it parses to no axes, hence the distinction between an empty
- * vector and nullopt. Callers are expected to surface nullopt, since applying
- * no axes otherwise looks exactly like a font with none.
+ * All-or-nothing on a malformed string, matching Android (TextView applies
+ * nothing rather than the entries that did parse). An empty string parses to
+ * no axes, hence nullopt vs. empty vector — callers must surface nullopt,
+ * since applying no axes otherwise looks identical to a font with none.
  *
- * "normal" — CSS's own spelling of "sets no axes" — is also accepted, trimmed
- * and case-insensitively, as an alias for the empty string. Android's own
- * fromFontVariationSettings has no such case; RN's Android wrapper adds it
- * one layer above that raw parser, and this does the same one layer above
- * this one.
+ * "normal" (CSS's spelling of "sets no axes") is also accepted, trimmed and
+ * case-insensitively, as an alias for the empty string, matching RN's
+ * Android wrapper.
  */
 std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const std::string &settings);
 

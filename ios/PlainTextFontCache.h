@@ -1,18 +1,11 @@
 /*
- * A key -> object cache that invalidates itself whenever fonts are
- * registered or unregistered at runtime (expo-font,
- * CTFontManagerRegisterFontsForURL), since that changes what a fontFamily
- * resolves to — RCTFont.mm clears its own family-name cache on the same
- * notification. PlainTextFont.mm's three caches (family face names, resolved
- * face name, resolved UIFont) each wrap one of these instead of repeating the
- * NSCache/notification wiring.
+ * A key -> object cache that invalidates itself when fonts are registered or
+ * unregistered at runtime, mirroring RCTFont.mm's own family-name cache
+ * invalidation. PlainTextFont.mm's three caches each wrap one of these.
  *
- * A miss runs `compute` and stores whatever it returns, nil included: nil
- * means "cache this as unresolvable" rather than "don't cache", since
- * re-deriving that a fontFamily is unresolvable costs the same font-database
- * walk (and the same log line) as deriving it the first time. Callers don't
- * need their own sentinel for this, unlike a raw NSCache, which cannot store
- * nil at all.
+ * A miss runs `compute` and stores the result, nil included: nil means
+ * "cache as unresolvable" rather than "don't cache", since a raw NSCache
+ * can't store nil at all.
  */
 
 #import <Foundation/Foundation.h>
@@ -27,8 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithCountLimit:(NSUInteger)countLimit;
 
 /*
- * `key`'s cached value. On a miss, `compute` runs once, its result is stored
- * under `key`, and that result is returned.
+ * `key`'s cached value, computing and storing it via `compute` on a miss.
  */
 - (nullable ObjectType)objectForKey:(KeyType)key orSet:(ObjectType _Nullable (^)(void))compute;
 

@@ -21,9 +21,8 @@ std::string trim(const std::string &value)
 
 bool caseInsensitiveEquals(const std::string &a, const std::string &b)
 {
-  // The size check is what lets this use the plain three-iterator std::equal
-  // below rather than the four-iterator, differing-length-ranges overload,
-  // and rejects a length mismatch before comparing a single character.
+  // Size check first: the three-iterator std::equal below doesn't stop at
+  // the shorter string's end on its own.
   return a.size() == b.size() &&
       std::equal(a.begin(), a.end(), b.begin(), [](unsigned char x, unsigned char y) {
         return std::tolower(x) == std::tolower(y);

@@ -11,11 +11,7 @@
 
 using namespace facebook::react;
 
-// The accessibility font-size multiplier to apply, mirroring RN's
-// RCTEffectiveFontSizeMultiplierFromTextAttributes. This runs on the main
-// thread from updateProps, so the base scale is read straight from
-// RCTFontSizeMultiplier(); the shadow node passes the layout context's
-// fontSizeMultiplier, which the Fabric surface seeds from the same value.
+// Mirrors RN's RCTEffectiveFontSizeMultiplierFromTextAttributes, reading RCTFontSizeMultiplier() directly since this runs on the main thread.
 static CGFloat RNPlainTextFontSizeMultiplier(const RNPlainTextProps &props)
 {
     return plainTextFontSizeMultiplier(props, RCTFontSizeMultiplier());
@@ -37,9 +33,7 @@ static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAli
     }
 }
 
-// textDecorationLine is a space-joined set of "underline"/"line-through" (see
-// PlainTextViewNativeComponent.ts on why it isn't a codegen enum). Mirrors RN
-// <Text>: substring presence toggles each decoration independently.
+// textDecorationLine is a space-joined set of "underline"/"line-through"; substring presence toggles each independently, mirroring RN <Text>.
 static BOOL RNPlainTextHasUnderline(const std::string &textDecorationLine)
 {
     return textDecorationLine.find("underline") != std::string::npos;
@@ -64,19 +58,9 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     }
 }
 
-// UILabel vertically centers its text when its frame is taller than the text
-// (e.g. an explicit height). RN's <Text> on iOS top-aligns instead, and treats
-// vertical alignment as Android-only, so top-align here to match <Text>. This
-// is why textAlignVertical is not applied on iOS: RN's iOS text has no vertical
-// alignment knob — it is always pinned to the top.
+// UILabel vertically centers an overtall frame, but RN <Text> on iOS always top-aligns, so this subclass forces top alignment (textAlignVertical is Android-only).
 @interface RNPlainTextLabel : UILabel
-// When lineHeight is larger than the font's natural line height, the extra
-// space UILabel/TextKit adds per line falls entirely below the glyphs, so the
-// text sits high in its line box. verticalTextShift (set in
-// applyContentFromProps) moves the whole drawn block — glyphs, underline and
-// strikethrough together — up by half that extra, centering each line without
-// touching NSBaselineOffsetAttributeName (which only shifts glyphs, leaving
-// decorations drawn at the untouched line-fragment baseline).
+// When lineHeight exceeds the font's line height, TextKit's extra per-line space falls below the glyphs; verticalTextShift moves the whole drawn block (glyphs plus underline/strikethrough) up by half that extra, unlike NSBaselineOffsetAttributeName which shifts only glyphs.
 @property (nonatomic) CGFloat verticalTextShift;
 @end
 
@@ -96,18 +80,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
 @implementation RNPlainText {
     RNPlainTextLabel * _label;
-    // Forces the first -updateProps after construction to apply _label's
-    // content/numberOfLines/lineBreakMode unconditionally, bypassing the props
-    // diff. Needed once: _props starts out holding defaultProps (so the diff
-    // has something to compare against — see -initWithFrame:), but _label
-    // itself starts out with UILabel's own factory defaults, which don't match
-    // what defaultProps renders as (e.g. UILabel's built-in 17pt font vs
-    // defaultProps.fontSize). A view whose real props equal the defaults would
-    // otherwise see "no change" and never apply, keeping the mismatched look.
-    //
-    // Recycling doesn't need this: nothing between one instance's last
-    // -updateProps and the next touches _label, so _label already matches
-    // _props exactly, and the plain diff below is sufficient on its own.
+    // Forces the first -updateProps to apply unconditionally, since _label starts with UILabel's factory defaults (e.g. 17pt font) rather than _props' defaults, so a no-op diff would otherwise skip applying them.
     BOOL _forceApplyProps;
 }
 
@@ -120,25 +93,13 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 {
   if (self = [super initWithFrame:frame]) {
     _label = [[RNPlainTextLabel alloc] init];
-    // UILabel defaults to NSLineBreakStrategyStandard (the "avoid orphans"
-    // look-ahead added in iOS 14), which can wrap a word to the next line
-    // earlier than plain greedy wrapping would. measureContent's
-    // boundingRectWithSize: call has no such behavior — NSParagraphStyle's own
-    // default is .none — so it predicts a plain wrap; matching the label to
-    // that keeps the mounted view's wrap points in sync with what was
-    // measured (and with RN <Text>, which wraps the same way).
+    // UILabel's default NSLineBreakStrategyStandard wraps earlier than measureContent's boundingRectWithSize:, so disable it to match measurement and RN <Text>.
     _label.lineBreakStrategy = NSLineBreakStrategyNone;
 
-    // _props must hold RNPlainTextProps from the start: -updateProps and
-    // -traitCollectionDidChange both static_pointer_cast it, and the base class
-    // seeds it with a plain ViewProps.
+    // _props must hold RNPlainTextProps from the start since -updateProps and -traitCollectionDidChange both static_pointer_cast it.
     static const auto defaultProps = std::make_shared<const RNPlainTextProps>();
     _props = defaultProps;
 
-    // Nothing else about _label is seeded here — _forceApplyProps (see its
-    // declaration above) makes the first -updateProps apply the whole content
-    // unconditionally, so there is nothing for a diff against defaultProps to
-    // get wrong in the meantime.
     _forceApplyProps = YES;
 
     self.contentView = _label;
@@ -147,13 +108,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
   return self;
 }
 
-// UILabel has no plain properties for lineHeight or letterSpacing, so once
-// either is set the text/font/color/alignment all have to be expressed through
-// an NSAttributedString. This applies whichever form is needed from the current
-// props; call it whenever any text-content prop changes.
-// SYNC: PlainTextShadowNode::measureContent must mirror every attribute set
-// here, or the measured size won't match the drawn text. The font is the one
-// exception — both sides go through plainTextFont (ios/PlainTextFont.h).
+// Once lineHeight or letterSpacing is set, text/font/color/alignment must go through an NSAttributedString since UILabel has no plain properties for them.
+// SYNC: PlainTextShadowNode::measureContent must mirror every attribute set here (font excepted, both go through plainTextFont) or measured size won't match drawn text.
 - (void)applyContentFromProps:(const RNPlainTextProps &)props
 {
     CGFloat fontSizeMultiplier = RNPlainTextFontSizeMultiplier(props);
@@ -169,15 +125,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     BOOL hasTextDecoration = hasUnderline || hasLineThrough;
 
     if (!hasLineHeight && !hasLetterSpacing && !hasTextDecoration) {
-        // Plain path: let the label carry font/color/alignment directly.
-        //
-        // Explicitly nil attributedText instead of relying on UIKit to clear
-        // it as a side effect of setting .text below — confirmed by repro
-        // that it doesn't reliably: a view recycled from an instance that had
-        // letterSpacing set (attributed path, NSKernAttributeName) into one
-        // that doesn't kept the old kerning, spacing and truncating text that
-        // should have been plain, even though every prop and _label.text were
-        // by then correct. This line is the fix.
+        // Explicitly nil attributedText: a view recycled from an attributed instance kept the old kerning/spacing even after .text and every prop were correct, so setting .text alone isn't enough.
         _label.attributedText = nil;
         _label.font = font;
         _label.textColor = color;
@@ -196,9 +144,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         attributes[NSKernAttributeName] = @(props.letterSpacing);
     }
 
-    // Underline / strikethrough. UILabel has no plain property for either, so
-    // like lineHeight/letterSpacing they force the attributed path. The line
-    // color defaults to the text color, matching RN <Text>.
+    // UILabel has no plain property for these either; line color defaults to text color, matching RN <Text>.
     if (hasUnderline) {
         attributes[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
     }
@@ -208,24 +154,15 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
     paragraphStyle.alignment = alignment;
-    // A paragraph style overrides the label's own lineBreakMode, so carry the
-    // ellipsize mode into it to keep truncation working with attributed text.
+    // A paragraph style overrides the label's own lineBreakMode, so carry ellipsizeMode into it too.
     paragraphStyle.lineBreakMode = RNPlainTextLineBreakModeFromProp(props.ellipsizeMode);
 
     CGFloat verticalTextShift = 0;
     if (hasLineHeight) {
-        // lineHeight is in points, scaled by the same accessibility multiplier
-        // as the font (mirrors RN <Text>, which multiplies lineHeight by the
-        // effective font-size multiplier); pin the line box to it.
         CGFloat lineHeight = props.lineHeight * fontSizeMultiplier;
         paragraphStyle.minimumLineHeight = lineHeight;
         paragraphStyle.maximumLineHeight = lineHeight;
-        // Center the text within the enlarged line box by shifting the whole
-        // drawn block up by half the extra space (see verticalTextShift).
-        // NSBaselineOffsetAttributeName was tried here first — it shifts
-        // glyphs only, so UILabel drew underline/strikethrough at the
-        // untouched line-fragment baseline, near the bottom of the box, far
-        // below the (shifted-up) glyphs.
+        // Shift the drawn block up by half the extra space to center it in the enlarged line box (see verticalTextShift).
         if (lineHeight >= font.lineHeight) {
             verticalTextShift = (lineHeight - font.lineHeight) / 2.0;
         }
@@ -236,16 +173,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
 }
 
-// A Dynamic Type change alone doesn't touch any prop — RCTFontSizeMultiplier()
-// is read ambiently inside applyContentFromProps — so Fabric's props diff in
-// updateProps below never fires and _label.font is left stale until something
-// else causes a remount. UIKit calls this on every view when the OS text size
-// changes, independent of Fabric, so re-derive the content from the current
-// props here to pick it up immediately.
-//
-// SYNC: PlainTextView.onConfigurationChanged is the Android counterpart, and the
-// two have to cover the same set of scaled values. See
-// docs/agent/sync-points.md.
+// A Dynamic Type change alone touches no prop, so updateProps's diff never fires; re-derive content here since UIKit calls this independent of Fabric.
+// SYNC: PlainTextView.onConfigurationChanged is the Android counterpart and must cover the same set of scaled values.
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection
 {
     [super traitCollectionDidChange:previousTraitCollection];
@@ -266,10 +195,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     const auto &oldViewProps = *std::static_pointer_cast<RNPlainTextProps const>(_props);
     const auto &newViewProps = *std::static_pointer_cast<RNPlainTextProps const>(props);
 
-    // text/font/color/textAlign/lineHeight/letterSpacing all feed a single
-    // content build (see applyContentFromProps) since they may share an
-    // attributed string; ellipsizeMode does too because it lands in that
-    // string's paragraph style when one is used.
+    // These all feed applyContentFromProps since they may share an attributed string (ellipsizeMode via its paragraph style).
     if (_forceApplyProps ||
         oldViewProps.text != newViewProps.text ||
         oldViewProps.fontSize != newViewProps.fontSize ||

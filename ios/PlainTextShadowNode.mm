@@ -12,9 +12,8 @@ namespace facebook::react {
 
 // SYNC: must mirror what the mounted UILabel renders (RNPlainText.mm's
 // applyContentFromProps), and every prop read here must appear in
-// `measurementInputsEqual` — otherwise the measured size drifts from the drawn
-// text, or goes stale after an update. The font is the one attribute that isn't
-// mirrored: both sides go through plainTextFont (PlainTextFont.h).
+// `measurementInputsEqual`, or measured size drifts from drawn text. Font is
+// the exception — both sides go through plainTextFont (PlainTextFont.h).
 Size PlainTextShadowNode::measureContent(
     const LayoutContext &layoutContext,
     const LayoutConstraints &layoutConstraints) const {
@@ -25,17 +24,12 @@ Size PlainTextShadowNode::measureContent(
     text = @"";
   }
 
-  // Accessibility font scaling. The base scale comes from the layout context
-  // (the Fabric surface seeds it from RCTFontSizeMultiplier, which is what the
-  // mounted view reads directly); the clamping on top of it is shared with that
-  // view, so the measured size matches.
+  // Base scale comes from the layout context (Fabric seeds it from
+  // RCTFontSizeMultiplier, same as the mounted view); clamping matches the
+  // mounted view so measured and drawn sizes agree.
   CGFloat fontSizeMultiplier = plainTextFontSizeMultiplier(props, layoutContext.fontSizeMultiplier);
   UIFont *font = plainTextFont(props, fontSizeMultiplier);
 
-  // Build the same attributes the mounted UILabel renders with, so the measured
-  // size matches. Kerning (letterSpacing) widens the text; a pinned line height
-  // (lineHeight) changes each line's height. Both mirror RNPlainText.mm's
-  // applyContentFromProps.
   NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
   attributes[NSFontAttributeName] = font;
 
@@ -56,22 +50,18 @@ Size PlainTextShadowNode::measureContent(
     perLineHeight = static_cast<Float>(lineHeight);
   }
 
-  // Measured with the same text engine that renders the UILabel (CoreText, via
-  // NSString drawing). Runs on the Fabric shadow thread; NSAttributedString
+  // Measured with the same engine that renders the UILabel (CoreText via
+  // NSString drawing), on the Fabric shadow thread; NSAttributedString
   // measurement is thread-safe.
   //
-  // RN reports the full constraint width, not the narrower widest-rendered-line
-  // width, whenever the text word-wrapped — only unwrapped text (a single line,
-  // or one broken up by explicit "\n"s) gets the tight width. So the two cases
-  // need different things measured, and taking them in this order means only
-  // the wrapping one needs two layouts.
-  //
-  // Unconstrained first: with no width limit the engine breaks only at hard
-  // breaks, so this width is precisely the width the text needs in order not to
-  // wrap. Deliberately asked of the same API that will do the wrapping — every
-  // cheaper stand-in has to predict CoreText's rules (trailing whitespace
-  // hanging, U+2028, font fallback) instead of inheriting them, and the ones
-  // tried measured slower anyway. See docs/agent/performance.md.
+  // RN reports the full constraint width unless the text is unwrapped (fits
+  // on one line, or only broken by explicit "\n"s), in which case it reports
+  // the tight width instead. Measuring unconstrained first tells us which
+  // case applies: with no width limit, CoreText only breaks at hard breaks,
+  // so that width is exactly what's needed to avoid wrapping. Deliberately
+  // uses the same API that does the wrapping — cheaper stand-ins have to
+  // predict CoreText's rules and measured slower in practice (see
+  // docs/agent/performance.md).
   CGRect unconstrained = [text boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
                                             options:NSStringDrawingUsesLineFragmentOrigin
                                          attributes:attributes
@@ -79,14 +69,12 @@ Size PlainTextShadowNode::measureContent(
 
   CGSize measured;
   if (unconstrained.size.width <= layoutConstraints.maximumSize.width) {
-    // Already fits, so constraining to a width it never reaches cannot change
-    // where the lines break. The constrained layout would be identical — same
-    // lines, same height — so there is nothing left to measure.
+    // Already fits, so a constraint it never reaches can't change where lines
+    // break — the constrained layout would be identical.
     measured = unconstrained.size;
   } else {
-    // It wraps, which fixes the width at the constraint by the rule above and
-    // leaves only the height unknown. Height is unbounded here so multiline
-    // text grows vertically rather than being clipped.
+    // It wraps, which fixes width at the constraint (per the rule above);
+    // height is left unbounded so multiline text grows instead of clipping.
     CGRect constrained =
         [text boundingRectWithSize:CGSizeMake(layoutConstraints.maximumSize.width, CGFLOAT_MAX)
                            options:NSStringDrawingUsesLineFragmentOrigin
@@ -100,10 +88,8 @@ Size PlainTextShadowNode::measureContent(
       .height = static_cast<Float>(std::ceil(measured.height)),
   };
 
-  // Cap the height to numberOfLines (0 = unlimited), matching the mounted
-  // UILabel's own line clamp. UILabel truncates to N lines of perLineHeight,
-  // so bound the measured height the same way; min() keeps text that already
-  // fits in fewer lines from being inflated.
+  // Cap height to numberOfLines (0 = unlimited), matching UILabel's own line
+  // clamp; min() avoids inflating text that already fits in fewer lines.
   if (props.numberOfLines > 0) {
     Float maxHeight = static_cast<Float>(std::ceil(props.numberOfLines * perLineHeight));
     size.height = std::min(size.height, maxHeight);

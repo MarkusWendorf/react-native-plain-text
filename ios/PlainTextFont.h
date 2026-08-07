@@ -1,22 +1,11 @@
 /*
  * Font resolution for <RNPlainText>, shared by the mounted view and the shadow
- * node.
+ * node so both resolve the same UIFont from the same props — otherwise the
+ * measured box and the drawn text could disagree.
  *
- * Both need the same UIFont from the same props — the view to draw with, the
- * shadow node to measure with — so any disagreement shows up as a measured box
- * that doesn't fit the drawn text. One copy makes that structural rather than a
- * sync point.
- *
- * It is also a hot path: every commit resolves a font per node on the shadow
- * thread and again on the main thread. Resolution is not free — a custom
- * fontFamily is matched face by face against the family's fonts, and italic
- * costs a second descriptor round-trip — so the results are cached, as RN does
- * for its own system fonts (RCTFont.mm, `cachedSystemFont`).
- *
- * Three caches, since only one of the three questions depends on fontSize: the
- * family's face names, the winning face per family/weight/style, and the UIFont
- * per those plus size and variants. So a new size costs one font instantiation
- * rather than another scan of the family. All three clear on
+ * Resolution is expensive, so results are cached in three caches — family face
+ * names, winning face per family/weight/style, and UIFont per face+size+variants
+ * — since only the last depends on fontSize. All three clear on
  * `kCTFontManagerRegisteredFontsChangedNotification`.
  */
 
@@ -28,34 +17,25 @@
 namespace facebook::react {
 
 /*
- * The effective accessibility font-size multiplier: `baseMultiplier` when
+ * Effective accessibility font-size multiplier: `baseMultiplier` when
  * allowFontScaling is on, clamped by maxFontSizeMultiplier when that is >= 1,
- * and 1 otherwise.
- *
- * The base differs by caller — the mounted view reads `RCTFontSizeMultiplier()`
- * on the main thread, the shadow node takes `LayoutContext::fontSizeMultiplier`
- * (which the Fabric surface seeds from the same value) — but the clamping on
- * top of it must not, hence the shared function.
+ * and 1 otherwise. Shared so the view and shadow node apply identical
+ * clamping despite reading their base multiplier from different places.
  */
 CGFloat plainTextFontSizeMultiplier(const RNPlainTextProps &props, CGFloat baseMultiplier);
 
 /*
- * The UIFont for these props, at `props.fontSize` scaled by the multiplier from
- * `plainTextFontSizeMultiplier`. Cached, keyed on the only six inputs that reach
- * UIFont: fontFamily, fontSize, fontWeight, italic, fontVariant and
+ * The UIFont for these props, at `props.fontSize` scaled by
+ * `fontSizeMultiplier`. Cached, keyed on the six inputs that reach UIFont:
+ * fontFamily, fontSize, fontWeight, italic, fontVariant and
  * fontVariationSettings.
  *
- * Takes the multiplier rather than an already-scaled size so that the rounding
- * RCTFont.mm applies to it lives in one place instead of in both callers. Nothing
- * else needs the scaled size: the font carries it, and lineHeight scales by the
- * multiplier without rounding (RN's behavior too) in each caller.
+ * Takes the multiplier rather than an already-scaled size so RCTFont.mm's
+ * rounding lives in one place instead of in both callers.
  *
- * Never nil: an unresolvable fontFamily falls back to the system font, since
- * both callers would otherwise silently measure and draw with different
- * defaults.
- *
- * Callable from any thread: UIFont and NSCache are both thread-safe, so the
- * shadow thread and the main thread share one cache.
+ * Never nil: an unresolvable fontFamily falls back to the system font, so
+ * both callers stay in sync. Callable from any thread: UIFont and NSCache are
+ * both thread-safe.
  */
 UIFont *plainTextFont(const RNPlainTextProps &props, CGFloat fontSizeMultiplier);
 

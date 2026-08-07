@@ -14,10 +14,8 @@ constexpr char kWhitespace[] = " \t\n\r\f\v";
 
 // One `"wght" 700` pair out of a fontVariationSettings string.
 //
-// The grammar is Android's, from FontVariationAxis.fromFontVariationSettings:
-// four characters in U+0020..U+007E, wrapped in single or double quotes, then a
-// number. Deliberately no laxer than that: a string this rejects is a string
-// Android rejects, so the prop can't mean two different things across platforms.
+// Grammar is Android's (FontVariationAxis.fromFontVariationSettings), no
+// laxer, so the prop can't mean different things across platforms.
 bool parseEntry(const std::string &entry, PlainTextFontVariationAxis &axis)
 {
   size_t start = entry.find_first_not_of(kWhitespace);
@@ -29,8 +27,8 @@ bool parseEntry(const std::string &entry, PlainTextFontVariationAxis &axis)
   if (quote != '\'' && quote != '"') {
     return false;
   }
-  // The tag occupies [start + 1, start + 4]; the closing quote must be at
-  // start + 5, which also proves those four characters exist.
+  // Requiring the closing quote at start+5 also proves the four tag
+  // characters at [start+1, start+4] exist.
   if (start + 5 >= entry.size() || entry[start + 5] != quote) {
     return false;
   }
@@ -47,11 +45,9 @@ bool parseEntry(const std::string &entry, PlainTextFontVariationAxis &axis)
   const char *number = entry.c_str() + start + 6;
   char *numberEnd = nullptr;
   double parsed = std::strtod(number, &numberEnd);
-  // Android runs the value through Float.parseFloat, which is close to strtod
-  // but not identical, so the edges are a judgement call rather than a match.
-  // Rejecting non-finite values is the one place worth diverging: no font has
-  // an axis at infinity, and Java would take "Infinity" and "NaN" here. See the
-  // divergence list in tests/cpp/PlainTextFontVariations.test.cpp.
+  // Android runs this through Float.parseFloat, close to strtod but not
+  // identical. Rejecting non-finite values is a deliberate divergence: no
+  // font has an axis at infinity, but Java would accept "Infinity"/"NaN" here.
   if (numberEnd == number || !std::isfinite(parsed)) {
     return false;
   }
@@ -70,16 +66,11 @@ bool parseEntry(const std::string &entry, PlainTextFontVariationAxis &axis)
 
 std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const std::string &settings)
 {
-  // "normal" is CSS's own spelling of "sets no axes" (the property's initial
-  // value), not a shape fromFontVariationSettings itself recognizes — RN's
-  // own Android wrapper (ReactTypefaceUtils.parseFontVariationSettings)
-  // special-cases it the same way, one layer above the raw parser. Compared
-  // trimmed, but the comparison is the only thing that sees the trimmed
-  // form: the string this goes on to parse below is always the original,
-  // un-trimmed one. parseEntry already tolerates surrounding whitespace on a
-  // real entry, so pre-trimming there would buy nothing and would cost
-  // something elsewhere — it would turn a whitespace-only string, which the
-  // grammar below rejects, into "", which it accepts as no axes.
+  // "normal" is CSS's spelling of "sets no axes", not something
+  // fromFontVariationSettings itself recognizes — RN's Android wrapper
+  // special-cases it the same way. Compared trimmed, but only the comparison
+  // sees the trimmed form: pre-trimming here would turn a whitespace-only
+  // string (rejected by the grammar) into "" (accepted as no axes).
   if (caseInsensitiveEquals(trim(settings), "normal")) {
     return std::vector<PlainTextFontVariationAxis>{};
   }
@@ -89,15 +80,10 @@ std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const
     return axes;
   }
 
-  // Android's parser reads the comma as the value terminator and then runs off the
-  // end of the string, so `"wght" 700,` is one axis there. Splitting on commas
-  // would instead produce an empty final entry and drop every axis in the string,
-  // leaving the same prop value varied on one platform and not the other, with
-  // nothing in the UI to say why. So a trailing comma ends the list here too.
-  //
-  // Only a trailing one. A leading or interior empty entry leaves Android's scanner
-  // on a comma that is neither whitespace nor a quote, which throws, so both
-  // platforms reject those.
+  // Android's parser reads the comma as the value terminator and runs off
+  // the string's end, so `"wght" 700,` is one axis there. A trailing comma
+  // ends the list here too, to match — only a trailing one, since a leading
+  // or interior empty entry throws on Android too.
   size_t lastCharacter = settings.find_last_not_of(kWhitespace);
   bool endsWithComma = lastCharacter != std::string::npos && settings[lastCharacter] == ',';
 
@@ -106,7 +92,6 @@ std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const
     size_t separator = settings.find(',', position);
     size_t end = separator == std::string::npos ? settings.size() : separator;
 
-    // The segment after the last comma, which `endsWithComma` says is blank.
     if (separator == std::string::npos && endsWithComma) {
       break;
     }

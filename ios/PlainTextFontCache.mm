@@ -13,8 +13,8 @@
     _cache.countLimit = countLimit;
 
     // __weak would race +removeAllObjects against -dealloc for no benefit:
-    // every instance is held in a static local for the process lifetime (see
-    // PlainTextFont.mm), so it, and this observer, never gets torn down.
+    // this instance lives in a static local for the process lifetime, so it
+    // and this observer are never torn down.
     NSCache<NSString *, id> *cache = _cache;
     [NSNotificationCenter.defaultCenter
         addObserverForName:(NSNotificationName)kCTFontManagerRegisteredFontsChangedNotification

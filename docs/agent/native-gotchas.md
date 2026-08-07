@@ -76,7 +76,8 @@ Learned the hard way. Most of these cost an afternoon the first time.
   matches what actually gets drawn; matching `NSLayoutManager`/TextKit instead
   would fix this one shape while risking disagreement with the mounted label
   everywhere else. See
-  [performance.md](performance.md#L459-468) for the rejected alternative.
+  [performance.md](performance.md#replacing-ioss-second-boundingrectwithsize-with-a-cheaper-wrap-test)
+  for the rejected alternative.
 
 - **Under the New Architecture, RN `<Text>` supports a narrower `fontVariant` set
   than its own types advertise — on both platforms.** The C++ `FontVariant` enum

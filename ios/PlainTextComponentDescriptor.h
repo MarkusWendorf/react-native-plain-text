@@ -7,10 +7,10 @@
 namespace facebook::react {
 
 /*
- * `ComponentDescriptor` for <RNPlainText>, built on our measuring
- * `PlainTextShadowNode` instead of the codegen-generated shadow node.
- * `RNPlainText.mm` registers this (via `componentDescriptorProvider`) in place
- * of the generated descriptor, which is what gives the component its measure fn.
+ * `ComponentDescriptor` for <RNPlainText>, built on `PlainTextShadowNode`
+ * instead of the codegen-generated shadow node so the component gets a
+ * measure function. `RNPlainText.mm` registers this via
+ * `componentDescriptorProvider` in place of the generated descriptor.
  */
 using PlainTextComponentDescriptor =
     ConcreteComponentDescriptor<PlainTextShadowNode>;

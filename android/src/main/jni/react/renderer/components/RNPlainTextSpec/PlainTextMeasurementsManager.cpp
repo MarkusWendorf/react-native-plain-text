@@ -26,8 +26,8 @@ Size PlainTextMeasurementsManager::measure(
               jfloat,
               jfloat)>("measure");
 
-  // Held as a global ref rather than built per call: make_jstring allocates a
-  // Java String, and this one is the same for every node.
+  // Held as a global ref rather than built per call: make_jstring allocates a Java
+  // String, and this one is the same for every node.
   static const auto componentName = make_global(make_jstring("RNPlainText"));
 
   auto minimumSize = layoutConstraints.minimumSize;
@@ -37,14 +37,13 @@ Size PlainTextMeasurementsManager::measure(
   // RNPlainTextManager.measure reads back to size an off-screen TextView.
   // (AndroidSwitch passes null here — its size is prop-independent; ours isn't.)
   //
-  // Only non-default props are serialized: each entry costs a folly::dynamic
-  // insert and a JNI-visible map slot per node, and typical usage sets two or
-  // three.
+  // Only non-default props are serialized, since each entry costs a folly::dynamic
+  // insert and a JNI-visible map slot per node.
   //
   // SYNC: that makes the defaults a three-way contract — the value in each
   // condition below, the default in the generated Props.h, and the fallback in
-  // RNPlainTextManager.measure() for the same key. A mismatch silently measures
-  // at the wrong size, since an omitted key means "default", not "not set".
+  // RNPlainTextManager.measure() for the same key. A mismatch silently measures at
+  // the wrong size, since an omitted key means "default", not "not set".
   folly::dynamic serializedProps = folly::dynamic::object;
   if (!props.text.empty()) {
     serializedProps["text"] = props.text;
@@ -62,8 +61,7 @@ Size PlainTextMeasurementsManager::measure(
     serializedProps["fontStyle"] = props.fontStyle;
   }
   if (!props.fontVariant.empty()) {
-    // A dynamic array, so it arrives as a ReadableArray — what RN's own
-    // ReactTypefaceUtils.parseFontVariant takes on the other side.
+    // Arrives as a ReadableArray, what ReactTypefaceUtils.parseFontVariant takes.
     folly::dynamic fontVariant = folly::dynamic::array;
     for (const auto &variant : props.fontVariant) {
       fontVariant.push_back(variant);

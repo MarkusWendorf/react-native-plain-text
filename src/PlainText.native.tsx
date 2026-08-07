@@ -2,21 +2,14 @@ import { StyleSheet, type AccessibilityProps, type StyleProp, type TextStyle } f
 import PlainTextViewNativeComponent from './PlainTextViewNativeComponent';
 
 // RN's TextStyle plus the one text style it has no entry for.
-//
-// - `fontVariationSettings` is a style rather than a prop because that is the
-//   shape RN itself reached for, twice: facebook/react-native#44685 (iOS) and
-//   #44667 (Android) both added it to StyleSheetTypes and threaded it through
-//   TextAttributes. Neither merged, so the key never shipped and the type has to
-//   be widened here.
-// - Widened rather than replaced, so anything already typed as TextStyle stays
-//   assignable, and the key disappears from here without a break if RN adds it.
+// `fontVariationSettings` is a style rather than a prop because two upstream
+// attempts to add it (facebook/react-native#44685, #44667) never merged, so
+// the type is widened here instead. Widened, not replaced, so a plain
+// TextStyle stays assignable and this can be dropped if RN adds the key.
 export type PlainTextStyle = TextStyle & { fontVariationSettings?: string };
 
-// Accessibility, testID, and nativeID/id are all part of RN's ViewProps, which
-// the native component's codegen spec extends — so the base native view
-// (RCTViewComponentView on iOS, BaseViewManager on Android) already applies
-// them. They just need forwarding from here, which the `...accessibilityProps`
-// rest below does. This mirrors RN <Text>'s accessibility surface.
+// Accessibility, testID, and nativeID/id are ViewProps that the native view
+// already applies; `...accessibilityProps` just forwards them through.
 export type PlainTextProps = AccessibilityProps & {
   children?: string;
   style?: StyleProp<PlainTextStyle>;
@@ -29,10 +22,8 @@ export type PlainTextProps = AccessibilityProps & {
   id?: string;
 };
 
-// RN <Text> supports both the Android-specific `textAlignVertical` and the
-// cross-platform `verticalAlign` style. When both are set, `verticalAlign`
-// wins (RN applies it as an override), and its 'middle' value maps to the
-// native prop's 'center'. Mirror that here so the native side sees one value.
+// verticalAlign wins over textAlignVertical when both are set (matches RN
+// <Text>), and its 'middle' maps to the native prop's 'center'.
 function resolveTextAlignVertical(
   textAlignVertical: TextStyle['textAlignVertical'],
   verticalAlign: TextStyle['verticalAlign']
@@ -43,18 +34,11 @@ function resolveTextAlignVertical(
   return textAlignVertical;
 }
 
-// Module scope so the string path doesn't allocate a RegExp per call: a regex
-// literal evaluates to a new object every time control reaches it.
 const FONT_VARIANT_SEPARATORS = /[\s,]+/;
 
-// RN types fontVariant as either an array of variant names or a CSS-style
-// `font-variant` string, and accepts both (ReactCommon's
-// parseUnprocessedFontVariant). The native prop takes only the array, so split
-// the string form on the separators CSS allows — the token names are the same
-// either way, so nothing else has to know which form arrived.
-//
-// The array form is returned as-is rather than copied, so the common case adds no
-// allocation and the prop keeps its identity across renders.
+// RN accepts fontVariant as either an array or a CSS-style string; the native
+// prop only takes the array, so the string form is split here. The array form
+// is returned as-is (not copied) to avoid allocating in the common case.
 function resolveFontVariant(fontVariant: TextStyle['fontVariant']): readonly string[] | undefined {
   if (typeof fontVariant !== 'string') {
     return fontVariant;
@@ -74,9 +58,8 @@ export function PlainText({
   maxFontSizeMultiplier,
   ...accessibilityProps
 }: PlainTextProps) {
-  // color/fontSize/fontFamily/fontWeight/fontStyle/textAlign are text-style
-  // props, so they don't flow through the native ViewProps. Pull them out of
-  // the flattened style and pass them explicitly.
+  // Text-style props don't flow through the native ViewProps, so pull them
+  // out of the flattened style and pass them explicitly.
   const {
     color,
     fontSize,

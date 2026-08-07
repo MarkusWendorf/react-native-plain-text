@@ -6,25 +6,20 @@
 #include <react/renderer/components/RNPlainTextSpec/States.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 
-// Shared with the Android shadow node; the podspec puts cpp/ on the header
-// search path.
+// SYNC: mirrors android/.../RNPlainTextSpec/PlainTextShadowNode.h — same traits and
+// overrides, so a change here usually belongs there too. Only the invalidation logic
+// is actually shared, via the include below. See
+// docs/agent/sync-points.md#both-platforms-shadow-nodes.
 #include "PlainTextMeasurementHelpers.h"
 
 namespace facebook::react {
 
 /*
  * Custom `ShadowNode` for <RNPlainText> that measures its own intrinsic size.
- *
- * The codegen-generated `RNPlainTextShadowNode` (in ShadowNodes.h) is a plain
- * `ConcreteViewShadowNode` alias with no measure function, so Yoga clips the
- * text to whatever width/height the style specifies. This subclass opts into
- * measurement by setting the `MeasurableYogaNode` trait and overriding
- * `measureContent` — Yoga then calls it during layout and uses the returned
- * size as the node's dimensions.
- *
- * The class is named differently from the generated alias to avoid a
- * redefinition clash. It reuses the generated `RNPlainTextComponentName` so
- * its component handle/name match the default, letting our ComponentDescriptor
+ * The codegen-generated `RNPlainTextShadowNode` has no measure function, so
+ * Yoga would otherwise clip text to the style's width/height. Named
+ * differently to avoid a redefinition clash with the generated alias, but
+ * reuses its `RNPlainTextComponentName` so this ComponentDescriptor can
  * override the generated one in the provider registry.
  */
 class PlainTextShadowNode final : public ConcreteViewShadowNode<
@@ -36,16 +31,10 @@ class PlainTextShadowNode final : public ConcreteViewShadowNode<
   using ConcreteViewShadowNode::ConcreteViewShadowNode;
 
   /*
-   * Clone constructor, declared only to decide `measurementInputsChanged_`.
-   *
-   * This is the one point where the source node and the new props are both
-   * reachable, so the verdict has to be computed here rather than in
-   * `shouldNewRevisionDirtyMeasurement` — see the comment on that override.
-   * Declaring it excludes the inherited constructor of the same signature.
-   *
-   * The base subobject is fully initialized before this member, so
-   * `getConcreteProps()` already returns the *new* props while
-   * `sourceShadowNode` still carries the old ones.
+   * Declared just to compute `measurementInputsChanged_` here, the only point
+   * where the source node's old props and the new props are both reachable:
+   * the base subobject is initialized first, so `getConcreteProps()` already
+   * returns the new props while `sourceShadowNode` still holds the old ones.
    */
   PlainTextShadowNode(const ShadowNode &sourceShadowNode, const ShadowNodeFragment &fragment)
       : ConcreteViewShadowNode(sourceShadowNode, fragment),
@@ -55,7 +44,6 @@ class PlainTextShadowNode final : public ConcreteViewShadowNode<
 
   static ShadowNodeTraits BaseTraits() {
     auto traits = ConcreteViewShadowNode::BaseTraits();
-    // LeafYogaNode: the text has no Yoga children participating in layout.
     traits.set(ShadowNodeTraits::Trait::LeafYogaNode);
     // MeasurableYogaNode: registers `measureContent` as the Yoga measure fn.
     traits.set(ShadowNodeTraits::Trait::MeasurableYogaNode);
@@ -68,15 +56,11 @@ class PlainTextShadowNode final : public ConcreteViewShadowNode<
 
  protected:
   /*
-   * The base implementation always invalidates, which would re-run a full
-   * CoreText layout per node on any ancestor re-render. Logic is shared with
-   * Android in cpp/PlainTextMeasurementHelpers.h.
-   *
-   * Both parameters are useless here: `YogaLayoutableShadowNode::completeClone`
-   * discards its own `sourceShadowNode` and calls this with `*this`, which by
-   * then already holds `fragment.props`. Comparing those would compare the new
-   * props against themselves and never invalidate. The verdict is computed in
-   * the clone constructor instead, where the real source is still in scope.
+   * Both parameters are useless here: `completeClone` discards its own
+   * `sourceShadowNode` and calls this with `*this`, which already holds the
+   * new props, so comparing would compare new against itself and never
+   * invalidate. The real verdict is computed in the clone constructor, where
+   * the old props are still reachable.
    */
   bool shouldNewRevisionDirtyMeasurement(const ShadowNode &, const ShadowNodeFragment &) const override
   {
