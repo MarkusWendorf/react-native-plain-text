@@ -64,7 +64,7 @@ Via `style={{ ... }}`:
 - `textDecorationLine`: `'none' | 'underline' | 'line-through' | 'underline line-through'`
 - `textDecorationColor` / `textDecorationStyle`: iOS only, matching RN
   `<Text>`. `textDecorationStyle` is `'solid' | 'double' | 'dotted' | 'dashed' |
-  'wavy'`; `'wavy'` falls back to a single line (no UIKit equivalent).
+'wavy'`; `'wavy'` falls back to a single line (no UIKit equivalent).
 - `verticalAlign`: Android only, like RN `<Text>`
 - `textAlignVertical`: Android only, like RN `<Text>`
 - Every other `ViewStyle` prop (`width`, `margin`, `padding`,

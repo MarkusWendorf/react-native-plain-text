@@ -125,12 +125,12 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
   // these setters on the Android manager interface, so implement them as no-ops.
   @ReactProp(name = "textDecorationColor", customType = "Color")
   override fun setTextDecorationColor(view: PlainTextView?, textDecorationColor: Int?) {
-    // no-op on Android
+    // no-op on Android: not supported by RN <Text> on Android either
   }
 
   @ReactProp(name = "textDecorationStyle")
   override fun setTextDecorationStyle(view: PlainTextView?, textDecorationStyle: String?) {
-    // no-op on Android
+    // no-op on Android: not supported by RN <Text> on Android either
   }
 
   @ReactProp(name = "lineHeight")

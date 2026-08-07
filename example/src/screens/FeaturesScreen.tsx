@@ -665,13 +665,7 @@ const TEXT_DECORATION_LINES = [
   'underline line-through',
 ] as const;
 
-const TEXT_DECORATION_STYLES = [
-  'solid',
-  'double',
-  'dotted',
-  'dashed',
-  'wavy',
-] as const;
+const TEXT_DECORATION_STYLES = ['solid', 'double', 'dotted', 'dashed', 'wavy'] as const;
 
 // The section needs a font that actually carries the features, and SF does not:
 // it forms no ff/ffi/ffl ligatures and ships no oldstyle figures, so those rows
