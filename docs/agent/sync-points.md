@@ -118,6 +118,15 @@ must hold because of that:
   never-attached view), and `TextView.checkForRelayout()` dereferences the
   LayoutParams from the second measurement onward.
 
+This is now unconditional — measuring with a fresh view every time was the
+alternative an earlier perf-suite A/B test measured against, and it lost, so
+`measureView()` always shares the one view above. The internal `experiment`
+prop (not part of `PlainText`'s public props, one generic on/off switch for
+whatever the perf suite is currently A/B testing — see
+`src/PlainTextViewNativeComponent.ts`) is declared but unread on both
+platforms for now, the same as `textAlignVertical` on iOS, ready for whatever
+gets A/B tested next.
+
 ## Deferred prop application
 
 Setters on `PlainTextView` whose work is **shared with other props** record state

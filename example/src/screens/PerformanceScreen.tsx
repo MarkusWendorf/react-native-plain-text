@@ -32,22 +32,20 @@ const COUNT = 1000;
 // observe the way the timings do. An unmount needs it at least as much as a
 // mount: releasing is lazier than allocating.
 //
-// One value for both platforms, deliberately generous. Neither platform's
-// settle curve has been sampled, and undercounting memory fails *silently* —
-// a short window yields a plausible-looking smaller number, not a visible gap.
-// Too long only costs waiting.
-const SETTLE_MS = 10_000;
+// Default for both platforms — adjustable per run from the Props sheet (the
+// 'settleMs' row below) up to 15s, for whenever a platform's settle curve
+// turns out to need longer than this. Undercounting memory fails *silently* —
+// a short window yields a plausible-looking smaller number, not a visible gap
+// — so lengthening it is the safer direction to reach for when in doubt.
+const DEFAULT_SETTLE_MS = 3_000;
 
 type Kind = 'plain' | 'nativePlain' | 'text' | 'nativeText';
 
-// `short` is what the selector shows: the four full names do not fit on one
-// line of a phone, and a wrapped selector reads as two groups. The full name
-// still goes in the fingerprint line, which is what gets recorded.
-const VARIANTS: { kind: Kind; label: string; short: string }[] = [
-  { kind: 'plain', label: 'PlainText', short: 'Plain' },
-  { kind: 'nativePlain', label: 'NativePlainText', short: 'NativePlain' },
-  { kind: 'text', label: 'Text', short: 'Text' },
-  { kind: 'nativeText', label: 'NativeText', short: 'NativeText' },
+const VARIANTS: { kind: Kind; label: string }[] = [
+  { kind: 'plain', label: 'PlainText' },
+  { kind: 'nativePlain', label: 'NativePlainText' },
+  { kind: 'text', label: 'Text' },
+  { kind: 'nativeText', label: 'NativeText' },
 ];
 
 function labelFor(kind: Kind) {
@@ -67,9 +65,9 @@ type Scenario = 'mount' | 'unmount' | 'parent' | 'color' | 'layout';
 
 // The two colors the "Color" scenario alternates between. A toggle rather than
 // an absolute value so every press commits something, and so the run never
-// needs a value picker. Both from the palette: the page's ink, and the pigment
-// the rest of the app already uses when something has to read as changed.
-const COLORS = [COLOR.ink, COLOR.oxblood];
+// needs a value picker. Both from the palette: the page's ink, and the indigo
+// accent the rest of the app already uses for its own interactive elements.
+const COLORS = [COLOR.ink, COLOR.indigo];
 
 // The "Layout" scenario alternates fontSize by half a point: every item has to
 // re-measure, while the drawn area changes by ~2%. That isolates measurement
@@ -124,6 +122,13 @@ const PerformanceObserverGlobal = (
   }
 ).PerformanceObserver;
 
+// Hermes only, and only when it's built with GC exposed to JS. Called before
+// sampling memory on mount and unmount, so a run's own garbage doesn't count
+// toward its delta/retained numbers — never on the other scenarios, where a
+// GC pause would otherwise land inside the commit/interaction measurement
+// instead of after it.
+const forceGC = (globalThis as unknown as { gc?: () => void }).gc;
+
 type Props = NativeStackScreenProps<ParamListBase>;
 
 export default function PerformanceScreen({ navigation }: Props) {
@@ -161,8 +166,8 @@ export default function PerformanceScreen({ navigation }: Props) {
   const [running, setRunning] = useState<Scenario | null>(null);
   const settling = running != null;
 
-  // The three update scenarios. `rerenders` is rendered into its own button
-  // label on purpose — see runParentRerender.
+  // The three update scenarios. `rerenders` is fed into the No-op Update
+  // button's `testID` on purpose — see runParentRerender.
   const [rerenders, setRerenders] = useState(0);
   const [colorIndex, setColorIndex] = useState(0);
   const [sizeBump, setSizeBump] = useState(0);
@@ -184,6 +189,7 @@ export default function PerformanceScreen({ navigation }: Props) {
   // Not memoized: every render rebuilds all COUNT elements anyway, so a stable
   // object here would save nothing.
   const applied = buildApplied(config, colorIndex, sizeBump);
+  const settleDelayMs = settleMsFor(config);
   const fingerprint = formatFingerprint(config);
   // What the next mount would run.
   const live = `${labelFor(variant)} · ${fingerprint}`;
@@ -305,12 +311,14 @@ export default function PerformanceScreen({ navigation }: Props) {
   // The counter has to be *rendered* somewhere for this to test anything: a
   // state change that produces an identical tree makes React bail out, Fabric
   // commits no clones, and the run measures nothing at all rather than
-  // measuring a cheap re-own. Showing it in the button label changes something
-  // inside the same content container as the items, which forces that container
-  // to be cloned with a new children list — and that is what re-owns all ~1000
-  // mounted items. Keep the counter somewhere under that container; how deeply
-  // nested does not matter. Moving it into the header or into a view outside the
-  // ScrollView silently turns this run into a no-op.
+  // measuring a cheap re-own. Feeding it into the No-op Update button's
+  // `testID` changes a real prop inside the same content container as the
+  // items, which forces that container to be cloned with a new children list
+  // — and that is what re-owns all ~1000 mounted items. Keep the counter
+  // reaching some real prop under that container; how deeply nested, or
+  // whether it's user-visible, does not matter. Moving it into the header or
+  // into a view outside the ScrollView, or dropping it, silently turns this
+  // run into a no-op.
   const runParentRerender = useCallback(() => {
     beginRun('parent');
     setRerenders((n) => n + 1);
@@ -327,12 +335,12 @@ export default function PerformanceScreen({ navigation }: Props) {
   }, [beginRun]);
 
   // One pipeline for all five scenarios. Runs after React has committed; memory
-  // is sampled SETTLE_MS later, once native allocation (or release) has caught
-  // up, and the interaction number is read at the same moment because every
-  // Event Timing entry for that press has landed well before then.
+  // is sampled settleDelayMs later, once native allocation (or release) has
+  // caught up, and the interaction number is read at the same moment because
+  // every Event Timing entry for that press has landed well before then.
   //
-  // The dependency list is every piece of state a scenario touches, so exactly
-  // one of them changing is what runs this.
+  // The dependency list is every piece of state a scenario touches, plus
+  // settleDelayMs itself, so exactly one of them changing is what runs this.
   useEffect(() => {
     const run = pending.current;
     if (!run) return;
@@ -345,6 +353,14 @@ export default function PerformanceScreen({ navigation }: Props) {
     const commitMs = performance.measure(`${START_MARK}:${run.scenario}`, START_MARK).duration;
 
     const timer = setTimeout(() => {
+      // commitMs is already fixed above and interactionMs already latched by
+      // the observer effect, so a GC pause here only delays this callback —
+      // it can't skew either timing number. Mount and unmount only: those are
+      // the two scenarios whose memory number is supposed to reflect COUNT
+      // views' worth of allocation, so a run's own garbage shouldn't count
+      // toward it either way.
+      if (run.scenario === 'mount' || run.scenario === 'unmount') forceGC?.();
+
       const memAfter = getMemoryFootprint();
       const deltaBytes = memAfter - run.memBefore;
       const result: RunStats = {
@@ -358,10 +374,10 @@ export default function PerformanceScreen({ navigation }: Props) {
       };
       setRunning(null);
       setStats((prev) => ({ ...prev, [run.scenario]: result }));
-    }, SETTLE_MS);
+    }, settleDelayMs);
 
     return () => clearTimeout(timer);
-  }, [mounted, rerenders, colorIndex, sizeBump]);
+  }, [mounted, rerenders, colorIndex, sizeBump, settleDelayMs]);
 
   return (
     <>
@@ -420,10 +436,10 @@ export default function PerformanceScreen({ navigation }: Props) {
             {/* Selecting a variant is only meaningful for the next mount, so the
                 chips lock as soon as one is on screen. */}
             <View style={styles.row}>
-              {VARIANTS.map(({ kind, short }) => (
+              {VARIANTS.map(({ kind, label }) => (
                 <Chip
                   key={kind}
-                  label={short}
+                  label={label}
                   selected={kind === variant}
                   disabled={settling || mounted != null}
                   onPress={() => setVariant(kind)}
@@ -438,8 +454,9 @@ export default function PerformanceScreen({ navigation }: Props) {
             are already there. Which ones are enabled is the whole state
             machine: mount when nothing is up, the other four when something is.
 
-            `rerenders` is in its own label deliberately: it is what makes that
-            press commit anything at all. See runParentRerender.
+            `rerenders` is in the No-op Update button's `testID` deliberately:
+            it is what makes that press commit anything at all. See
+            runParentRerender.
           */}
           <Section title="Scenarios" spacedRows>
             <Action
@@ -447,30 +464,35 @@ export default function PerformanceScreen({ navigation }: Props) {
               scenario="mount"
               stats={stats}
               running={running}
+              settleMs={settleDelayMs}
               disabled={settling || mounted != null}
               onPress={() => runMount(variant)}
             />
             <Action
-              title={`Parent Re-render (${rerenders})`}
+              title="No-op Update"
+              testID={`no-op-update-${rerenders}`}
               scenario="parent"
               stats={stats}
               running={running}
+              settleMs={settleDelayMs}
               disabled={settling || mounted == null}
               onPress={runParentRerender}
             />
             <Action
-              title="Re-render Color"
+              title="Color Update"
               scenario="color"
               stats={stats}
               running={running}
+              settleMs={settleDelayMs}
               disabled={settling || mounted == null}
               onPress={runColorChange}
             />
             <Action
-              title="Re-render Layout"
+              title="Layout Update"
               scenario="layout"
               stats={stats}
               running={running}
+              settleMs={settleDelayMs}
               disabled={settling || mounted == null}
               onPress={runLayoutChange}
             />
@@ -479,6 +501,7 @@ export default function PerformanceScreen({ navigation }: Props) {
               scenario="unmount"
               stats={stats}
               running={running}
+              settleMs={settleDelayMs}
               disabled={settling || mounted == null}
               onPress={runUnmount}
             />
@@ -575,7 +598,9 @@ const pad = (n: number) => String(n).padStart(3, '0');
 // on NativePlainText, style entries everywhere else), `view` values are view
 // styles Yoga lays out around the self-measured text, `prop` values are
 // component props, `content` picks the string.
-type Target = 'text' | 'view' | 'prop' | 'content';
+// 'settle' isn't rendered onto anything — it's read separately, see
+// settleMsFor below.
+type Target = 'text' | 'view' | 'prop' | 'content' | 'settle';
 
 type AttrOption = {
   label: string;
@@ -859,6 +884,41 @@ const ATTRIBUTES: AttrDef[] = [
       { label: 'wrapping', value: WRAPPING_TEXT },
     ],
   },
+  {
+    // The library's internal `experiment` prop (src/PlainTextViewNativeComponent.ts)
+    // — one generic on/off switch for whatever the perf suite is currently A/B
+    // testing. `(none)`/`false` is baseline; `true` is the experiment. Meaning
+    // is platform- and experiment-specific; currently unread on both — the
+    // shared-vs-fresh measuring view it once gated is settled (shared won) and
+    // no longer conditional. See docs/agent/sync-points.md.
+    key: 'experiment',
+    section: 'Params',
+    fp: 'exp',
+    target: 'prop',
+    options: [
+      { label: '(none)' },
+      { label: 'baseline', value: false },
+      { label: 'experiment', value: true },
+    ],
+  },
+  {
+    // How long a run waits before sampling memory — see DEFAULT_SETTLE_MS.
+    // Always in the fingerprint, since it changes whether a recorded memory
+    // number is trustworthy.
+    key: 'settleMs',
+    label: 'Settle Time',
+    section: 'Params',
+    fp: 'settle',
+    target: 'settle',
+    options: [
+      { label: '3s', value: 3_000 },
+      { label: '5s', value: 5_000 },
+      { label: '8s', value: 8_000 },
+      { label: '10s', value: 10_000 },
+      { label: '15s', value: 15_000 },
+    ],
+    alwaysInFingerprint: true,
+  },
 ];
 
 // Derived, so adding an attribute above is the only edit: a hardcoded list is one
@@ -886,6 +946,13 @@ function selectedIndex(config: AttrConfig, attr: AttrDef) {
 // unreachable; it is here because noUncheckedIndexedAccess cannot see that.
 function selectedOption(config: AttrConfig, attr: AttrDef): AttrOption {
   return attr.options[selectedIndex(config, attr)] ?? { label: '(none)' };
+}
+
+const SETTLE_ATTR = ATTRIBUTES.find((attr) => attr.key === 'settleMs');
+
+function settleMsFor(config: AttrConfig): number {
+  if (SETTLE_ATTR == null) return DEFAULT_SETTLE_MS;
+  return selectedOption(config, SETTLE_ATTR).value as number;
 }
 
 // What the header badge counts. Rows that always name themselves in the
@@ -936,6 +1003,8 @@ function buildApplied(config: AttrConfig, colorIndex: number, sizeBump: number):
     if (attr.target === 'text') textStyle[attr.key] = option.value;
     else if (attr.target === 'view') viewStyle[attr.key] = option.value;
     else if (attr.target === 'prop') props[attr.key] = option.value;
+    else if (attr.target === 'settle')
+      continue; // read separately, see settleMsFor
     else text = option.value as TextBuilder;
   }
 
@@ -1039,23 +1108,26 @@ function Chip({
 // Actions and readouts
 // ---------------------------------------------------------------------------
 
-const SETTLING_LABEL = `Settling ${SETTLE_MS / 1000}s…`;
-
 // One action and the result it produced, as a unit. Grouping them means the
 // result cannot drift away from its own button when a sibling's result appears
 // or changes height.
 function Action({
   title,
+  testID,
   scenario,
   stats,
   running,
+  settleMs,
   disabled,
   onPress,
 }: {
   title: string;
+  // Not user-visible; a real prop for a real diff. See runParentRerender.
+  testID?: string;
   scenario: Scenario;
   stats: Partial<Record<Scenario, RunStats>>;
   running: Scenario | null;
+  settleMs: number;
   disabled?: boolean;
   onPress: () => void;
 }) {
@@ -1073,12 +1145,17 @@ function Action({
         disabled={disabled}
         style={[styles.button, disabled && styles.buttonDisabled]}
       >
-        <PlainText style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>
+        <PlainText
+          testID={testID}
+          style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}
+        >
           {title}
         </PlainText>
       </Pressable>
       {running === scenario ? (
-        <PlainText style={[styles.readout, styles.settling]}>{SETTLING_LABEL}</PlainText>
+        <PlainText style={[styles.readout, styles.settling]}>
+          {`Settling ${settleMs / 1000}s…`}
+        </PlainText>
       ) : result != null ? (
         <StatsBlock stats={result} />
       ) : null}

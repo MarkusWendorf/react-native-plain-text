@@ -150,6 +150,13 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     view?.setMaxFontSizeMultiplier(maxFontSizeMultiplier)
   }
 
+  // No-op: nothing on Android currently reads `experiment` (measureView()
+  // always shares the off-screen view below — the alternative it once gated
+  // measured slower). Declared for a future perf-suite A/B test, like iOS.
+  @ReactProp(name = "experiment", defaultBoolean = false)
+  override fun setExperiment(view: PlainTextView?, experiment: Boolean) {
+  }
+
   // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure) on the
   // Fabric layout thread — this is where text is actually measured, since Fabric never
   // runs Android's normal onMeasure for our view. `props` carries the size-affecting
@@ -231,6 +238,12 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
 
     // EXPENSIVE: constructing an AppCompatTextView — theme attribute resolution, tint/emoji
     // helpers — only reached on a cache miss (Context change or GC of the weak reference).
+    val view = newMeasureView(context)
+    measureViews.set(WeakReference(view))
+    return view
+  }
+
+  private fun newMeasureView(context: Context): PlainTextView {
     val view = PlainTextView(context)
     view.isMeasureOnly = true
     // From the second measurement on, setText() reaches checkForRelayout(), which
@@ -241,7 +254,6 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
       ViewGroup.LayoutParams.WRAP_CONTENT,
       ViewGroup.LayoutParams.WRAP_CONTENT
     )
-    measureViews.set(WeakReference(view))
     return view
   }
 
