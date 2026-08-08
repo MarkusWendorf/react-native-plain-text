@@ -179,6 +179,10 @@
               "section": "🐛 Bug Fixes"
             },
             {
+              "type": "perf",
+              "section": "⚡ Performance"
+            },
+            {
               "type": "refactor",
               "section": "♻️ Code Refactoring"
             },
