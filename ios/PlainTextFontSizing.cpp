@@ -6,10 +6,7 @@ namespace facebook::react {
 
 double scaledFontSize(double fontSize, double fontSizeMultiplier)
 {
-  if (fontSizeMultiplier <= 0.0 || fontSizeMultiplier == 1.0) {
-    return fontSize;
-  }
-  return std::round(fontSize * fontSizeMultiplier);
+  return fontSize * fontSizeMultiplier;
 }
 
 double clampFontSizeMultiplier(bool allowFontScaling, double maxFontSizeMultiplier, double baseMultiplier)

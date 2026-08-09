@@ -9,8 +9,8 @@
 namespace facebook::react {
 
 /*
- * Rounded to whole points when a multiplier applies, left alone otherwise —
- * matching RCTFont.mm, so Dynamic Type lands on the same size RN's <Text> uses.
+ * Unrounded, matching Fabric's <Text>. Legacy (non-Fabric) RN rounds instead;
+ * see native-gotchas.md.
  */
 double scaledFontSize(double fontSize, double fontSizeMultiplier);
 

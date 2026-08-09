@@ -35,10 +35,11 @@ one exception: the `UIFont` itself is not mirrored. `fontFamily`, `fontSize`,
 (`ios/PlainTextFont.h`), so a change to font resolution lands on both sides at
 once. A new prop that feeds the font belongs in there, not in either caller.
 
-Accessibility scaling of the font size is inside it for the same reason, which is
-why it takes the multiplier rather than an already-scaled size: the rounding
-`RCTFont.mm` applies is then in one place instead of two. `lineHeight` scales in
-the callers (RN doesn't round it), so it stays a sync point between them.
+Accessibility scaling of the font size is inside it for the same reason: it
+takes the multiplier rather than an already-scaled size so `scaledFontSize`'s
+unrounded `fontSize * fontSizeMultiplier` (see native-gotchas.md for why it
+must stay unrounded) lives in one place. `lineHeight` scales in the callers
+instead (also unrounded, matching RN), so it stays a sync point between them.
 
 ## The iOS font cache key
 

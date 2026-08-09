@@ -32,11 +32,8 @@ void expectEqual(const std::string &what, double expected, double actual)
 void testScaledFontSize()
 {
   expectEqual("multiplier of 1 leaves fontSize untouched, fraction included", 17.5, scaledFontSize(17.5, 1.0));
-  expectEqual("multiplier of 0 leaves fontSize untouched", 17.5, scaledFontSize(17.5, 0.0));
-  expectEqual("a negative multiplier leaves fontSize untouched", 17.5, scaledFontSize(17.5, -1.0));
-  expectEqual("a real multiplier rounds to a whole point", 26.0, scaledFontSize(17.0, 1.5));
-  expectEqual("rounds down below the midpoint", 17.0, scaledFontSize(17.0, 1.02));
-  expectEqual("rounds up above the midpoint", 18.0, scaledFontSize(17.0, 1.04));
+  expectEqual("a real multiplier scales without rounding, matching RCTFontWithFontProperties", 25.5, scaledFontSize(17.0, 1.5));
+  expectEqual("a fractional result stays fractional", 17.34, scaledFontSize(17.0, 1.02));
 }
 
 void testClampFontSizeMultiplier()

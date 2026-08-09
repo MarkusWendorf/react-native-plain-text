@@ -302,16 +302,14 @@ Learned the hard way. Most of these cost an afternoon the first time.
   so `"text-size"` can split as `"text-"` / `"size"` on iOS. Use a non-breaking
   hyphen (U+2011, `‑`) where that split is unwanted — see the "Non-breaking
   hyphen" row in the Features screen's Font Scaling section.
-- **Accepted: under Dynamic Type, `fontSize` is rounded to whole points but
-  `lineHeight` is not, so the font/lineHeight ratio drifts slightly at some
-  multipliers.** `scaledFontSize` (`PlainTextFont.mm:444-450`) rounds when a
-  multiplier applies; `lineHeight = props.lineHeight * fontSizeMultiplier` in
-  both `PlainTextShadowNode.mm` and `RNPlainText.mm` never does. This exactly
-  matches RN `<Text>`: `RCTFont.mm:421-422` rounds font size the same way, and
-  `RCTAttributedTextUtils.mm:241-244` computes `lineHeight * multiplier` with no
-  rounding. Flagged in code review as a possible follow-up; deliberately not
-  "fixed" by rounding `lineHeight` too — that would trade a real (if small)
-  parity gap with RN `<Text>` for a cosmetic ratio fix nobody has reported
-  seeing, and this library's whole reason to exist is matching `<Text>`
-  pixel-for-pixel. Revisit only given a concrete visual complaint that traces
-  back to this, not preemptively.
+- **`scaledFontSize` must not round.** It briefly did, copied from
+  `RCTFont.mm:421-422`, but that's the legacy non-Fabric path (same trap as
+  the `fontVariant` entry above). Fabric's real font resolution,
+  `RCTFontWithFontProperties` (`RCTFontUtils.mm:339`), never rounds. With the
+  rounding in place, `PlainText` matched RN `<Text>` only at the default
+  Dynamic Type setting (multiplier == 1.0, where rounding was skipped), and
+  drifted by up to half a point elsewhere, visible on a physical device at a
+  non-default Text Size but not on a simulator left at the default.
+  `lineHeight = props.lineHeight * fontSizeMultiplier` (`PlainTextShadowNode.mm`,
+  `RNPlainText.mm`) is unrounded too, but correctly so:
+  `RCTAttributedTextUtils.mm:241-244` doesn't round it either.
