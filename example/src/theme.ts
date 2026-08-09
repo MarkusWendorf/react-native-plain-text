@@ -8,14 +8,14 @@ import { Platform } from 'react-native';
 // from it alone.
 //
 // The accents are named after pigments, not after the screen's primaries, because
-// nothing here has to prove that the color *blue* works — only that a color prop
+// nothing here has to prove that the color *blue* works, only that a color prop
 // does. So they're chosen as a set that sits with the grey page: all five land in
 // the same narrow lightness band, dark enough to read as text on white and to hold
 // a hairline border, light enough not to compete with the ink.
 //
 // Lightness is what holds the set together, so chroma is free to be high, and it
 // is: these are saturated pigments, not muted ones. What UI default palettes get
-// wrong for this screen isn't saturation, it's the spread — a #3e63dd blue against
+// wrong for this screen isn't saturation, it's the spread: a #3e63dd blue against
 // a #30a46c mint puts a mid-tone next to a light one, and the pair reads as two
 // unrelated signals shouting over the type. Indigo is the deepest of the five, but
 // only by the same margin a blue needs to match the others in lightness.
@@ -75,8 +75,8 @@ export const SERIF = Platform.select({ ios: 'Georgia', default: 'serif' });
 // bundled at build time by the expo-font config plugin (example/app.json) from
 // assets/fonts/OpenSans.ttf, the variable release, with a wght axis (300-800,
 // default 400) and a wdth axis (75-100, default 100). No system font usably has
-// an fvar table — SF keeps its axes private, and Roboto is variable only from
-// Android 12 — so every row that varies an axis has to name this family.
+// an fvar table (SF keeps its axes private, and Roboto is variable only from
+// Android 12), so every row that varies an axis has to name this family.
 //
 // Unlike MONO and SERIF the two names are the same font file. They differ
 // because RN resolves a bundled family differently per platform: from the asset

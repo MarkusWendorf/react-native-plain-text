@@ -14,7 +14,7 @@
 #include <react/renderer/components/RNPlainTextSpec/States.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 
-// SYNC: mirrors ios/PlainTextShadowNode.h — same traits and overrides, so a change
+// SYNC: mirrors ios/PlainTextShadowNode.h. Same traits and overrides, so a change
 // here usually belongs there too. Only the invalidation logic is actually shared, via
 // the include below. See docs/agent/sync-points.md#both-platforms-shadow-nodes.
 #include "PlainTextMeasurementHelpers.h"
@@ -58,7 +58,7 @@ class PlainTextShadowNode final : public ConcreteViewShadowNode<
 
  protected:
   // The base implementation always invalidates (costing a JNI hop and TextView measure per
-  // node on any ancestor re-render); logic is shared with iOS in PlainTextMeasurementHelpers.h.
+  // node on any ancestor re-render). Logic is shared with iOS in PlainTextMeasurementHelpers.h.
   // Both parameters are unusable here: `YogaLayoutableShadowNode::completeClone` calls this
   // with `*this` already holding the new props, so the real verdict is computed in the clone
   // constructor instead, where the old source node is still in scope.

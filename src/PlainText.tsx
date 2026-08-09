@@ -1,6 +1,6 @@
 import { Text, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 
-// Same widened type as PlainText.native.tsx — see there for why.
+// Same widened type as PlainText.native.tsx, see there for why.
 export type PlainTextStyle = TextStyle & { fontVariationSettings?: string };
 
 export type PlainTextProps = Omit<TextProps, 'children' | 'style'> & {

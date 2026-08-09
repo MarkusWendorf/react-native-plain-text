@@ -19,8 +19,8 @@ import com.facebook.react.viewmanagers.RNPlainTextManagerDelegate;
  * <p>This lives in the delegate rather than {@code @ReactProp} setters because a delegate-driven
  * view manager never falls back to reflecting over annotations.
  *
- * <p>SYNC: a {@code @ReactProp} for anything the codegen spec doesn't declare is never called —
- * a new view-style prop belongs here, not as an annotation on {@link PlainTextViewManager}. See
+ * <p>SYNC: a {@code @ReactProp} for anything the codegen spec doesn't declare is never called.
+ * A new view-style prop belongs here, not as an annotation on {@link PlainTextViewManager}. See
  * docs/agent/sync-points.md#padding-and-border-width-which-are-not-props.
  *
  * <p>Java rather than Kotlin, unlike the rest of the library: subclassing the generated Java
@@ -39,7 +39,7 @@ class PlainTextViewManagerDelegate
     // startsWith immediately instead of hashing through the switch below.
     if (propName.startsWith("border")) {
       switch (propName) {
-        // No block-axis widths exist to mirror the block-axis colors below — RN has none either.
+        // No block-axis widths exist to mirror the block-axis colors below (RN has none either).
         case "borderWidth":
           applyBorderWidth(view, LogicalEdge.ALL, value);
           return;
@@ -139,7 +139,7 @@ class PlainTextViewManagerDelegate
           return;
 
         default:
-          // A border prop we don't handle (borderCurve, say) — fall through.
+          // A border prop we don't handle (borderCurve, say), fall through.
           break;
       }
     }
@@ -148,7 +148,7 @@ class PlainTextViewManagerDelegate
     super.setProperty(view, propName, value);
   }
 
-  /** Widths arrive in DIP; BackgroundStyleApplicator scales them. null clears. */
+  /** Widths arrive in DIP. BackgroundStyleApplicator scales them. null clears. */
   private static void applyBorderWidth(PlainTextView view, LogicalEdge edge, @Nullable Object value) {
     BackgroundStyleApplicator.setBorderWidth(
         view, edge, value == null ? null : ((Double) value).floatValue());

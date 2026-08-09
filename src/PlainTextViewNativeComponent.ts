@@ -5,11 +5,11 @@ import {
   type ViewProps,
 } from 'react-native';
 
-// SYNC: this spec is the source of truth for props; changing one touches several
+// SYNC: this spec is the source of truth for props. Changing one touches several
 // other files that nothing checks automatically (see docs/agent/sync-points.md).
 //
-// `Cost:` lines rate a prop that is *set*, per docs/agent/performance.md#prop-cost-policy;
-// unmarked props are light, and a set prop left at default still costs a check.
+// `Cost:` lines rate a prop that is *set*, per docs/agent/performance.md#prop-cost-policy.
+// Unmarked props are light, and a set prop left at default still costs a check.
 export interface NativeProps extends ViewProps {
   text?: string;
   color?: ColorValue;
@@ -24,12 +24,12 @@ export interface NativeProps extends ViewProps {
   // OpenType feature toggles (RN <Text>'s fontVariant); string array because codegen
   // turns enum arrays into a bitmask enum. Empty means no features set.
   //
-  // Cost: medium. Font-cache-miss descriptor round trip on iOS; unguarded paint write on Android.
+  // Cost: medium. Font-cache-miss descriptor round trip on iOS, unguarded paint write on Android.
   fontVariant?: ReadonlyArray<string>;
   // Variable-font axes, CSS `font-variation-settings` syntax (e.g. '"wght" 700, "wdth" 87.5').
   // Not in RN's TextStyle, so PlainText.native.tsx widens the style type (PlainTextStyle).
   //
-  // Cost: medium. CTFont copy on an iOS font-cache miss; Android derives a new Typeface on change.
+  // Cost: medium. CTFont copy on an iOS font-cache miss, Android derives a new Typeface on change.
   fontVariationSettings?: string;
   // Points, 0 means unset.
   //
@@ -37,10 +37,10 @@ export interface NativeProps extends ViewProps {
   lineHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   // Points, 0 means unset.
   //
-  // Cost: medium. Forces iOS's attributed-string path; one paint write on Android.
+  // Cost: medium. Forces iOS's attributed-string path, plus one paint write on Android.
   letterSpacing?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   textAlign?: CodegenTypes.WithDefault<'auto' | 'left' | 'right' | 'center' | 'justify', 'auto'>;
-  // Android-only, like RN <Text>; JS maps the cross-platform verticalAlign style onto this.
+  // Android-only, like RN <Text>. JS maps the cross-platform verticalAlign style onto this.
   textAlignVertical?: CodegenTypes.WithDefault<'auto' | 'top' | 'bottom' | 'center', 'auto'>;
   // Free string: 'underline line-through' has a space, which codegen enums can't represent.
   //
@@ -51,13 +51,13 @@ export interface NativeProps extends ViewProps {
   ellipsizeMode?: CodegenTypes.WithDefault<'head' | 'middle' | 'tail' | 'clip', 'tail'>;
   // OS accessibility text-size scaling (Dynamic Type / font scale).
   allowFontScaling?: CodegenTypes.WithDefault<boolean, true>;
-  // Caps the accessibility scale when allowFontScaling is on; 0 or values in (0, 1) mean no cap.
+  // Caps the accessibility scale when allowFontScaling is on. 0 or values in (0, 1) mean no cap.
   maxFontSizeMultiplier?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
   // Internal, not part of PlainText's public props. One generic on/off switch
-  // for the perf suite's current A/B test — false is baseline, true is
+  // for the perf suite's current A/B test: false is baseline, true is
   // whatever is being tried. What it does is platform- and experiment-
-  // specific; a platform with no experiment wired up ignores it. Currently
-  // read only by Android's measure() — see docs/agent/sync-points.md.
+  // specific. A platform with no experiment wired up ignores it. Currently
+  // read only by Android's measure(). See docs/agent/sync-points.md.
   experiment?: CodegenTypes.WithDefault<boolean, false>;
 }
 

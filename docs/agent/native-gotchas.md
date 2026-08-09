@@ -7,14 +7,14 @@ Learned the hard way. Most of these cost an afternoon the first time.
 - **Native changes require a full rebuild** (`yarn example ios|android`). Metro
   reload and Fast Refresh only pick up JS. A stale native build is the first
   thing to suspect when a native change "does nothing". (Don't run these
-  yourself unless asked — see [workflow.md](workflow.md).)
+  yourself unless asked, see [workflow.md](workflow.md).)
 - **Do not run `./gradlew clean`** in `example/android`. It re-runs CMake
   configure against the library's generated codegen dir before regenerating it,
   and fails. To force a clean native build, delete the caches by hand:
-  `example/android/app/.cxx`, `example/android/app/build`, `android/build` —
-  then run `yarn example android`, which regenerates codegen.
+  `example/android/app/.cxx`, `example/android/app/build`, `android/build`.
+  Then run `yarn example android`, which regenerates codegen.
 - **After editing `android/src/main/jni/**` or `react-native.config.js`**,
-  autolinking output can go stale — the generated `autolinking.json` /
+  autolinking output can go stale: the generated `autolinking.json` /
   `autolinking.cpp` aren't reliably invalidated. Also delete
   `example/android/build/generated/autolinking`.
 - **New `ios/*.mm` files are only compiled after `pod install`** re-scans the
@@ -43,10 +43,10 @@ Learned the hard way. Most of these cost an afternoon the first time.
   `Layout.getDesiredWidth`, an advance sum per paragraph with no line breaking
   involved, so nothing can be trimmed. iOS's is the used rect of a real layout,
   where the final line fragment of a multi-fragment layout has its trailing
-  whitespace trimmed — and a single-line string never enters that path.
+  whitespace trimmed, and a single-line string never enters that path.
 
   **On Android, RN `<Text>` does exactly the same thing** (both go through
-  `Layout.getDesiredWidth`) — verified on device with the Features screen's
+  `Layout.getDesiredWidth`). Verified on device with the Features screen's
   _Wrap Detection_ rows and the Compare Text overlay.
 
   **On iOS, RN `<Text>` does NOT drop it.** The row above only holds for
@@ -57,30 +57,30 @@ Learned the hard way. Most of these cost an afternoon the first time.
   `NSLayoutManager`/`NSTextContainer` and reads `usedRectForTextContainer:`,
   which does **not** trim the trailing whitespace in this shape. Confirmed
   directly (AppKit, 18pt, `lineFragmentPadding = 0`, `usesFontLeading = NO`, no
-  wrap) — `"Short\nthis line is longest   "`:
+  wrap): `"Short\nthis line is longest   "`:
 
   |                                     |          |
   | ----------------------------------- | -------- |
   | `boundingRectWithSize:` (PlainText) | 142.93pt |
   | `usedRectForTextContainer:` (RN)    | 156.61pt |
 
-  13.68pt apart — exactly the three trailing spaces. So on iOS this is a real,
+  13.68pt apart: exactly the three trailing spaces. So on iOS this is a real,
   visible parity gap in the _Wrap Detection_ section (row 2: `PlainText`'s grey
   box is narrower than `<Text>`'s red overlay by the trailing-space width),
   not a harness bug and not something Android's numbers can be used to excuse.
 
   Deliberately not "fixed" by switching `measureContent` to the
   `NSLayoutManager` approach: that was tried and rejected on performance
-  grounds, and for a different reason too — `PlainText` renders through
+  grounds, and for a different reason too: `PlainText` renders through
   `UILabel` (CoreText), so `boundingRectWithSize:` is the measurement that
-  matches what actually gets drawn; matching `NSLayoutManager`/TextKit instead
+  matches what actually gets drawn. Matching `NSLayoutManager`/TextKit instead
   would fix this one shape while risking disagreement with the mounted label
   everywhere else. See
   [performance.md](performance.md#replacing-ioss-second-boundingrectwithsize-with-a-cheaper-wrap-test)
   for the rejected alternative.
 
 - **Under the New Architecture, RN `<Text>` supports a narrower `fontVariant` set
-  than its own types advertise — on both platforms.** The C++ `FontVariant` enum
+  than its own types advertise, on both platforms.** The C++ `FontVariant` enum
   (`attributedstring/primitives.h`) has members only for `small-caps`, the four
   figure styles and `ss01`–`ss20`. The ligature and contextual values RN's types
   list (`common-ligatures`, `no-common-ligatures`, `discretionary-ligatures`,
@@ -88,11 +88,11 @@ Learned the hard way. Most of these cost an afternoon the first time.
   in that bitmask, so they are dropped at the props layer before either platform
   sees them. Both input forms lose them: the array form
   (`parseProcessedFontVariant`) is an if/else-if chain that simply doesn't match
-  the names, and the CSS string form parses them and then discards them outright —
+  the names, and the CSS string form parses them and then discards them outright:
   `fontVariantFromCSSFontVariant` ends in a `return std::nullopt` covering exactly
   those eight cases. Both Fabric consumers mirror the same subset: `toMapBuffer`
   for Android, `RCTFontFeatures` (`RCTFontUtils.mm`) for iOS. The complete table
-  including ligatures is in `RCTFont.mm`, which is the legacy non-Fabric path —
+  including ligatures is in `RCTFont.mm`, which is the legacy non-Fabric path,
   easy to mistake for the live one, and the reason to check `RCTFontUtils.mm`
   instead when asking what Fabric iOS actually does.
 
@@ -136,9 +136,9 @@ Learned the hard way. Most of these cost an afternoon the first time.
   per-face, so if a row goes flat after a font change, try the next candidate
   (Palatino, Iowan Old Style, Charter, Didot) before suspecting the prop.
 
-  `PlainText` doesn't go through that bitmask — `fontVariant` is its own codegen
+  `PlainText` doesn't go through that bitmask: `fontVariant` is its own codegen
   prop (`std::vector<std::string>`), mapped per platform in `PlainTextFont.mm` and
-  through `ReactTypefaceUtils.parseFontVariant` — so the ligature values do work.
+  through `ReactTypefaceUtils.parseFontVariant`, so the ligature values do work.
   Together with the Android gate below, that makes `fontVariant` the one prop where
   `PlainText` is knowingly _more_ capable than `<Text>`, the inverse of the usual
   parity risk. Expect Font Variant rows where the `PlainText` box changes and the
@@ -168,7 +168,7 @@ Learned the hard way. Most of these cost an afternoon the first time.
 
   Android has it directly: `TextView.setFontVariationSettings(String)`, API 26+,
   taking the CSS string as-is. iOS has nothing on `UILabel`, `UIFont` or
-  `UIFontDescriptor`; the capability lives one layer down in CoreText, as the
+  `UIFontDescriptor`. The capability lives one layer down in CoreText, as the
   `kCTFontVariationAttribute` font-descriptor key, whose axes are keyed by the
   four-character tag as a number (`'wght'` = `0x77676874`).
 
@@ -213,8 +213,8 @@ Learned the hard way. Most of these cost an afternoon the first time.
     `super`, so every attached view is affected, and the early-out on the last
     applied string means the next flush won't re-derive. A variable font sits at
     its default instance until the next change to `fontVariationSettings` or to
-    any font prop. Accepted, not fixed — cheaper than a per-view configuration
-    listener. `appliedBaseTypeface` itself stays accurate throughout; see
+    any font prop. Accepted, not fixed, cheaper than a per-view configuration
+    listener. `appliedBaseTypeface` itself stays accurate throughout, see
     [sync-points.md](sync-points.md) for why.
 
   The grammar is shared rather than per-platform: iOS parses the same
@@ -222,7 +222,7 @@ Learned the hard way. Most of these cost an afternoon the first time.
   `FontVariationAxis.fromFontVariationSettings` defines, including its
   all-or-nothing failure (one bad entry drops the whole string), so one prop
   value can't mean two things. Android throws `IllegalArgumentException` on a
-  malformed string, which is caught and logged; iOS returns no axes.
+  malformed string, which is caught and logged. iOS returns no axes.
 
   Android is the reference even where it is laxer than CSS, and it is laxer twice.
   It accepts a trailing comma (`"wght" 700,`), because its scanner reads the comma
@@ -245,7 +245,7 @@ Learned the hard way. Most of these cost an afternoon the first time.
 
 - **`TextView` needs a manual measure pass for prop changes that don't resize
   it.** Fabric's mount transaction calls `measure()` + `layout()` after applying
-  props (`SurfaceMountingManager.updateLayout`), which covers mounting — but a
+  props (`SurfaceMountingManager.updateLayout`), which covers mounting, but a
   prop change on an already-laid-out view whose size doesn't change emits no
   `updateLayout`, and nothing else rebuilds the `Layout` that `TextView` draws.
   `PlainTextView.kt` handles that in an overridden `requestLayout()`, scoped to
@@ -253,15 +253,15 @@ Learned the hard way. Most of these cost an afternoon the first time.
   did not re-lay-out after all (`isLayoutRequested`). Keep it, and keep both
   scopes: unscoped, it posted thousands of redundant runnables per screen, each
   rebuilding a `Layout` Fabric had just rebuilt.
-- **A bare `TextView` inherits the theme's text color; RN `<Text>` does not.**
+- **A bare `TextView` inherits the theme's text color. RN `<Text>` does not.**
   With `color` unset, RN's Fabric text path adds no `ForegroundColorSpan`
   (`ReactBaseTextShadowNode`, gated on `isColorSet`) and never sets
   `paint.color` (`TextLayoutManager.updateTextPaint`), so the text draws with
-  `TextPaint`'s default — black — regardless of theme. `PlainTextView.kt`
+  `TextPaint`'s default (black) regardless of theme. `PlainTextView.kt`
   therefore hardcodes `Color.BLACK` both at construction and as the reset value
   in `setColor(null)`. Don't "fix" this to `?android:attr/textColor`: it would
   make `PlainText` turn white in dark mode where a swapped-out `<Text>` stayed
-  black. iOS matches for the same reason — RN's `RCTAttributedTextUtils.mm`
+  black. iOS matches for the same reason: RN's `RCTAttributedTextUtils.mm`
   falls back to `[UIColor blackColor]`, not `labelColor`.
 
 - **RN `<Text>` on Android ignores `fontVariant` unless another font prop is set
@@ -270,15 +270,15 @@ Learned the hard way. Most of these cost an afternoon the first time.
   sites that attach that span (`TextLayoutManager`, in its two span builders) are
   gated on `fontStyle != UNSET || fontWeight != UNSET || fontFamily != null`. So a
   style of `fontVariant` alone renders unchanged, while adding any other font prop
-  — even `fontStyle: 'normal'` — makes it work. There is no second path:
+  (even `fontStyle: 'normal'`) makes it work. There is no second path:
   `TextLayoutManager.updateTextPaint`, the other place a paint gets font
   attributes, never touches `fontFeatureSettings`. The span itself is fine, taking
-  the value and applying it in both `updateDrawState` and `updateMeasureState`;
-  only the condition deciding whether it exists was never extended. Still present
+  the value and applying it in both `updateDrawState` and `updateMeasureState`.
+  Only the condition deciding whether it exists was never extended. Still present
   in 0.83.
 
   `PlainTextView.kt` sets `fontFeatureSettings` unconditionally, so `fontVariant`
-  works on its own. That is deliberate — don't "fix" it by reproducing the gate.
+  works on its own. That is deliberate: don't "fix" it by reproducing the gate.
   The Features screen's Font Variant rows carry a `fontStyle: 'normal'` purely to
   trip the gate, so that the `<Text>` overlay is comparable at all.
 
@@ -288,19 +288,19 @@ Learned the hard way. Most of these cost an afternoon the first time.
   `<Text>` at the same width.** `UILabel` needs slightly more horizontal space
   per character than RN's TextKit-based `<Text>`, so near a width limit a word
   can land on the next line where RN keeps it. This is inherent to `UILabel` vs
-  TextKit, not a sizing bug — the box already gets the correct full width.
+  TextKit, not a sizing bug: the box already gets the correct full width.
   Fixing it would mean rendering through TextKit, defeating the point of the
   library.
 - **`UILabel` defaults to `NSLineBreakStrategyStandard`, which can push a word
   (or several) to the next line for last-line balance even when it would fit.**
   `RNPlainText.mm` sets `_label.lineBreakStrategy = NSLineBreakStrategyNone` at
   construction to disable it, matching `measureContent`'s
-  `boundingRectWithSize:` — `NSParagraphStyle`'s own default is `.none`, so
+  `boundingRectWithSize:`: `NSParagraphStyle`'s own default is `.none`, so
   without this the mounted label and the measured size can wrap differently
   even though the box width is correct.
 - **A bare hyphen (`-`) is a wrap point for `UILabel` but not for RN `<Text>`**,
   so `"text-size"` can split as `"text-"` / `"size"` on iOS. Use a non-breaking
-  hyphen (U+2011, `‑`) where that split is unwanted — see the "Non-breaking
+  hyphen (U+2011, `‑`) where that split is unwanted, see the "Non-breaking
   hyphen" row in the Features screen's Font Scaling section.
 - **`scaledFontSize` must not round.** It briefly did, copied from
   `RCTFont.mm:421-422`, but that's the legacy non-Fabric path (same trap as

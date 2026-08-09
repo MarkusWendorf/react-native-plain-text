@@ -13,7 +13,7 @@ import { COLOR } from '../theme';
 
 // The specimen-book furniture both screens are set in: the title page, the
 // section headings and the row that puts one PlainText against the RN <Text>
-// overlay. Nothing here decides what to demonstrate — the screens do that.
+// overlay. Nothing here decides what to demonstrate: the screens do that.
 
 // Sets the register before the first section: optionally the largest glyphs on
 // the screen and the page's name, then one line on what the page holds.
@@ -54,11 +54,11 @@ export function Section({
   children,
 }: {
   title: string;
-  // Notes about the section's props — caveats, platform gaps, what to look at.
+  // Notes about the section's props: caveats, platform gaps, what to look at.
   footer?: string;
   // For sections whose children are not TextItems: the row separation lives in
-  // each specimen's run-off padding (see `section` below), so anything else — the
-  // Performance screen's buttons, chip rows and props sheet — has nothing to sit
+  // each specimen's run-off padding (see `section` below), so anything else (the
+  // Performance screen's buttons, chip rows and props sheet) has nothing to sit
   // apart on and needs the gap back here.
   spacedRows?: boolean;
   children: ReactNode;
@@ -119,7 +119,7 @@ export function TextItem({
     <View style={styles.rowContainer}>
       {label != null && <PlainText style={styles.rowLabel}>{label.toUpperCase()}</PlainText>}
       {/* Full width, and the overlay's containing block. The grey row inside
-          shrink-wraps to PlainText; the overlay must NOT, or it would be handed
+          shrink-wraps to PlainText. The overlay must NOT, or it would be handed
           PlainText's width as its own constraint and could only ever wrap where
           the real difference is that RN wanted a wider box. */}
       <View style={styles.specimen}>
@@ -139,7 +139,7 @@ export function TextItem({
         {showText && (
           // `alignItems: flex-start` leaves the Text a normal flex child, so it
           // shrink-wraps to its own measured width but still wraps at the same
-          // available width PlainText was measured against — which is what makes
+          // available width PlainText was measured against, which is what makes
           // the brass box edge comparable to the grey one.
           <View style={styles.overlay}>
             <Text
@@ -164,7 +164,7 @@ export function TextItem({
 
 // White paper kept under every specimen for a taller-than-PlainText overlay to run
 // off into (see `specimen`). It is inside the specimen box, so it counts as part of
-// whatever gap follows a row — which means everything that sits below a specimen has
+// whatever gap follows a row, which means everything that sits below a specimen has
 // to subtract it, and everything that sits above one has to add it, or the page
 // spaces itself differently depending on which side of a row you are on.
 const RUN_OFF = 16;
@@ -200,7 +200,7 @@ export const screenStyles = StyleSheet.create({
 // The cover lockup's one type size, weight and tracking: the "Aa" in the mark and
 // the wordmark beside it are the same type, and they have to stay that way.
 //
-// No `fontFamily`, so both take the system face — the same one every specimen on
+// No `fontFamily`, so both take the system face: the same one every specimen on
 // every screen is set in. A serif wordmark read as a claim about typography, and
 // this library's claim is the opposite one: it draws with the platform's own text
 // widget, in the platform's own face, one style per node. The mark should say that
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   // Nothing, deliberately. `specimen` already holds the row-to-row space as its
   // run-off padding, and every child of a Section is a TextItem, so every one of
-  // them brings its own; a gap here stacks on top of that instead of replacing it,
+  // them brings its own. A gap here stacks on top of that instead of replacing it,
   // and 16 of run-off plus a 4pt gap read as 20 points of nothing between a row and
   // the next row's caption.
   //
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     // The whole of the heading's distance from the first specimen, now that the
-    // section gap is 0 — and the same 14 it has always been.
+    // section gap is 0, and the same 14 it has always been.
     marginBottom: 14,
   },
   // Caps and a rule still, but at full ink and half again the row labels' size:
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     color: COLOR.faint,
-    // Marginalia on the section rather than another row of it, so it wants air above
-    // — and the last specimen's run-off padding is already 16 of it, against the 14
+    // Marginalia on the section rather than another row of it, so it wants air above,
+    // and the last specimen's run-off padding is already 16 of it, against the 14
     // the rows used to get. Nothing to add above.
     //
     // Below is the same problem the cover has: a footer displaces the specimen that
@@ -355,20 +355,20 @@ const styles = StyleSheet.create({
     // nothing else: an overlay that measures taller has to go somewhere, and
     // without this it goes onto the next row's label, which reads as a glitch
     // rather than as the disagreement it is. The overlay is not *clipped* either
-    // way — it has no `bottom` or `height`, so it takes its own measured height —
+    // way (it has no `bottom` or `height`, so it takes its own measured height),
     // but a height difference is only legible if it lands on white paper.
     //
     // A full line of the page's body size rather than the few points a rounding
     // difference needs. The point is to catch a disagreement while scrolling past,
     // and at 8 a whole extra line of overlay ran out of white before it was obviously
-    // there — it has to be a band, not a lip. More than the 14 the rows used to sit
-    // apart, so the sections are a little longer than they were; a comparison you
+    // there: it has to be a band, not a lip. More than the 14 the rows used to sit
+    // apart, so the sections are a little longer than they were. A comparison you
     // can read while scrolling is worth 6 points a row.
     paddingBottom: RUN_OFF,
   },
   row: {
     // Sized to the PlainText. The overlay shares this box's top-left origin but
-    // not its width — see the specimen view in TextItem.
+    // not its width. See the specimen view in TextItem.
     alignSelf: 'flex-start',
     alignItems: 'flex-start',
     // As light as it can go and still hold an edge against the white page: that
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR.wash,
   },
   // Pinned to all three edges so the Text is *offered* the container's full
-  // width — the same width PlainText was measured against — while
+  // width (the same width PlainText was measured against) while
   // `alignItems: flex-start` keeps the Text itself a shrink-wrapping child of
   // this box rather than stretched to it. That combination is what makes the brass
   // edge the overlay's own measured width instead of the container's, which is

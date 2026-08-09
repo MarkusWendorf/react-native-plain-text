@@ -35,12 +35,12 @@ Size PlainTextMeasurementsManager::measure(
 
   // The generic FabricUIManager.measure path takes props as a ReadableMap, which
   // RNPlainTextManager.measure reads back to size an off-screen TextView.
-  // (AndroidSwitch passes null here — its size is prop-independent; ours isn't.)
+  // (AndroidSwitch passes null here because its size is prop-independent. Ours isn't.)
   //
   // Only non-default props are serialized, since each entry costs a folly::dynamic
   // insert and a JNI-visible map slot per node.
   //
-  // SYNC: that makes the defaults a three-way contract — the value in each
+  // SYNC: that makes the defaults a three-way contract: the value in each
   // condition below, the default in the generated Props.h, and the fallback in
   // RNPlainTextManager.measure() for the same key. A mismatch silently measures at
   // the wrong size, since an omitted key means "default", not "not set".

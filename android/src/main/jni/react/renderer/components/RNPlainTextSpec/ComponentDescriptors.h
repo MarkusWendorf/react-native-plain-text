@@ -3,7 +3,7 @@
  * CMakeLists puts this directory ahead of the generated one on the include path,
  * so this shadows the generated header and autolinking's
  * `concreteComponentDescriptorProvider<RNPlainTextComponentDescriptor>()` picks up
- * our measuring descriptor instead of the generated non-measuring one — no changes
+ * our measuring descriptor instead of the generated non-measuring one, no changes
  * needed to the app or to autolinking.
  *
  * See android/src/main/jni/CMakeLists.txt and react-native.config.js.

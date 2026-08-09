@@ -134,7 +134,7 @@ export default function FeaturesScreen({ navigation }: Props) {
       </Section>
       {/* padding isn't a text-style prop: it stays in the style handed to the
           native view, so Yoga lays it out around the self-measured text. What to
-          look at is the grey box growing while the glyphs move down with it — a
+          look at is the grey box growing while the glyphs move down with it: a
           box that grew but glyphs that stayed put means the space was reserved
           and nothing insetted the text. */}
       <Section title="Padding">
@@ -175,7 +175,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
       </Section>
       {/* Borders are view styles too, and border width joins padding in the
-          contentInsets Yoga reserves — so the same two questions apply: is the
+          contentInsets Yoga reserves, so the same two questions apply: is the
           border drawn at all, and is the text inset by it. The last row pairs
           both so the insets have to add up.
 
@@ -280,7 +280,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         ))}
       </Section>
       {/* Font scaling follows the OS accessibility text-size setting (Dynamic
-          Type on iOS, Font size on Android); FONT_SCALING_FOOTER names the path
+          Type on iOS, Font size on Android). FONT_SCALING_FOOTER names the path
           for whichever platform is running. */}
       <Section title="Font Scaling" footer={FONT_SCALING_FOOTER}>
         <TextItem label="default" showText={showText} style={{ fontSize: SHORT_ROW_SIZE }}>
@@ -304,8 +304,8 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
       </Section>
       {/* fontVariant turns OpenType features on, so a row only changes if the
-          font actually carries the feature — which is why iOS runs these rows in
-          a serif rather than SF, from the second baseline row down; see
+          font actually carries the feature, which is why iOS runs these rows in
+          a serif rather than SF, from the second baseline row down. See
           FONT_VARIANT_FEATURE_FAMILY. The figure-spacing rows above it stay on the
           system font, which handles tabular/proportional correctly. A row that
           looks like its baseline is usually a missing feature, not a broken
@@ -313,8 +313,8 @@ export default function FeaturesScreen({ navigation }: Props) {
 
           The brass <Text> overlay is the less capable of the two here, for two
           reasons in RN core. Its New Architecture props layer has no room for the
-          ligature and contextual values at all — the C++ FontVariant bitmask
-          covers only small-caps, the figure styles and ss01-ss20 — so those rows
+          ligature and contextual values at all (the C++ FontVariant bitmask
+          covers only small-caps, the figure styles and ss01-ss20), so those rows
           never change on either platform. And on Android it only applies what
           survives when fontStyle, fontWeight or fontFamily is set as well, which
           is why these rows pass fontStyle 'normal' (see fontVariantRow below).
@@ -329,7 +329,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         <TextItem label="default" showText={showText} style={fontVariantRow}>
           {FONT_VARIANT_SPECIMEN}
         </TextItem>
-        {/* Figure spacing first — the pair of values people actually reach for.
+        {/* Figure spacing first: the pair of values people actually reach for.
             It shows up as width: the two rows of each pair have the same digit
             count, so tabular figures make them equally wide (each row
             shrink-wraps to its text) and proportional ones do not. Compare
@@ -358,7 +358,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         ))}
         {/* Second baseline, in the serif the feature rows below use, so they have
             something to differ from. On Android it is the same font as the first
-            baseline — that platform stays on the system font throughout. */}
+            baseline: that platform stays on the system font throughout. */}
         <TextItem label="default" showText={showText} style={fontVariantFeatureRow}>
           {FONT_VARIANT_SPECIMEN}
         </TextItem>
@@ -379,7 +379,7 @@ export default function FeaturesScreen({ navigation }: Props) {
             fontVariationSettings on either platform, so the brass overlay sits at
             the font's default instance on every row while the grey box moves.
             Two PRs tried to add it to core and both went stale unmerged
-            (facebook/react-native#44685 for iOS, #44667 for Android); see
+            (facebook/react-native#44685 for iOS, #44667 for Android). See
             docs/agent/native-gotchas.md.
           - Every row needs a font whose file carries an fvar table, which no
             system font usably does: SF keeps its axes private, and Roboto is
@@ -402,8 +402,8 @@ export default function FeaturesScreen({ navigation }: Props) {
           </TextItem>
         ))}
       </Section>
-      {/* Vertical alignment is Android-only (matches RN <Text>); on iOS it's a
-          no-op — see VERTICAL_ALIGN_FOOTER. Each box is taller than its text so
+      {/* Vertical alignment is Android-only (matches RN <Text>). On iOS it's a
+          no-op, see VERTICAL_ALIGN_FOOTER. Each box is taller than its text so
           the position is visible. */}
       <Section title="Vertical Align (Android)" footer={VERTICAL_ALIGN_FOOTER}>
         {VERTICAL_ALIGNS.map((verticalAlign) => (
@@ -421,7 +421,7 @@ export default function FeaturesScreen({ navigation }: Props) {
       {/*
         Measured *width*, which is the one thing wrap detection decides. RN
         reports the full constraint width for text that word-wrapped and the
-        tight widest-line width for text that didn't — so what to look at is the
+        tight widest-line width for text that didn't, so what to look at is the
         grey box edge, not the glyphs. None of these rows sets a width: the row
         shrink-wraps to whatever the text measured, and "Compare Text" overlays
         RN's own answer in brass on top.
@@ -429,15 +429,15 @@ export default function FeaturesScreen({ navigation }: Props) {
         Two things to check, in order: PlainText against the brass Text overlay on
         one platform, then iOS against Android.
 
-        Rows 2 and 3 are the interesting case — hard breaks that all fit, so
+        Rows 2 and 3 are the interesting case: hard breaks that all fit, so
         nothing wrapped and the box must stop at the longest line. Every line is
-        kept well under ~25 characters so it still fits on a narrow phone; if a
+        kept well under ~25 characters so it still fits on a narrow phone. If a
         line soft-wraps the row stops testing what it is here to test. The label
         sits above the row rather than beside it, so it costs these probes no
         width at all.
       */}
       <Section title="Wrap Detection">
-        {/* Control. Nothing to detect — if this one disagrees, the harness is
+        {/* Control. Nothing to detect: if this one disagrees, the harness is
             wrong, not the wrap logic. */}
         <TextItem label="control" showText={showText} style={styles.wrapProbe}>
           {'One short line   '}
@@ -468,7 +468,7 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
       </Section>
       {/* Accessibility props are part of RN's ViewProps, so they pass straight
-          through to the native view. They're not visually distinct — turn on
+          through to the native view. They're not visually distinct: turn on
           VoiceOver (iOS) / TalkBack (Android) to hear the label/role/state, or
           inspect the native tree for the testID. */}
       <Section title="Accessibility">
@@ -533,8 +533,8 @@ export default function FeaturesScreen({ navigation }: Props) {
   );
 }
 
-// The sections whose specimen is one short line — the face itself, its weight,
-// style, color, tracking, decoration and OpenType features — are set a few points
+// The sections whose specimen is one short line (the face itself, its weight,
+// style, color, tracking, decoration and OpenType features) are set a few points
 // up from body size. Those rows are looked at rather than read, and at 18pt the
 // differences between them were too small to judge. Sections whose specimen has to
 // wrap stay at 18: there the point is the paragraph, not the glyph.
@@ -543,7 +543,7 @@ const SHORT_ROW_SIZE = 22;
 const styles = StyleSheet.create({
   // Every section whose specimen wraps: full width, body size, and no background
   // of its own, because the row's grey is the control. What each of those sections
-  // demonstrates — the alignment, the padding, the border geometry, the clamp — is
+  // demonstrates (the alignment, the padding, the border geometry, the clamp) is
   // set on top of this at the row, so the column differs only in the one thing it
   // is about.
   //
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   // `containerStyle={screenStyles.wideRow}` as well, so the percentage resolves
   // against a definite row width rather than against the overlay's full-width box
   // on one side and a shrink-wrapping row on the other. A section that is not
-  // about layout should set no width at all instead — see `a11yRow`.
+  // about layout should set no width at all instead. See `a11yRow`.
   body: {
     width: '100%',
     fontSize: 18,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   // in one ink and the rows differ only in the geometry.
   //
   // It is the one accent used at this weight, so it is also the constraint on how
-  // bright the blue can go — a 4pt stroke reads roughly twice as loud as the same
+  // bright the blue can go: a 4pt stroke reads roughly twice as loud as the same
   // color set as text.
   bordered: {
     borderColor: COLOR.indigo,
@@ -577,8 +577,8 @@ const styles = StyleSheet.create({
   //
   // No width, like `wrapProbe`: these rows demonstrate props that do not affect
   // layout at all, so both boxes should just hug their text. A `width: '100%'`
-  // here resolved against two different containing blocks — the shrink-wrapping
-  // row under the PlainText, the full-width overlay box over it — and showed a
+  // here resolved against two different containing blocks (the shrink-wrapping
+  // row under the PlainText, the full-width overlay box over it) and showed a
   // brass box running to the margin over a grey one hugging the glyphs, which is
   // a difference in the harness rather than in anything either component
   // measured.
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
 });
 
 // Specimen strings. Every value a row varies now lives in the label gutter, so
-// these can be real text — which is what a row set in it is actually for.
+// these can be real text, which is what a row set in it is actually for.
 //
 // All of them are the one familiar pangram at three lengths, so a reader scanning
 // down the screen is comparing the property and not the sentence. SPECIMEN is a
@@ -657,14 +657,14 @@ const TEXT_DECORATION_LINES = [
 // these rows carry.
 const FONT_VARIANT_FEATURE_FAMILY = Platform.select({ ios: 'Baskerville', default: undefined });
 
-// `fontStyle: 'normal'` is not cosmetic — it is what makes the brass <Text> overlay
+// `fontStyle: 'normal'` is not cosmetic: it is what makes the brass <Text> overlay
 // show any of this on Android. RN only attaches the span that carries
 // fontFeatureSettings when fontStyle, fontWeight or fontFamily is set too, so
 // fontVariant on its own renders unchanged there (see
 // docs/agent/native-gotchas.md). Applied to both sides rather than to the overlay
 // alone, so the comparison stays apples-to-apples: it is a no-op for PlainText,
 // which already resolves fontStyle 'normal' the same as unset. It does nudge RN's
-// own paint — the span also sets isSubpixelText/isLinearText — which is
+// own paint (the span also sets isSubpixelText/isLinearText), which is
 // unavoidable, since that span is RN's only carrier for the features.
 const fontVariantRow: TextStyle = { fontSize: SHORT_ROW_SIZE, fontStyle: 'normal' };
 
@@ -679,7 +679,7 @@ const fontVariantFeatureRow: TextStyle = {
 const FONT_VARIANTS: { label: string; fontVariant?: TextStyle['fontVariant'] }[] = [
   // Ordered by how often the value actually gets used in app UIs, commonest first.
   // The section renders the baseline row and the two figure-spacing values
-  // (tabular-nums, proportional-nums) ahead of this list — those are the ones
+  // (tabular-nums, proportional-nums) ahead of this list: those are the ones
   // reached for most, and they need paired rows to show anything, so they can't be
   // driven from here.
   //
@@ -702,7 +702,7 @@ const FONT_VARIANTS: { label: string; fontVariant?: TextStyle['fontVariant'] }[]
   // ligatures. Both fonts here carry them, so this is where PlainText's box should
   // differ from the <Text> overlay on either platform.
   { label: 'no-common-ligatures', fontVariant: ['no-common-ligatures'] },
-  // Not a real-world combination; here so the array form is exercised with more
+  // Not a real-world combination. Here so the array form is exercised with more
   // than one entry.
   { label: 'small-caps + oldstyle-nums', fontVariant: ['small-caps', 'oldstyle-nums'] },
 ];
@@ -739,7 +739,7 @@ const FONT_VARIATION_SETTINGS: { label: string; fontVariationSettings?: string }
   { label: '"wght" 550', fontVariationSettings: '"wght" 550' },
   { label: '"wght" 800', fontVariationSettings: '"wght" 800' },
   // Width. Open Sans only condenses (75-100), so this axis moves in one
-  // direction; a font with a wider upper bound would move both ways.
+  // direction. A font with a wider upper bound would move both ways.
   { label: '"wdth" 87.5', fontVariationSettings: '"wdth" 87.5' },
   { label: '"wdth" 75', fontVariationSettings: '"wdth" 75' },
   // Two axes at once, comma-separated. The form both platforms' parsers take.
@@ -776,14 +776,14 @@ const FONT_WEIGHTS = ['normal', 'bold', '100', '300', '500', '700', '900'] as co
 //
 // Every face and family here is verified present in the iOS 26.5 simulator
 // runtime, and the PostScript names are read from its font files rather than
-// guessed. A name that isn't installed renders as the system font — which is
+// guessed. A name that isn't installed renders as the system font, which is
 // what the Unresolvable row is for, so a wrong name elsewhere would quietly read
 // as a passing row.
 //
 // The Face name and Unresolvable rows are the pair worth watching together.
 // Resolution used to match UIFontDescriptorFamilyAttribute, which takes a
 // registered family name and nothing else, so a face name silently produced the
-// system font — the very thing an unresolvable name produces, which is what made
+// system font, the very thing an unresolvable name produces, which is what made
 // the bug hard to see: a loaded custom font and a typo rendered identically.
 // They should look different now, and both should match the brass <Text> overlay.
 //
@@ -817,8 +817,8 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
       style: { fontSize: 16, fontFamily: 'Zapfino', fontWeight: 'bold' },
     },
     {
-      // HelveticaNeue-Thin, picked because RCTGetFontWeight reads the name suffix
-      // — a weight trait alone would not have singled it out. Also the order in
+      // HelveticaNeue-Thin, picked because RCTGetFontWeight reads the name suffix:
+      // a weight trait alone would not have singled it out. Also the order in
       // that suffix list earning its keep: the family carries UltraLight, Thin
       // and Light, and "ultralight" has to be tested before "light" or the
       // UltraLight face would answer to weight 300.
@@ -848,7 +848,7 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
     },
     {
       // Both Condensed cuts sit in family "Helvetica Neue", but the family path
-      // filters condensed faces out, so no weight reaches them there — a face
+      // filters condensed faces out, so no weight reaches them there: a face
       // name is the only way in. The two branches are not interchangeable.
       label: 'Condensed face',
       style: { fontSize: 20, fontFamily: 'HelveticaNeue-CondensedBlack' },
@@ -898,7 +898,7 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
   ],
 });
 
-// Custom fonts, as against the platform built-ins above — and the only rows in
+// Custom fonts, as against the platform built-ins above, and the only rows in
 // this screen that are the same on iOS and Android, because the name is ours
 // rather than the platform's. Loaded in App.tsx via expo-font, which is how most
 // apps get a custom font, and the reason this section exists: it is the case the
@@ -908,7 +908,7 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
 // it swizzles +fontNames(forFamilyName:) so that an unknown family name gets
 // retried as an alias, and when the alias resolves to a PostScript name that is
 // not itself a family, it answers with that one name in a one-element array.
-// So resolution reaches the face only if it goes through that method —
+// So resolution reaches the face only if it goes through that method:
 // UIFontDescriptorFamilyAttribute matching does not call it, which is why every
 // row here used to come out as the system font.
 //
@@ -916,7 +916,7 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
 // `fontNamesForFamilyName:.count == 0`, could never have worked in an Expo app:
 // the swizzle returns one name, not none.
 //
-// On Android the same aliases resolve without any of this — expo-font registers
+// On Android the same aliases resolve without any of this: expo-font registers
 // them into ReactFontManager (android FontLoaderModule.kt), which is what
 // PlainTextView.applyTypeface already resolves through.
 const CUSTOM_FONT_ROWS: FontFamilyRow[] = [
@@ -926,7 +926,7 @@ const CUSTOM_FONT_ROWS: FontFamilyRow[] = [
   },
   {
     // Each cut is loaded under its own alias, so weight lives in the name here
-    // rather than in fontWeight — one alias is a one-face family, and there is
+    // rather than in fontWeight: one alias is a one-face family, and there is
     // no sibling cut for a weight to match against.
     label: 'expo-font alias, heavier cut',
     style: { fontSize: 18, fontFamily: 'Inter_600SemiBold' },

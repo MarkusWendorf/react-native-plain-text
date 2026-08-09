@@ -1,6 +1,6 @@
 # Manual sync points
 
-Places that must be updated together where **nothing verifies them** — no type
+Places that must be updated together where **nothing verifies them**: no type
 error, no failing test, and usually nothing visibly wrong on first render. Every
 site carries a `// SYNC:` comment:
 

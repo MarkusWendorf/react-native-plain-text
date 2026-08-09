@@ -44,7 +44,7 @@ function titleOptions(title: string): NativeStackNavigationOptions {
   // cover instead.
   if (Platform.OS !== 'ios') {
     // Android's title is drawn natively, so it takes what the native header
-    // supports — size and weight, not tracking.
+    // supports: size and weight, not tracking.
     return {
       title,
       headerTitleAlign: 'left',
@@ -61,7 +61,7 @@ function titleOptions(title: string): NativeStackNavigationOptions {
     // title comes out inside a rounded, shadowed pill and reads as a button.
     //
     // The title is styled explicitly rather than with the header's own title
-    // component, which in this slot would take the nav bar's tint — blue 17pt on
+    // component, which in this slot would take the nav bar's tint. Blue 17pt on
     // the leading margin reads as a bar button too.
     unstable_headerLeftItems: () => [
       {
@@ -82,12 +82,12 @@ function titleOptions(title: string): NativeStackNavigationOptions {
 // is a custom left bar button item, which UIKit lays out before the right one and
 // lets take the width it asks for, so a long title compresses the screen's own
 // header button to a bare "…": "Performance", not "Performance Benchmarks". The
-// library's full name is not in the bar at all — it is set as a wordmark on the
+// library's full name is not in the bar at all. It is set as a wordmark on the
 // Features cover, right beside the "Aa", which is a better place for it than a
 // 23pt nav title next to a button.
 //
 // The route name inside each stack never surfaces: single-screen stacks show no
-// back button, and the persisted selection reads the *tab* route name — which is
+// back button, and the persisted selection reads the *tab* route name, which is
 // the title. So it is the titles here that have to stay put across releases, or a
 // persisted selection stops resolving; see `onStateChange` in App below.
 const TABS = [
@@ -116,7 +116,7 @@ const TAB_SCREENS = TABS.map(({ title, route, icon, screen }) => ({
 // The keys are the names FeaturesScreen passes as fontFamily, and expo-font
 // registers each one as an alias for the face's real PostScript name
 // ("Inter_400Regular" ▸ "Inter-Regular"). One family, same names on both
-// platforms, which is what makes those rows comparable at all — every other font
+// platforms, which is what makes those rows comparable at all. Every other font
 // in that section is a platform built-in.
 //
 // Gated rather than rendered through: an alias that hasn't been registered yet
@@ -160,8 +160,8 @@ export default function App() {
               headerShown: false,
               // The bar is furniture for the same book as the pages, so it takes
               // the palette instead of the platform default blue: indigo is the
-              // page's accent, and the resting state comes from the neutral ramp
-              // — faint enough to sit back from the selected tab, dark enough to
+              // page's accent, and the resting state comes from the neutral ramp,
+              // faint enough to sit back from the selected tab, dark enough to
               // still read as a label.
               tabBarActiveTintColor: COLOR.indigo,
               tabBarInactiveTintColor: COLOR.faint,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   // Six points over the 17pt system title, at bold and with the cover glyph's
   // negative tracking pulled back to what a 23pt string can carry: the page's
   // name should be the largest thing in the bar by a clear margin, and at this
-  // size each of the three still fits one line beside its header button — which
+  // size each of the three still fits one line beside its header button, which
   // is what keeps the titles short.
   headerTitle: {
     fontSize: 23,

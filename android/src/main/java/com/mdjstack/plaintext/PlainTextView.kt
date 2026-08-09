@@ -60,9 +60,9 @@ class PlainTextView : AppCompatTextView {
   // Named for the value, not TextView.setFontVariationSettings, to avoid colliding
   // with the synthetic property Kotlin derives from that method pair.
   private var variationSettings: String? = null
-  // Last value handed to TextView, so an unchanged flush is a no-op — can't be read
+  // Last value handed to TextView, so an unchanged flush is a no-op (can't be read
   // back, since getFontVariationSettings() returns the paint's string, which outlives
-  // the typeface it was applied to.
+  // the typeface it was applied to).
   private var appliedVariationSettings: String? = null
 
   // Never the live typeface: applyStyles derives from whatever is passed when
@@ -80,10 +80,10 @@ class PlainTextView : AppCompatTextView {
   //
   // Known quirk: the OS "Bold text" setting reapplies the typeface via
   // onConfigurationChanged (API 31+) without invalidating this field, silently
-  // resetting a variable font's axes — benign, self-heals on the next font/axis change.
+  // resetting a variable font's axes, benign, self-heals on the next font/axis change.
   private var appliedBaseTypeface: Typeface? = baseTypeface
 
-  // Reused by PlainTextViewManager for measurement; never attached to a window, so
+  // Reused by PlainTextViewManager for measurement. Never attached to a window, so
   // posting measureAndLayout would queue forever.
   internal var isMeasureOnly: Boolean = false
 
@@ -100,7 +100,7 @@ class PlainTextView : AppCompatTextView {
     relayoutPosted = false
 
     // True here means Fabric didn't already redo this via updateLayout in the same
-    // mount batch — a prop change with no size change, which Fabric never re-lays-out.
+    // mount batch, a prop change with no size change, which Fabric never re-lays-out.
     if (!isLayoutRequested) return@Runnable
 
     measure(
@@ -110,7 +110,7 @@ class PlainTextView : AppCompatTextView {
     layout(left, top, right, bottom)
   }
 
-  // Pixels-per-sp when sp-derived values were last applied — the probe ReactHostImpl
+  // Pixels-per-sp when sp-derived values were last applied, the probe ReactHostImpl
   // uses to detect a font-scale or density change.
   private var scaledPixelsPerSp: Float = PixelUtil.toPixelFromSP(1f)
 
@@ -130,9 +130,9 @@ class PlainTextView : AppCompatTextView {
   private var dirtyTypeface = false
   private var dirtyText = false
 
-  // @ReactProp setters mark a dirty flag instead of repeating expensive work per call;
-  // this applies each once per transaction, like <Text>'s single ReactTextUpdate.
-  // Never call from init — its apply* helpers read state past where Kotlin's
+  // @ReactProp setters mark a dirty flag instead of repeating expensive work per call.
+  // This applies each once per transaction, like <Text>'s single ReactTextUpdate.
+  // Never call from init: its apply* helpers read state past where Kotlin's
   // init-order check looks.
   //
   // SYNC: a new prop feeding shared work must set its own dirty flag, and flags must
@@ -157,7 +157,7 @@ class PlainTextView : AppCompatTextView {
       dirtyTypeface = false
       applyTypeface()
     }
-    // SYNC: must run after applyTypeface — axes are baked into a derived Typeface, so
+    // SYNC: must run after applyTypeface, since axes are baked into a derived Typeface, so
     // a new base typeface arrives with none. Reordering silently drops the axes
     // whenever a font prop changes in the same transaction. See
     // docs/agent/sync-points.md#deferred-prop-application.
@@ -207,7 +207,7 @@ class PlainTextView : AppCompatTextView {
   }
 
   // SYNC: everything derived from the OS text-size setting must be reachable from
-  // here — iOS's traitCollectionDidChange must cover the same set. See
+  // here, iOS's traitCollectionDidChange must cover the same set. See
   // docs/agent/sync-points.md.
   private fun markScaledSizesDirty() {
     dirtyFontSize = true
@@ -219,7 +219,7 @@ class PlainTextView : AppCompatTextView {
     dirtyText = true
   }
 
-  // Mirrors <Text> (TextAttributeProps#lineHeight): DIP, scaled with font scaling on;
+  // Mirrors <Text> (TextAttributeProps#lineHeight): DIP, scaled with font scaling on.
   // 0/unset keeps the font's natural line height.
   fun setLineHeight(lineHeight: Float) {
     lineHeightSp = if (lineHeight <= 0f) Float.NaN else lineHeight
@@ -251,7 +251,7 @@ class PlainTextView : AppCompatTextView {
   }
 
   // Mirrors <Text> (ReactBaseTextShadowNode): both values can appear in one
-  // space-joined string; paint flags rather than spans, since this view always
+  // space-joined string. Paint flags rather than spans, since this view always
   // renders a single uniform run.
   fun setTextDecorationLine(value: String?) {
     paintFlags = if (value?.contains("underline") == true) {
@@ -286,7 +286,7 @@ class PlainTextView : AppCompatTextView {
   }
 
   // Mirrors <Text> (TextAttributeProps#setFontVariant): an OpenType feature-settings
-  // string on the paint, not the typeface. Deliberately unguarded — Paint early-outs
+  // string on the paint, not the typeface. Deliberately unguarded: Paint early-outs
   // on an equal string, and the invalidation is redundant with setText anyway. See
   // docs/agent/performance.md before adding a guard.
   fun setFontVariant(fontVariant: ReadableArray?) {
@@ -312,7 +312,7 @@ class PlainTextView : AppCompatTextView {
   }
 
   private fun applyVariationSettings() {
-    // API 26 is where variable fonts arrived; below it the prop is inert.
+    // API 26 is where variable fonts arrived. Below it the prop is inert.
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
     val settings = variationSettings
@@ -341,9 +341,9 @@ class PlainTextView : AppCompatTextView {
       }
     }
 
-    // Paint.setFontVariationSettings(null) doesn't undo axes on API 26-35 — minikin
-    // reuses the varied typeface's collection despite the cleared string — so the
-    // base typeface must be restored manually; API 36 fixes this via
+    // Paint.setFontVariationSettings(null) doesn't undo axes on API 26-35: minikin
+    // reuses the varied typeface's collection despite the cleared string, so the
+    // base typeface must be restored manually. API 36 fixes this via
     // Typeface.mDerivedFrom. Nothing to restore if applyTypeface just ran (it
     // already reset this to null).
     if (appliedVariationSettings != null) {
@@ -363,7 +363,7 @@ class PlainTextView : AppCompatTextView {
 
     try {
       // EXPENSIVE: a second native Typeface derivation, same uncached path as the
-      // clear above; applyTypeface's identity guard keeps this pair off the
+      // clear above. applyTypeface's identity guard keeps this pair off the
       // per-node measuring path.
       super.setFontVariationSettings(settings)
       // Read off `paint`, not `typeface`: setFontVariationSettings only writes
@@ -373,7 +373,7 @@ class PlainTextView : AppCompatTextView {
         variationTypefaceCache.put(VariationCacheKey(base, settings), paint.typeface)
       }
     } catch (e: IllegalArgumentException) {
-      // A malformed prop string, not a broken font; recording it as applied means a
+      // A malformed prop string, not a broken font. Recording it as applied means a
       // stable bad value logs once, not every flush.
       FLog.w(ReactConstants.TAG, "PlainText: invalid fontVariationSettings: ${e.message}")
     }
@@ -390,12 +390,12 @@ class PlainTextView : AppCompatTextView {
       context.assets
     )
     // Guarded on identity, not just the dirty flag, since measure() sets all three
-    // font props per node; skips re-running applyVariationSettings' two EXPENSIVE
+    // font props per node. This skips re-running applyVariationSettings' two EXPENSIVE
     // derivations for every node.
     if (resolved === appliedBaseTypeface) return
     appliedBaseTypeface = resolved
     // EXPENSIVE: TextView.setTypeface clears the text Layout and requests a new one
-    // (TextView.java:4851); reached per node when axes are set, since the live
+    // (TextView.java:4851), reached per node when axes are set, since the live
     // axis-derived typeface never equals what applyStyles resolved.
     typeface = resolved
     // Resetting to null forces applyVariationSettings to re-clear Paint's string and
@@ -415,7 +415,7 @@ class PlainTextView : AppCompatTextView {
       "center" -> Gravity.CENTER_HORIZONTAL
       else -> Gravity.NO_GRAVITY
     }
-    // Horizontal bits only, so textAlignVertical set in either order survives; both
+    // Horizontal bits only, so textAlignVertical set in either order survives. Both
     // masks must be cleared since the default START is a relative gravity whose flag
     // lives outside HORIZONTAL_GRAVITY_MASK.
     gravity = (gravity and
@@ -441,7 +441,7 @@ class PlainTextView : AppCompatTextView {
     gravity = (gravity and Gravity.VERTICAL_GRAVITY_MASK.inv()) or vertical
   }
 
-  // 0 means unlimited, matching <Text>; also bounds the off-screen measure pass.
+  // 0 means unlimited, matching <Text>. It also bounds the off-screen measure pass.
   fun setNumberOfLines(numberOfLines: Int) {
     maxLines = if (numberOfLines <= 0) Integer.MAX_VALUE else numberOfLines
   }
@@ -457,12 +457,12 @@ class PlainTextView : AppCompatTextView {
   }
 
   // A text-size change touches no prop, so Fabric's diff never fires and
-  // textSize/letterSpacing/lineHeight stay stale in pixels; re-derive them here since
+  // textSize/letterSpacing/lineHeight stay stale in pixels. Re-derive them here since
   // Android calls this on every attached view regardless of Fabric.
   //
   // Only reached when the host Activity declares fontScale in android:configChanges
   // (otherwise the Activity gets recreated). The super call also reapplies "Bold text"
-  // to the typeface, unrelated to scale — see appliedBaseTypeface for the cost.
+  // to the typeface, unrelated to scale (see appliedBaseTypeface for the cost).
   override fun onConfigurationChanged(newConfig: Configuration?) {
     super.onConfigurationChanged(newConfig)
     // The measuring instance never gets here in practice, but is guarded anyway since
@@ -500,12 +500,12 @@ private fun toEffectivePixel(
 }
 
 // Key for variationTypefaceCache. Typeface has no equals override, so identity on
-// baseTypeface is a reference compare — fine, since applyStyles already interns it.
+// baseTypeface is a reference compare, fine, since applyStyles already interns it.
 // Structural equality on settings, which arrives fresh off the bridge per node.
 private data class VariationCacheKey(val baseTypeface: Typeface, val settings: String)
 
 // Shared across every PlainTextView, including the measuring view. Bounded since
-// settings is a continuous value an animating screen could grow without limit — same
+// settings is a continuous value an animating screen could grow without limit, same
 // reasoning as the iOS font cache's countLimit
 // (docs/agent/performance.md#share-and-cache-ios-font-resolution).
 //

@@ -19,7 +19,7 @@ import { PlainText, type PlainTextStyle } from 'react-native-plain-text';
 import { Section, screenStyles } from '../components/Specimen';
 import { useSessionState } from '../useSessionState';
 import { COLOR, MONO, SERIF, VARIABLE } from '../theme';
-// The library's bare codegen host component — the analogue of the
+// The library's bare codegen host component, the analogue of the
 // NativeText-vs-Text pair, which prices the JS wrapper. Imported by path
 // because it is deliberately not public API.
 import NativePlainText from '../../../src/PlainTextViewNativeComponent';
@@ -32,11 +32,11 @@ const COUNT = 1000;
 // observe the way the timings do. An unmount needs it at least as much as a
 // mount: releasing is lazier than allocating.
 //
-// Default for both platforms — adjustable per run from the Props sheet (the
+// Default for both platforms, adjustable per run from the Props sheet (the
 // 'settleMs' row below) up to 15s, for whenever a platform's settle curve
-// turns out to need longer than this. Undercounting memory fails *silently* —
-// a short window yields a plausible-looking smaller number, not a visible gap
-// — so lengthening it is the safer direction to reach for when in doubt.
+// turns out to need longer than this. Undercounting memory fails *silently*
+// (a short window yields a plausible-looking smaller number, not a visible
+// gap), so lengthening it is the safer direction to reach for when in doubt.
 const DEFAULT_SETTLE_MS = 3_000;
 
 type Kind = 'plain' | 'nativePlain' | 'text' | 'nativeText';
@@ -84,7 +84,7 @@ type RunStats = {
   memAfter: number;
   // Signed: positive for a mount, negative for an unmount that actually
   // released, near zero for an update that allocated nothing. The readout also
-  // shows this over COUNT — only meaningful where the run created or destroyed
+  // shows this over COUNT, only meaningful where the run created or destroyed
   // the views, and ~0 per view for the update runs.
   deltaBytes: number;
   // Unmount only: how far the settled footprint sits above the pre-mount
@@ -93,12 +93,12 @@ type RunStats = {
 };
 
 // Measured with RN's own Web Performance APIs, stable since 0.83, rather than
-// hand-rolled timing — see docs/agent/measuring.md.
+// hand-rolled timing. See docs/agent/measuring.md.
 //
 // `interaction` is the headline: for an event whose handler causes rendering
 // updates, EventPerformanceLogger holds the entry until the shadow tree mounts
 // and reports `duration = mountTime - eventStartTime`. Press to mounted,
-// measured by the core — RN's analogue of INP.
+// measured by the core, RN's analogue of INP.
 //
 // Typed locally: tsconfig has no DOM lib and RN's strict TS API doesn't declare
 // these globals, though the runtime installs them.
@@ -124,7 +124,7 @@ const PerformanceObserverGlobal = (
 
 // Hermes only, and only when it's built with GC exposed to JS. Called before
 // sampling memory on mount and unmount, so a run's own garbage doesn't count
-// toward its delta/retained numbers — never on the other scenarios, where a
+// toward its delta/retained numbers, never on the other scenarios, where a
 // GC pause would otherwise land inside the commit/interaction measurement
 // instead of after it.
 const forceGC = (globalThis as unknown as { gc?: () => void }).gc;
@@ -167,7 +167,7 @@ export default function PerformanceScreen({ navigation }: Props) {
   const settling = running != null;
 
   // The three update scenarios. `rerenders` is fed into the No-op Update
-  // button's `testID` on purpose — see runParentRerender.
+  // button's `testID` on purpose. See runParentRerender.
   const [rerenders, setRerenders] = useState(0);
   const [colorIndex, setColorIndex] = useState(0);
   const [sizeBump, setSizeBump] = useState(0);
@@ -231,7 +231,7 @@ export default function PerformanceScreen({ navigation }: Props) {
       // Same split as the Compare Text toggle: Android draws `headerRight`, iOS
       // takes the item form so the bar's iOS 26 glass capsule can be turned off.
       //
-      // The rule cannot tell a header-slot render callback from a component; the
+      // The rule cannot tell a header-slot render callback from a component. The
       // element it returns is built once above, outside the callback. The same
       // pattern in CompareText sits in a hook rather than a component, which is
       // why only this one needs the exemption.
@@ -304,7 +304,7 @@ export default function PerformanceScreen({ navigation }: Props) {
   // The control for the other two update runs: re-render the screen *without*
   // touching any prop the mounted text receives. This is what isolates
   // `shouldNewRevisionDirtyMeasurement`'s `fragment.props == nullptr` early
-  // return — the ancestor-re-render path, where Fabric clones every child of a
+  // return, the ancestor-re-render path, where Fabric clones every child of a
   // changed parent purely to re-own its Yoga node
   // (`YogaLayoutableShadowNode::adoptYogaChild`) and nothing should re-measure.
   //
@@ -313,9 +313,9 @@ export default function PerformanceScreen({ navigation }: Props) {
   // commits no clones, and the run measures nothing at all rather than
   // measuring a cheap re-own. Feeding it into the No-op Update button's
   // `testID` changes a real prop inside the same content container as the
-  // items, which forces that container to be cloned with a new children list
-  // — and that is what re-owns all ~1000 mounted items. Keep the counter
-  // reaching some real prop under that container; how deeply nested, or
+  // items, which forces that container to be cloned with a new children list,
+  // and that is what re-owns all ~1000 mounted items. Keep the counter
+  // reaching some real prop under that container. How deeply nested, or
   // whether it's user-visible, does not matter. Moving it into the header or
   // into a view outside the ScrollView, or dropping it, silently turns this
   // run into a no-op.
@@ -334,8 +334,8 @@ export default function PerformanceScreen({ navigation }: Props) {
     setSizeBump((n) => (n === 0 ? SIZE_BUMP : 0));
   }, [beginRun]);
 
-  // One pipeline for all five scenarios. Runs after React has committed; memory
-  // is sampled settleDelayMs later, once native allocation (or release) has
+  // One pipeline for all five scenarios. Runs after React has committed.
+  // Memory is sampled settleDelayMs later, once native allocation (or release) has
   // caught up, and the interaction number is read at the same moment because
   // every Event Timing entry for that press has landed well before then.
   //
@@ -346,7 +346,7 @@ export default function PerformanceScreen({ navigation }: Props) {
     if (!run) return;
     pending.current = null;
 
-    // The JS thread only — React render, Fabric commit, Yoga layout. Mounting
+    // The JS thread only: React render, Fabric commit, Yoga layout. Mounting
     // happens on the UI thread after this fires, so `interaction - commit` is
     // roughly what mounting cost. Named per scenario so the runs stay separable
     // in React Native DevTools' Performance panel.
@@ -354,8 +354,8 @@ export default function PerformanceScreen({ navigation }: Props) {
 
     const timer = setTimeout(() => {
       // commitMs is already fixed above and interactionMs already latched by
-      // the observer effect, so a GC pause here only delays this callback —
-      // it can't skew either timing number. Mount and unmount only: those are
+      // the observer effect, so a GC pause here only delays this callback.
+      // It can't skew either timing number. Mount and unmount only: those are
       // the two scenarios whose memory number is supposed to reflect COUNT
       // views' worth of allocation, so a run's own garbage shouldn't count
       // toward it either way.
@@ -397,8 +397,8 @@ export default function PerformanceScreen({ navigation }: Props) {
 
               Debug numbers are not comparable to anything, so say so before the
               first press rather than in a doc nobody reads mid-run. Set as the
-              banner shape the Use Cases page uses for the same job — a tinted
-              wash with the pigment as a left rule — rather than as a pill,
+              banner shape the Use Cases page uses for the same job (a tinted
+              wash with the pigment as a left rule) rather than as a pill,
               because this is a note about the whole page.
 
               Two PlainTexts in a row rather than one string with a bold span in
@@ -426,7 +426,7 @@ export default function PerformanceScreen({ navigation }: Props) {
               instance count, which is fixed and already named on the mount
               button. Frozen at mount time rather than following the live
               selection, so it never relabels results measured against something
-              else; until the first mount it shows what the next one will run.
+              else. Until the first mount it shows what the next one will run.
 
               Set in the mono face the page uses for every recorded value: it is
               a record to be read character by character and quoted, not prose.
@@ -533,7 +533,7 @@ function renderItems(kind: Kind, applied: Applied) {
 
   if (kind === 'nativePlain') {
     // Same rendered result as the PlainText branch, but with props already in
-    // native shape — no StyleSheet.flatten, no rest destructure, and only the
+    // native shape: no StyleSheet.flatten, no rest destructure, and only the
     // props actually set. The delta is the JS wrapper's cost. Every key in
     // textStyle is also a native prop name, so it spreads straight through.
     return Array.from({ length: COUNT }, (_, n) => (
@@ -598,7 +598,7 @@ const pad = (n: number) => String(n).padStart(3, '0');
 // on NativePlainText, style entries everywhere else), `view` values are view
 // styles Yoga lays out around the self-measured text, `prop` values are
 // component props, `content` picks the string.
-// 'settle' isn't rendered onto anything — it's read separately, see
+// 'settle' isn't rendered onto anything. It's read separately, see
 // settleMsFor below.
 type Target = 'text' | 'view' | 'prop' | 'content' | 'settle';
 
@@ -636,7 +636,7 @@ type AttrDef = {
 // two runs comparable and quotable, and it keeps the persisted shape trivial.
 //
 // Every row starts with `(none)`, which leaves the attribute unset, and then
-// lists the real values explicitly — including the ones that equal the platform
+// lists the real values explicitly, including the ones that equal the platform
 // default (`fontStyle normal`, `textDecorationLine none`, `allowFontScaling
 // true`). That distinction is the point: unset means the prop never reaches the
 // native view, while an explicit default-valued prop still costs a diff, a
@@ -885,12 +885,12 @@ const ATTRIBUTES: AttrDef[] = [
     ],
   },
   {
-    // The library's internal `experiment` prop (src/PlainTextViewNativeComponent.ts)
-    // — one generic on/off switch for whatever the perf suite is currently A/B
-    // testing. `(none)`/`false` is baseline; `true` is the experiment. Meaning
-    // is platform- and experiment-specific; currently unread on both — the
-    // shared-vs-fresh measuring view it once gated is settled (shared won) and
-    // no longer conditional. See docs/agent/sync-points.md.
+    // The library's internal `experiment` prop (src/PlainTextViewNativeComponent.ts):
+    // one generic on/off switch for whatever the perf suite is currently A/B
+    // testing. `(none)`/`false` is baseline, and `true` is the experiment.
+    // Meaning is platform- and experiment-specific, and currently unread on
+    // both: the shared-vs-fresh measuring view it once gated is settled
+    // (shared won) and no longer conditional. See docs/agent/sync-points.md.
     key: 'experiment',
     section: 'Params',
     fp: 'exp',
@@ -902,7 +902,7 @@ const ATTRIBUTES: AttrDef[] = [
     ],
   },
   {
-    // How long a run waits before sampling memory — see DEFAULT_SETTLE_MS.
+    // How long a run waits before sampling memory. See DEFAULT_SETTLE_MS.
     // Always in the fingerprint, since it changes whether a recorded memory
     // number is trustworthy.
     key: 'settleMs',
@@ -943,7 +943,7 @@ function selectedIndex(config: AttrConfig, attr: AttrDef) {
 }
 
 // selectedIndex only ever returns an index that exists, so the fallback is
-// unreachable; it is here because noUncheckedIndexedAccess cannot see that.
+// unreachable. It is here because noUncheckedIndexedAccess cannot see that.
 function selectedOption(config: AttrConfig, attr: AttrDef): AttrOption {
   return attr.options[selectedIndex(config, attr)] ?? { label: '(none)' };
 }
@@ -983,7 +983,7 @@ type Applied = {
   // which is exactly the gap the row is there to price.
   textStyle: PlainTextStyle;
   viewStyle: ViewStyle;
-  // numberOfLines, ellipsizeMode, allowFontScaling, maxFontSizeMultiplier —
+  // numberOfLines, ellipsizeMode, allowFontScaling, maxFontSizeMultiplier:
   // whichever of them are set. Kept as a bag rather than named fields so adding
   // a row to ATTRIBUTES is the only edit needed, and so a prop that is `(none)`
   // is genuinely absent from the element rather than passed as undefined.
@@ -1049,8 +1049,8 @@ function PropsSheet({
         </View>
 
         <ScrollView contentContainerStyle={styles.sheetBody}>
-          {/* The screens' own section furniture — tracked caps and a rule out to
-              the margin — so the sheet reads as a page of the same book rather
+          {/* The screens' own section furniture (tracked caps and a rule out to
+              the margin) so the sheet reads as a page of the same book rather
               than as a settings dialog bolted to it. */}
           {SECTIONS.map((section) => (
             <Section key={section} title={section} spacedRows>
@@ -1122,7 +1122,7 @@ function Action({
   onPress,
 }: {
   title: string;
-  // Not user-visible; a real prop for a real diff. See runParentRerender.
+  // Not user-visible, just a real prop for a real diff. See runParentRerender.
   testID?: string;
   scenario: Scenario;
   stats: Partial<Record<Scenario, RunStats>>;
@@ -1208,7 +1208,7 @@ const styles = StyleSheet.create({
   // `screenStyles.container` with its `gap` dropped and `alignItems` set: the
   // gap between sections is 40pt there, and this content container also holds
   // the 1000 items, which would each take that gap in place of their own
-  // margin. Everything else — the margins, the top and bottom padding — is the
+  // margin. Everything else (the margins, the top and bottom padding) is the
   // same page as the other two screens, so the control block above the items
   // sits on the same measure as a specimen row.
   container: {
@@ -1233,8 +1233,8 @@ const styles = StyleSheet.create({
     borderBottomColor: COLOR.line,
   },
   // No card. The action's own 6pt against the section's row gap is what binds a
-  // result to the button that produced it — the same ratio the specimen rows
-  // use to bind a caption to its specimen — and the readout carries a wash of
+  // result to the button that produced it (the same ratio the specimen rows
+  // use to bind a caption to its specimen), and the readout carries a wash of
   // its own, so the pairing survives without a box drawn around it.
   action: {
     alignSelf: 'stretch',
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   // Tabular figures rather than a mono face: the readout is three short
   // sentences of units and arrows, not a code listing, and mono made a block of
-  // it. Tabular is what the column of five actually needs — the digits still
+  // it. Tabular is what the column of five actually needs: the digits still
   // line up run to run, in the page's own face.
   stats: {
     fontVariant: ['tabular-nums'],

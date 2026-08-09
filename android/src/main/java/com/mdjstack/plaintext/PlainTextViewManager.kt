@@ -37,16 +37,16 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
 
   // SYNC: does not reset a recycled view. Fabric's recycle pool
   // (enableViewRecyclingForText/ForView, on by default) can hand this a previously-used
-  // PlainTextView with stale text/font/color instead of calling createViewInstance —
+  // PlainTextView with stale text/font/color instead of calling createViewInstance.
   // RN's own ReactTextViewManager guards this with recycleView(). See
-  // docs/agent/sync-points.md#recycled-view-state — same failure as the iOS fix in
+  // docs/agent/sync-points.md#recycled-view-state, the same failure as the iOS fix in
   // RNPlainText.mm, not yet ported here.
   public override fun createViewInstance(context: ThemedReactContext): PlainTextView {
     return PlainTextView(context)
   }
 
   // The @ReactProp setters below only record state (see the batching block in
-  // PlainTextView); this runs once per transaction rather than once per prop.
+  // PlainTextView). This runs once per transaction rather than once per prop.
   override fun onAfterUpdateTransaction(view: PlainTextView) {
     super.onAfterUpdateTransaction(view)
     view.flushPendingUpdates()
@@ -54,12 +54,12 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
 
   // Padding (and border width) never arrives as a prop: Yoga resolves it into the
   // shadow view's contentInsets and Fabric delivers it as a separate UpdatePadding
-  // mount item via ViewManager.setPadding, whose base implementation is a no-op — RN's
+  // mount item via ViewManager.setPadding, whose base implementation is a no-op. RN's
   // own ReactTextViewManager overrides it the same way. No counterpart is needed in
   // the measure pass, since Yoga hands the measure callback the content box already
   // minus padding/border.
   //
-  // SYNC: iOS gets this for free — RCTViewComponentView lays the contentView out at
+  // SYNC: iOS gets this for free: RCTViewComponentView lays the contentView out at
   // layoutMetrics.getContentFrame(), already inset by the same contentInsets.
   override fun setPadding(view: PlainTextView, left: Int, top: Int, right: Int, bottom: Int) {
     view.setPadding(left, top, right, bottom)
@@ -151,14 +151,14 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
   }
 
   // No-op: nothing on Android currently reads `experiment` (measureView()
-  // always shares the off-screen view below — the alternative it once gated
+  // always shares the off-screen view below, since the alternative it once gated
   // measured slower). Declared for a future perf-suite A/B test, like iOS.
   @ReactProp(name = "experiment", defaultBoolean = false)
   override fun setExperiment(view: PlainTextView?, experiment: Boolean) {
   }
 
   // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure) on the
-  // Fabric layout thread — this is where text is actually measured, since Fabric never
+  // Fabric layout thread. This is where text is actually measured, since Fabric never
   // runs Android's normal onMeasure for our view. `props` carries the size-affecting
   // props serialized by the C++ side.
   //
@@ -187,7 +187,7 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     val fontSize = if (props?.hasKey("fontSize") == true) props.getDouble("fontSize") else 14.0
     view.setFontSizeSp(fontSize.toFloat())
     // props serializes an unset fontFamily as "" (the C++ std::string default),
-    // not null — normalize so this matches the setFontFamily prop setter path.
+    // not null. Normalize so this matches the setFontFamily prop setter path.
     view.setFontFamily(props?.getString("fontFamily")?.ifEmpty { null })
     view.setFontWeight(props?.getString("fontWeight")?.ifEmpty { null })
     view.setFontStyle(props?.getString("fontStyle")?.ifEmpty { null })
@@ -199,7 +199,7 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     // applied for the measured size to match.
     view.setLetterSpacingDip(if (props?.hasKey("letterSpacing") == true) props.getDouble("letterSpacing").toFloat() else 0f)
     view.setLineHeight(if (props?.hasKey("lineHeight") == true) props.getDouble("lineHeight").toFloat() else 0f)
-    // numberOfLines caps the measured height; ellipsizeMode only changes where the
+    // numberOfLines caps the measured height. ellipsizeMode only changes where the
     // ellipsis lands, so it isn't serialized for measure.
     view.setNumberOfLines(if (props?.hasKey("numberOfLines") == true) props.getInt("numberOfLines") else 0)
     view.setPlainText(props?.getString("text") ?: "")
@@ -224,20 +224,20 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
   // commits the Fabric transaction, and Views aren't thread-safe.
   //
   // WeakReference because the view holds the surface's ThemedReactContext (whose base
-  // is the Activity) and we have no hook to learn a surface stopped; held strongly,
+  // is the Activity) and we have no hook to learn a surface stopped. Held strongly,
   // this ThreadLocal would keep the last measured surface's Activity reachable for the
   // rest of the session, whereas weakly a mid-pass collection costs one rebuild, not
   // one per node.
   private val measureViews = ThreadLocal<WeakReference<PlainTextView>>()
 
   private fun measureView(context: Context): PlainTextView {
-    // The Context is the surface's ThemedReactContext, so it dies with the surface; a
+    // The Context is the surface's ThemedReactContext, so it dies with the surface. A
     // cached view would resolve fonts against a torn-down theme. Two live surfaces can
     // alternate through this check, but per commit, not per node.
     measureViews.get()?.get()?.let { if (it.context === context) return it }
 
-    // EXPENSIVE: constructing an AppCompatTextView — theme attribute resolution, tint/emoji
-    // helpers — only reached on a cache miss (Context change or GC of the weak reference).
+    // EXPENSIVE: constructing an AppCompatTextView (theme attribute resolution, tint/emoji
+    // helpers), only reached on a cache miss (Context change or GC of the weak reference).
     val view = newMeasureView(context)
     measureViews.set(WeakReference(view))
     return view
@@ -247,8 +247,8 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     val view = PlainTextView(context)
     view.isMeasureOnly = true
     // From the second measurement on, setText() reaches checkForRelayout(), which
-    // dereferences LayoutParams and crashes when they're null — the same crash RN
-    // works around in ReactTextView (EMPTY_LAYOUT_PARAMS). Never attached, so the
+    // dereferences LayoutParams and crashes when they're null. RN works around the
+    // same crash in ReactTextView (EMPTY_LAYOUT_PARAMS). Never attached, so the
     // values don't matter.
     view.layoutParams = ViewGroup.LayoutParams(
       ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -257,8 +257,8 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     return view
   }
 
-  // Size constraints already arrive in pixels — FabricUIManager's getYogaSize()
-  // converts the C++ LayoutConstraints to px before this is called — so they map
+  // Size constraints already arrive in pixels: FabricUIManager's getYogaSize()
+  // converts the C++ LayoutConstraints to px before this is called, so they map
   // straight onto a MeasureSpec (the output above is converted back to DIP).
   private fun toMeasureSpec(size: Float, mode: YogaMeasureMode): Int {
     return when (mode) {

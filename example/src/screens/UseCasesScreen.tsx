@@ -8,8 +8,8 @@ import { COLOR, MONO, SERIF } from '../theme';
 type Props = NativeStackScreenProps<ParamListBase>;
 
 // The Features screen varies one prop at a time. This one stacks three to six of
-// them at once, which is where props that are individually fine start disagreeing
-// — padding against a border against a clamped line count, letterSpacing against
+// them at once, which is where props that are individually fine start disagreeing:
+// padding against a border against a clamped line count, letterSpacing against
 // wrap detection, lineHeight against verticalAlign.
 export default function UseCasesScreen({ navigation }: Props) {
   const showText = useCompareText(navigation);
@@ -41,8 +41,8 @@ export default function UseCasesScreen({ navigation }: Props) {
   );
 }
 
-// The rows carry no label caption — a use case is a whole shape rather than one
-// value — so `label` is only the key and the name to talk about it by.
+// The rows carry no label caption (a use case is a whole shape rather than one
+// value), so `label` is only the key and the name to talk about it by.
 function UseCaseRow({
   showText,
   label: _label,
@@ -62,7 +62,7 @@ function UseCaseRow({
       // instead of shrink-wrapping. Read off the style rather than flagged per
       // row: it was a hand-maintained `wide: true` on all 52 of them, which is 52
       // chances for the flag and the width to disagree. A row with an explicit
-      // point width (the avatar, the narrow box) needs nothing — the box already
+      // point width (the avatar, the narrow box) needs nothing: the box already
       // shrink-wraps to exactly that.
       containerStyle={style.width === '100%' ? screenStyles.wideRow : undefined}
       {...props}
@@ -95,7 +95,7 @@ type UseCaseGroup = {
   items: Combination[];
 };
 
-// Fixed, hand-written lists — never generated, never shuffled — so two runs of
+// Fixed, hand-written lists (never generated, never shuffled) so two runs of
 // the app render byte-identical rows and screenshots diff cleanly.
 //
 // Every color comes from `COLOR`, and a row that sets a tinted background takes
@@ -140,7 +140,7 @@ const USE_CASE_GROUPS: UseCaseGroup[] = [
       },
     ],
   },
-  // Running text, where the wrap points and the leading are the whole point —
+  // Running text, where the wrap points and the leading are the whole point:
   // whether it runs to its natural end or gets clamped after a line or two, which
   // is the same prose with a truncation rule on top rather than a different kind
   // of row.
@@ -460,7 +460,7 @@ const USE_CASE_GROUPS: UseCaseGroup[] = [
 // RANDOM_USE_CASES are arbitrary stacks of three to five props, there to catch
 // interactions the realistic rows happen to avoid. Several are ugly, and some
 // are outright broken layouts (padding taller than the box, a radius larger than
-// half the height, text that outgrows a fixed height at 4x scaling) — but each
+// half the height, text that outgrows a fixed height at 4x scaling), but each
 // one is a shape a real app can end up in by accident. Combinations that cannot
 // occur outside a test harness, and so tell us nothing when they render wrong,
 // don't belong here.
@@ -469,14 +469,14 @@ const USE_CASE_GROUPS: UseCaseGroup[] = [
 // A row that is another row's stack minus a prop is not a second data point: it
 // costs a screenful of scrolling and, when the pair disagrees with the overlay
 // together, twice the reading to reach the one conclusion. So a new row has to
-// name something no existing row already covers — a right-aligned tracked serif,
+// name something no existing row already covers: a right-aligned tracked serif,
 // display type clipped at one line, a clamp that does not bite, and a centered
 // head-truncated line are each here exactly once.
 //
 // Color in this section carries one meaning rather than one per row. Every row is
 // the neutral ramp unless it needs a tint to make its own subject visible, and then
-// there are only two: indigo where a surface is there to show a box's extents —
-// the leading, the padding, the corner radii, the whitespace — and oxblood on the
+// there are only two: indigo where a surface is there to show a box's extents
+// (the leading, the padding, the corner radii, the whitespace) and oxblood on the
 // rows whose box is wrong on purpose (glyphs taller than the line, padding taller
 // than the box, a radius past half the height, text left free to outgrow its
 // height). Borders that are only structure stay on the ramp. Cycling five pigments
@@ -673,7 +673,7 @@ const RANDOM_USE_CASES: Combination[] = [
   },
   {
     label: 'four-edge-borders',
-    // Four edges resolved independently, which is the point — so they differ by
+    // Four edges resolved independently, which is the point, so they differ by
     // width and by step on the neutral ramp rather than by hue. Four pigments read
     // as a swatch test and said nothing the four widths do not.
     text: 'Four borders, four different widths and tones, with matching asymmetric padding.',
