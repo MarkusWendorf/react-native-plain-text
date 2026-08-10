@@ -29,7 +29,7 @@ struct PlainTextFontVariationAxis {
  *
  * All-or-nothing on a malformed string, matching Android (TextView applies
  * nothing rather than the entries that did parse). An empty string parses to
- * no axes, hence nullopt vs. empty vector — callers must surface nullopt,
+ * no axes, hence nullopt vs. empty vector: callers must surface nullopt,
  * since applying no axes otherwise looks identical to a font with none.
  *
  * "normal" (CSS's spelling of "sets no axes") is also accepted, trimmed and

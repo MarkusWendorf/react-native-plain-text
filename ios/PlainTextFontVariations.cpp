@@ -67,8 +67,8 @@ bool parseEntry(const std::string &entry, PlainTextFontVariationAxis &axis)
 std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const std::string &settings)
 {
   // "normal" is CSS's spelling of "sets no axes", not something
-  // fromFontVariationSettings itself recognizes — RN's Android wrapper
-  // special-cases it the same way. Compared trimmed, but only the comparison
+  // fromFontVariationSettings itself recognizes (RN's Android wrapper
+  // special-cases it the same way). Compared trimmed, but only the comparison
   // sees the trimmed form: pre-trimming here would turn a whitespace-only
   // string (rejected by the grammar) into "" (accepted as no axes).
   if (caseInsensitiveEquals(trim(settings), "normal")) {
@@ -82,8 +82,8 @@ std::optional<std::vector<PlainTextFontVariationAxis>> parseFontVariations(const
 
   // Android's parser reads the comma as the value terminator and runs off
   // the string's end, so `"wght" 700,` is one axis there. A trailing comma
-  // ends the list here too, to match — only a trailing one, since a leading
-  // or interior empty entry throws on Android too.
+  // ends the list here too, to match (only a trailing one, since a leading
+  // or interior empty entry throws on Android too).
   size_t lastCharacter = settings.find_last_not_of(kWhitespace);
   bool endsWithComma = lastCharacter != std::string::npos && settings[lastCharacter] == ',';
 

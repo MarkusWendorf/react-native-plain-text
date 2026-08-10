@@ -26,8 +26,8 @@ std::string fontCacheKey(
 {
   std::string key = faceKey;
   key += kFieldSeparator;
-  // Hundredths of a point, as an integer — avoids the padded "17.000000"
-  // std::to_string gives a double, and sizes closer than that render
+  // Hundredths of a point, as an integer (avoids the padded "17.000000"
+  // std::to_string gives a double), and sizes closer than that render
   // identically at any screen scale.
   key += std::to_string(std::lround(fontSize * 100));
   for (const std::string &variant : fontVariant) {

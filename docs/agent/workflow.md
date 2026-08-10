@@ -5,12 +5,12 @@
 Unless told otherwise, a request for a new feature (e.g. a new prop) implies all
 three of:
 
-- **API parity with RN `<Text>`** — match the shape and semantics of the
+- **API parity with RN `<Text>`**: match the shape and semantics of the
   equivalent prop or behavior rather than inventing a new API.
-- **Both platforms** — iOS and Android, not one "for now".
-- **Example coverage** — a dedicated section on the Features screen
+- **Both platforms**: iOS and Android, not one "for now".
+- **Example coverage**: a dedicated section on the Features screen
   (`example/src/screens/FeaturesScreen.tsx`), so it's visible and testable.
-- **A cost rating** — free when the prop is unused, and rated light/medium/heavy
+- **A cost rating**: free when the prop is unused, and rated light/medium/heavy
   when it is set ([performance.md](performance.md#prop-cost-policy)). Medium and
   heavy get a `Cost:` note beside the prop in the codegen spec.
 
@@ -19,7 +19,7 @@ three of:
 1. **Add usage/test cases to the Features screen first.**
 2. **Implement iOS, then Android**, across the four-layer prop flow
    ([architecture.md](architecture.md)).
-3. **Run the checks** — `yarn validate`.
+3. **Run the checks**: `yarn validate`.
 
 Read [sync-points.md](sync-points.md) before starting. A size-affecting prop
 touches five more files than the four-layer flow suggests, and none of them fail
@@ -71,6 +71,6 @@ of defense.
 `yarn example android`) unless explicitly asked to. They are slow, and the user
 is usually running the app already.
 
-When you are asked to, note that native changes need a full rebuild — Metro
-reload and Fast Refresh only pick up JS — and that clean builds have
+When you are asked to, note that native changes need a full rebuild: Metro
+reload and Fast Refresh only pick up JS, and that clean builds have
 project-specific pitfalls. See [native-gotchas.md](native-gotchas.md).

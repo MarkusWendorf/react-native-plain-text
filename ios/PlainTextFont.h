@@ -1,11 +1,11 @@
 /*
  * Font resolution for <RNPlainText>, shared by the mounted view and the shadow
- * node so both resolve the same UIFont from the same props — otherwise the
+ * node so both resolve the same UIFont from the same props, otherwise the
  * measured box and the drawn text could disagree.
  *
- * Resolution is expensive, so results are cached in three caches — family face
- * names, winning face per family/weight/style, and UIFont per face+size+variants
- * — since only the last depends on fontSize. All three clear on
+ * Resolution is expensive, so results are cached in three caches (family face
+ * names, winning face per family/weight/style, and UIFont per face+size+variants)
+ * since only the last depends on fontSize. All three clear on
  * `kCTFontManagerRegisteredFontsChangedNotification`.
  */
 

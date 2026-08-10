@@ -15,7 +15,7 @@ namespace facebook::react {
 /*
  * Whether two revisions of the props would measure to the same size. Must
  * list every prop both platforms' `measureContent` reads (and, on Android,
- * every prop `PlainTextMeasurementsManager` serializes) — see SYNC comment
+ * every prop `PlainTextMeasurementsManager` serializes), see SYNC comment
  * in the .cpp. Yoga *style* props are excluded on purpose:
  * `YogaLayoutableShadowNode::updateYogaProps` already dirties the node on
  * style changes independently of this.
@@ -29,7 +29,7 @@ bool measurementInputsEqual(
  * `shouldNewRevisionDirtyMeasurement`: by then, `YogaLayoutableShadowNode::completeClone`
  * has already run with `*this`, whose `props_` the clone constructor already
  * replaced with `fragment.props`, so comparing there would always see new
- * against new. `newProps` is the new revision; the old one is read off
+ * against new. `newProps` is the new revision, and the old one is read off
  * `sourceShadowNode`.
  */
 bool shouldRevisionDirtyMeasurement(

@@ -4,7 +4,7 @@
  *
  * SYNC: must name every input `computeFaceName`/`resolvedFont` (PlainTextFont.mm)
  * read to pick a face or build the `UIFont`. A new one read there and left out
- * here doesn't fail — it applies once, then the cache silently serves that
+ * here doesn't fail: it applies once, then the cache silently serves that
  * first result back for every other value of the missing input. See
  * docs/agent/sync-points.md#the-ios-font-cache-key.
  */
@@ -17,8 +17,8 @@
 namespace facebook::react {
 
 /*
- * The three inputs that decide which face of a family to use — fontFamily,
- * fontWeight, fontStyle — and the leading fields of fontCacheKey below, so
+ * The three inputs that decide which face of a family to use (fontFamily,
+ * fontWeight, fontStyle) and the leading fields of fontCacheKey below, so
  * the shared prefix is built once.
  *
  * fontStyle is the raw prop string, not a converted bool: empty and "normal"
@@ -29,7 +29,7 @@ namespace facebook::react {
  * The fields are adjacent free-form strings with no separator escaping, so a
  * literal separator inside one can shift the field boundary (family "Foo|"
  * at weight "bold" keys the same as family "Foo" at weight "|bold"). Left
- * unguarded — the worst case is one wrong font, consistently.
+ * unguarded, since the worst case is one wrong font, consistently.
  */
 std::string faceCacheKey(const std::string &fontFamily, const std::string &fontWeight, const std::string &fontStyle);
 

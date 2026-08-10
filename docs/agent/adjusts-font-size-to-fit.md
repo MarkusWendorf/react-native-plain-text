@@ -57,10 +57,10 @@ picked, so the shadow node cannot predict it. See
 **The shrink runs at two sites against different boxes, and the draw-time run
 wins.**
 
-| Platform | Measure pass                                                       | Draw pass                                                                      |
-| -------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Platform | Measure pass                                                      | Draw pass                                                                     |
+| -------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | iOS      | `RCTTextLayoutManager.mm:50-51`: size = `{maxWidth, CGFLOAT_MAX}` | `:69-75` (`drawAttributedString`): size = `frame.size`                        |
-| Android  | `TextLayoutManager.kt:804-807`, width forced to `EXACTLY`          | `ReactTextView.java:339-348`: in `onDraw`, against `getWidth()`/`getHeight()` |
+| Android  | `TextLayoutManager.kt:804-807`, width forced to `EXACTLY`         | `ReactTextView.java:339-348`: in `onDraw`, against `getWidth()`/`getHeight()` |
 
 Note the **unbounded height** in the iOS measure pass. With no height limit the
 fit predicate can only fail via `truncatedGlyphRange`, which only fires when

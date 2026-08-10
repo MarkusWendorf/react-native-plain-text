@@ -18,16 +18,16 @@ Features screen (`example/src/screens/FeaturesScreen.tsx`).
 
 ## A prop that affects measured size
 
-Anything the text's width or height depends on — text, font, spacing, line
+Anything the text's width or height depends on: text, font, spacing, line
 count. All five, or the box and the text disagree:
 
-| Site                                                                             | Miss it and…                                                                        |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `cpp/PlainTextMeasurementHelpers.cpp` → `measurementInputsEqual`                 | the size goes stale after an update                                                 |
-| `ios/PlainTextShadowNode.mm` → `measureContent`                                  | iOS measures without it; must mirror `RNPlainText.mm`'s `applyContentFromProps`     |
-| `android/.../PlainTextMeasurementsManager.cpp`                                   | the prop never reaches the Android measure pass                                     |
-| `PlainTextViewManager.kt` → `measure()`                                          | same from the other side — and it must apply props exactly as the mounted view does |
-| `PlainTextView.kt` → setter, plus `flushPendingUpdates()` if its work is batched | the prop is recorded but never applied                                              |
+| Site                                                                             | Miss it and…                                                                       |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `cpp/PlainTextMeasurementHelpers.cpp` → `measurementInputsEqual`                 | the size goes stale after an update                                                |
+| `ios/PlainTextShadowNode.mm` → `measureContent`                                  | iOS measures without it, must mirror `RNPlainText.mm`'s `applyContentFromProps`    |
+| `android/.../PlainTextMeasurementsManager.cpp`                                   | the prop never reaches the Android measure pass                                    |
+| `PlainTextViewManager.kt` → `measure()`                                          | same from the other side, and it must apply props exactly as the mounted view does |
+| `PlainTextView.kt` → setter, plus `flushPendingUpdates()` if its work is batched | the prop is recorded but never applied                                             |
 
 The two iOS sites are the ones that have to agree _attribute by attribute_, with
 one exception: the `UIFont` itself is not mirrored. `fontFamily`, `fontSize`,
@@ -46,12 +46,12 @@ instead (also unrounded, matching RN), so it stays a sync point between them.
 `ios/PlainTextFontCacheKey.cpp` builds the keys behind `resolvedFaceName`'s and
 `plainTextFont`'s caches (`ios/PlainTextFont.mm`) from a fixed list of inputs:
 `faceCacheKey` takes `fontFamily`, `fontWeight` and the raw `fontStyle` string
-(not a converted bool — an empty string and `"normal"` both mean "not italic"
+(not a converted bool, an empty string and `"normal"` both mean "not italic"
 but must key separately, since `computeFaceName`'s face-name fallback tells
-them apart); `fontCacheKey` adds `fontSize`, `fontVariant` and
+them apart). `fontCacheKey` adds `fontSize`, `fontVariant` and
 `fontVariationSettings` on top. That list has to
 name every input `computeFaceName`/`resolvedFont` read to pick a face or build
-the `UIFont` — a new one read there and left out of the key doesn't fail to
+the `UIFont`: a new one read there and left out of the key doesn't fail to
 apply, it applies once and then serves that first value back for every other
 one, keyed as if nothing had changed. Both caches are unbounded
 (`familyNamesCache`, `faceNamesCache`) or bounded only by count
@@ -72,7 +72,7 @@ The C++ side omits props still at their default, so an absent key means
 ## Anything derived from the OS text-size setting
 
 The scale is never a prop. Both platforms read it ambiently while applying props
-— `RCTFontSizeMultiplier()` on iOS, `PixelUtil` on Android — and store the
+(`RCTFontSizeMultiplier()` on iOS, `PixelUtil` on Android) and store the
 result as absolute points/pixels. So when the user changes the setting, no prop
 changes, Fabric's props diff never fires, and every derived value is stale until
 something else remounts the view. Each platform re-derives from an OS callback
@@ -83,10 +83,10 @@ instead:
 | `RNPlainText.mm` → `traitCollectionDidChange` | a Dynamic Type change                             |
 | `PlainTextView.kt` → `onConfigurationChanged` | a font scale change, if the Activity declares it¹ |
 
-A new value that scales — a second span, a padding, anything multiplied by the
-multiplier — has to be reachable from both, or it holds its old size on one
+A new value that scales (a second span, a padding, anything multiplied by the
+multiplier) has to be reachable from both, or it holds its old size on one
 platform only. On Android that means `markScaledSizesDirty()` must mark its
-dirty flag; on iOS `applyContentFromProps` already covers everything it builds.
+dirty flag. On iOS `applyContentFromProps` already covers everything it builds.
 
 Re-measurement is not part of this contract: RN dirties every
 `MeasurableYogaNode` when the surface's `fontSizeMultiplier` changes, so the
@@ -107,23 +107,23 @@ path is the one you exercise while developing.
 fresh one per node (see [performance.md](performance.md) for why). Three things
 must hold because of that:
 
-- **Set every size-affecting prop on every call**, with its default when absent
-  — otherwise the previous node's value leaks into this one.
+- **Set every size-affecting prop on every call**, with its default when absent:
+  otherwise the previous node's value leaks into this one.
 - **Nothing in `PlainTextView` may derive new state from its own current state.**
   `applyTypeface()` resolves against a fixed `baseTypeface` for exactly this
   reason: `ReactTypefaceUtils.applyStyles` derives from the typeface passed in
   when `fontFamily` is null, so chaining off the live value let one node's font
   survive into the next.
-- **The scratch view needs `isMeasureOnly` and non-null `LayoutParams`** — it
+- **The scratch view needs `isMeasureOnly` and non-null `LayoutParams`**: it
   skips the `requestLayout` re-layout post (which would queue forever on a
   never-attached view), and `TextView.checkForRelayout()` dereferences the
   LayoutParams from the second measurement onward.
 
-This is now unconditional — measuring with a fresh view every time was the
+This is now unconditional: measuring with a fresh view every time was the
 alternative an earlier perf-suite A/B test measured against, and it lost, so
 `measureView()` always shares the one view above. The internal `experiment`
 prop (not part of `PlainText`'s public props, one generic on/off switch for
-whatever the perf suite is currently A/B testing — see
+whatever the perf suite is currently A/B testing, see
 `src/PlainTextViewNativeComponent.ts`) is declared but unread on both
 platforms for now, the same as `textAlignVertical` on iOS, ready for whatever
 gets A/B tested next.
@@ -131,13 +131,13 @@ gets A/B tested next.
 ## Deferred prop application
 
 Setters on `PlainTextView` whose work is **shared with other props** record state
-and set a dirty flag; `flushPendingUpdates()` does the work once. That covers
-typeface resolution, `setText`, and anything derived from the scaled font size —
+and set a dirty flag. `flushPendingUpdates()` does the work once. That covers
+typeface resolution, `setText`, and anything derived from the scaled font size:
 the props that used to redo the same expensive work several times per transaction.
 
 A new prop feeding any of that must mark the flag it belongs to, and the flush
 must apply it in dependency order. A prop that is set but never flushed silently
-does nothing; a new read path that doesn't flush first sees stale state.
+does nothing. A new read path that doesn't flush first sees stale state.
 
 `fontVariationSettings` is the one prop ordered against another rather than
 batched with it: the axes are baked into a `Typeface` derived from the current
@@ -150,9 +150,9 @@ same transaction.
 
 Three pieces of state carry that between the two, and they only work as a set:
 
-- `appliedVariationSettings` — the last string applied, `null` also meaning "the
+- `appliedVariationSettings`: the last string applied, `null` also meaning "the
   live typeface has no axes derived onto it".
-- `appliedBaseTypeface` — what `applyStyles` last resolved, which is what the live
+- `appliedBaseTypeface`: what `applyStyles` last resolved, which is what the live
   typeface is only until axes are applied. Both the identity guard in
   `applyTypeface` and the restore in `applyVariationSettings` read it.
 - The identity guard itself. It exists for the measuring view, where the dirty flag
@@ -167,43 +167,43 @@ It now persists.
 
 One assignment is out of our hands and is documented rather than prevented.
 `TextView.onConfigurationChanged` calls `setTypeface(getTypeface())` when
-`Configuration.fontWeightAdjustment` changes — the OS **Bold text** setting, API 31+
-— and our override calls `super`, so it runs on every attached view. It does not
+`Configuration.fontWeightAdjustment` changes (the OS **Bold text** setting, API 31+)
+and our override calls `super`, so it runs on every attached view. It does not
 desync `appliedBaseTypeface`: `getTypeface()` returns `mOriginalTypeface`, the last
 value handed to `setTypeface`, and `TextView.setFontVariationSettings` writes only
 `mTextPaint`, so the field still holds the un-varied base and the call re-assigns it
 to itself. What it does is drop the axes off the paint while `Paint` keeps the
 settings string that says otherwise, so a **Bold text** toggle leaves a variable font
 at its default instance until the next change to `fontVariationSettings` or to any
-font prop — the `settings == appliedVariationSettings` early-out means an unchanged
+font prop: the `settings == appliedVariationSettings` early-out means an unchanged
 prop will not re-derive it. Known, benign, not worth a per-view listener.
 
 The guard and the restore have to land together. The guard alone stops
 `applyTypeface` from resetting `appliedVariationSettings` for consecutive nodes
 sharing a font, and without the restore the reused measuring view then measures
-node N+1 at node N's axes — a wrong size for every node, not just a wrong render
+node N+1 at node N's axes: a wrong size for every node, not just a wrong render
 for one. Before the guard, `measure()` was correct only because `applyTypeface`
 ran unconditionally. Don't restore that accident by dropping either half.
 
-Props that map onto a single cheap independent write apply inline — there is
+Props that map onto a single cheap independent write apply inline: there is
 nothing to coalesce, and a dirty flag would only add state to keep in sync. Some
 of them (`maxLines`, `justificationMode`) call `requestLayout()` unconditionally,
 which the `relayoutPosted` guard in `PlainTextView.requestLayout()` collapses to
-one re-layout per transaction — and often to none, since the posted runnable
+one re-layout per transaction, and often to none, since the posted runnable
 drops out when Fabric re-laid-out the view itself.
 
 Flush happens in `PlainTextViewManager.onAfterUpdateTransaction` and before the
-off-screen `measure` — never in the view's `init`, for the reason below.
+off-screen `measure`, never in the view's `init`, for the reason below.
 
 ## Construction-time state
 
 `PlainTextView`'s `init` seeds `textSize` and `letterSpacing`, because Fabric skips
 setters for props still at their default and the off-screen measuring view always
-applies both — a view left on the theme's values would render at a size nothing
+applies both: a view left on the theme's values would render at a size nothing
 measured.
 
 Kotlin runs property initializers and `init` blocks in declaration order, so a
-field declared **below** `init` still holds its zero-default while `init` runs —
+field declared **below** `init` still holds its zero-default while `init` runs:
 `allowFontScaling` false rather than true, `letterSpacingDip` 0f rather than NaN,
 `fontWeight` 0 rather than `UNSET`, a null `baseTypeface`. Anything `init` reads,
 directly or through a call, therefore gets that value instead of the written one:
@@ -218,29 +218,29 @@ Two things keep that from happening, and only the first is enforced:
   compile error.
 - **`toEffectivePixel` and `calculateLetterSpacing` are pure top-level functions,
   not methods.** This is the unverified half. The check only fires for a field read
-  written _inside_ `init`; it does not follow a call. Turn either function into a
+  written _inside_ `init`. It does not follow a call. Turn either function into a
   method that reads the fields itself and every guarantee above silently
   disappears, with nothing to show for it until someone reorders a field months
   later.
 
 `requestLayout()` is a separate case that field order cannot fix: `TextView`'s
 constructor calls it before any initializer runs, so `measureAndLayout` is null
-there. The `width == 0 || height == 0` guard is what makes that safe — it is not
+there. The `width == 0 || height == 0` guard is what makes that safe: it is not
 only about Fabric's initial mount.
 
 ## Padding and border width, which are not props
 
 Neither ever reaches a prop setter. Yoga resolves them into the shadow view's
-`contentInsets`, and each platform inflates the view's frame by them — so the box
+`contentInsets`, and each platform inflates the view's frame by them, so the box
 grows whether or not anything insets the text inside it. That is the failure
 mode: the size is right and only the glyphs are in the wrong place.
 
 | Platform | How the text gets inset                                                                                                                                           |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | iOS      | Free. `RCTViewComponentView` lays `contentView` out at `layoutMetrics.getContentFrame()`, the frame already inset by the same insets.                             |
-| Android  | `PlainTextViewManager.setPadding` → `view.setPadding`. Fabric emits a separate `UpdatePadding` mount item; `ViewManager`'s base implementation is an empty no-op. |
+| Android  | `PlainTextViewManager.setPadding` → `view.setPadding`. Fabric emits a separate `UpdatePadding` mount item. `ViewManager`'s base implementation is an empty no-op. |
 
-So the Android half is opt-in and silent when missing — the same override RN's
+So the Android half is opt-in and silent when missing: the same override RN's
 own `ReactTextViewManager` carries.
 
 _Drawing_ the border is a separate, also Android-only, piece of opt-in:
@@ -259,19 +259,19 @@ has to be set on every call.
 
 ## Recycled view state
 
-Fabric recycles component views by type (`RCTComponentViewRegistry` on iOS;
+Fabric recycles component views by type (`RCTComponentViewRegistry` on iOS,
 `enableViewRecyclingForText`/`ForView`, on by default, on Android): an unmounted
 view is handed straight back out to back an unrelated component instance's first
 mount.
 
 `RNPlainText.mm`'s `updateProps` diffs against `_props` (the ivar), not the
-`oldProps` parameter — matching the base `RCTViewComponentView`. `_props` is
+`oldProps` parameter, matching the base `RCTViewComponentView`. `_props` is
 supposed to describe what `_label` is _actually_ showing. On construction it
 doesn't: the base class seeds `_props` with a plain `ViewProps`, and separately
 `_label` itself starts out with UILabel's own factory defaults (e.g. its
 built-in 17pt font), which don't match what `RNPlainTextProps`' defaults render
 as. A first-mount view whose real props happen to equal those defaults would
-diff as "no change" and never apply, keeping UILabel's mismatched look — the
+diff as "no change" and never apply, keeping UILabel's mismatched look: the
 exact "correct on first render, wrong after an update, silent in between" shape
 this whole document is about, just triggered on construction instead of by a
 prop update.
@@ -284,11 +284,11 @@ regardless of the diff.
 Recycling turns out not to need the same treatment. A recycled view is handed
 straight back out to back an unrelated instance's first mount with `_props`
 still holding the previous instance's real values (the base
-`-prepareForRecycle` resets the layers and state it owns, not `_props`) — but
+`-prepareForRecycle` resets the layers and state it owns, not `_props`), but
 nothing between that instance's last `-updateProps` and this one touches
 `_label`, so `_label` still genuinely matches `_props`. The plain diff is
 therefore already correct on recycle: real prop differences apply normally, and
-if the new instance's props happen to equal the leftovers, that's not a bug —
+if the new instance's props happen to equal the leftovers, that's not a bug:
 `_label` already shows the right thing. An earlier version of this fix also
 re-armed `_forceApplyProps` in `-prepareForRecycle`, modeled on
 `RCTViewComponentView`'s own diff-blind safety net for its `_props`-diffed
@@ -297,7 +297,7 @@ unconditionally, rebuilding background/border layers every layout pass no
 matter what the diff concluded). It was removed: the recycling bug actually hit
 occurred _with_ that re-arm in place (the logs show `_forceApplyProps` forcing
 `applyContentFromProps` to run) and the real cause was inside
-`applyContentFromProps` itself — see below — so the re-arm was never doing
+`applyContentFromProps` itself (see below), so the re-arm was never doing
 anything for that failure, and speculative insurance against an undemonstrated
 one isn't worth the extra state.
 
@@ -306,7 +306,7 @@ routine**, and why a new prop doesn't need one. `applyContentFromProps` fully
 determines the label's state (font, color, alignment, `text`/`attributedText`,
 `verticalTextShift`), and the forced apply on first mount runs it before
 anything is on screen, so a fresh view needs no separate seeding. An earlier
-version also reset `_label` directly in `-prepareForRecycle`; it made
+version also reset `_label` directly in `-prepareForRecycle`. It made
 correctness depend on that reset staying prop-for-prop in step with
 `applyContentFromProps` forever, which is exactly the kind of silent sync point
 this document exists to avoid. If a `_label` property is ever set outside
@@ -316,30 +316,30 @@ own handling.
 One property does need explicit handling within `applyContentFromProps`
 itself: `attributedText`. `numberOfLines`/`ellipsizeMode`/`textColor`/etc. are
 plain properties with one obvious value, so setting them always overwrites
-whatever the recycled-from instance left. Text content isn't — it's carried on
+whatever the recycled-from instance left. Text content isn't: it's carried on
 either `.text` (the plain path, when nothing needs an attributed string) or
 `.attributedText` (letterSpacing, lineHeight, underline/strikethrough), and
 only one of the two is ever set per call. Apple documents that setting `.text`
 also clears `.attributedText` to an equivalent, attribute-free string, but a
-real repro (a view recycled from an instance with `letterSpacing` — the
-attributed path, `NSKernAttributeName` — into one without) showed the old
+real repro (a view recycled from an instance with `letterSpacing`, the
+attributed path, `NSKernAttributeName`, into one without) showed the old
 kerning surviving: the label kept the previous instance's spacing and
 truncation even though every prop, and `_label.text` itself, were already
 correct. The plain path now sets `_label.attributedText = nil` explicitly
 before `.text`, rather than relying on that documented side effect. A future
-rewrite of `applyContentFromProps` must keep doing this — the failure is
+rewrite of `applyContentFromProps` must keep doing this: the failure is
 invisible until something is recycled from the attributed path into the plain
 one.
 
-**Android likely doesn't share this specific hazard** — `PlainTextView.applyText()`
+**Android likely doesn't share this specific hazard**: `PlainTextView.applyText()`
 has the same plain-vs-spanned duality (`setText(value)` vs a `SpannableString`
 carrying the `lineHeight` span), but both branches go through the single
 `setText()` entry point rather than two separate properties, so there's no
 second backing store for a stale span to hide in. **It still has no recycling
 reset of any kind, though**: `PlainTextView`/`PlainTextViewManager` reset
 nothing on reuse. RN's own `ReactTextView` does (`recycleView()`, called from
-`ReactTextViewManager.createViewInstance` when a view comes from the pool) —
-ours doesn't yet, so the construction-time hazard above (a first-mount view at
+`ReactTextViewManager.createViewInstance` when a view comes from the pool), ours
+doesn't yet, so the construction-time hazard above (a first-mount view at
 all-default props never getting seeded) is reachable there. Not yet
 implemented.
 

@@ -24,7 +24,7 @@ means rather than what the benchmark decided it means.
 updates, RN's `EventPerformanceLogger` holds the entry until the shadow tree
 mounts and reports `duration = mountTime - eventStartTime`. It starts at the
 _native_ event timestamp, so it includes the input-dispatch latency the user
-really waits through — typically ~13&nbsp;ms more than a JS-side timer would
+really waits through, typically ~13&nbsp;ms more than a JS-side timer would
 show.
 
 **commit** exists to locate a change, not to judge it: `interaction - commit` is
@@ -35,7 +35,7 @@ on the JS thread or the UI thread.
 
 - **Rasterization and compositing.** `interaction` ends at mount, not at pixels.
   In this benchmark the omission is small, because mount cost scales with the
-  number of views while draw cost is bounded by the viewport — but it would not
+  number of views while draw cost is bounded by the viewport, but it would not
   be small for a component with expensive per-frame painting.
 - **Non-interaction updates.** No `event` entry exists for a render caused by a
   timer, a network response, or app startup.
@@ -63,7 +63,7 @@ cost:
 | `NativeText`      | RN's bare `RCTText` host component (`unstable_NativeText`) |
 
 The `PlainText`/`NativePlainText` and `Text`/`NativeText` deltas price each
-library's JS wrapper; the `NativePlainText`/`NativeText` delta compares the
+library's JS wrapper. The `NativePlainText`/`NativeText` delta compares the
 native implementations directly.
 
 ### Update scenarios
@@ -80,15 +80,15 @@ They report `interaction`/`commit` on their own line, no memory.
 | **Re-render**               | one sibling label, nothing the items receive | re-measure none of them |
 
 They are complements, and they catch opposite failures: a **font size** run near
-the empty-screen baseline means invalidation never fires (stale sizes — text
+the empty-screen baseline means invalidation never fires (stale sizes, text
 redraws inside its old frame), while a **re-render** run near the font-size
 number means it always fires (the override is doing nothing).
 
 Two things make these different from the mount runs:
 
 - **They require a populated tree**, so the "kill the app between runs" rule
-  cannot apply. Record what is mounted alongside the number; it is meaningless
-  without it. Take the empty-screen baseline first, before mounting anything —
+  cannot apply. Record what is mounted alongside the number. It is meaningless
+  without it. Take the empty-screen baseline first, before mounting anything:
   the screen's own chrome costs a few ms and both runs include it.
 - **Neither is a clean zero.** Even a re-render that measures nothing still
   re-runs 1000 React components and clones 1000 shadow nodes. That floor is
@@ -108,7 +108,7 @@ mounted item via `YogaLayoutableShadowNode::adoptYogaChild`.
    hardware and its numbers are not usable. On **iOS a simulator is acceptable**
    for comparing variants: it is not an emulator, it runs the same arm64 binary
    against the same frameworks, and Apple-silicon single-core throughput is in
-   the same class as current iPhones. Two limits — it models the UI-thread and
+   the same class as current iPhones. Two limits: it models the UI-thread and
    compositing path poorly, and its memory footprint is not a phone's, so never
    take memory figures from it. Record which you used.
 3. **Kill the app between every run.** Memory is a process-footprint delta, and
@@ -119,7 +119,7 @@ mounted item via `YogaLayoutableShadowNode::adoptYogaChild`.
 5. **Report the median of at least 5 runs**, with the range. Single numbers on a
    phone are noise.
 6. State the **device and OS version**. Numbers are comparable across variants
-   on one device — never across devices or platforms.
+   on one device, never across devices or platforms.
 
 ## Reading the results
 

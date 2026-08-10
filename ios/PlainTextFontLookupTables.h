@@ -19,8 +19,8 @@ RCTFontWeight fontWeightFromProp(const std::string &fontWeight);
 
 /*
  * Mirrors RCTFont.mm's RCTFontStyle map: "italic" and "oblique" are italic,
- * everything else — including an empty string, codegen's stand-in for
- * fontStyle not being passed — isn't. Callers that need to tell "not passed"
+ * everything else (including an empty string, codegen's stand-in for
+ * fontStyle not being passed) isn't. Callers that need to tell "not passed"
  * apart from an explicit "normal" check the raw string themselves (see
  * computeFaceName in PlainTextFont.mm).
  */

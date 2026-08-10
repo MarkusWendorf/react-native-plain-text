@@ -6,7 +6,7 @@
 #include <react/renderer/components/RNPlainTextSpec/States.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 
-// SYNC: mirrors android/.../RNPlainTextSpec/PlainTextShadowNode.h — same traits and
+// SYNC: mirrors android/.../RNPlainTextSpec/PlainTextShadowNode.h, same traits and
 // overrides, so a change here usually belongs there too. Only the invalidation logic
 // is actually shared, via the include below. See
 // docs/agent/sync-points.md#both-platforms-shadow-nodes.
