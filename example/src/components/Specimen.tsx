@@ -126,7 +126,13 @@ export function TextItem({
         <View style={[styles.row, containerStyle]}>
           {/* No explicit height: the native text measures its own size. */}
           <PlainText
-            style={style}
+            // `base` first so a row that sets its own fontSize (most of them)
+            // overrides it, and one that doesn't (like a row demonstrating a
+            // prop unrelated to size) still gets a real body size instead of
+            // PlainText's bare default. Dimmed to match the overlay's own
+            // opacity while it's showing, so neither box reads as "the real
+            // one" drawn under a faint guide.
+            style={[screenStyles.base, style, showText && styles.dimmed]}
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
             allowFontScaling={allowFontScaling}
@@ -145,8 +151,9 @@ export function TextItem({
             <Text
               // Cast back to what RN accepts. A fontVariationSettings in there is
               // dropped, which is the gap the Font Variation Settings section
-              // exists to show.
-              style={[style as StyleProp<TextStyle>, styles.overlayText]}
+              // exists to show. Same `base` default as PlainText, so the two
+              // stay comparable when a row leaves fontSize unset.
+              style={[screenStyles.base, style as StyleProp<TextStyle>, styles.overlayText]}
               numberOfLines={numberOfLines}
               ellipsizeMode={ellipsizeMode}
               allowFontScaling={allowFontScaling}
@@ -194,6 +201,12 @@ export const screenStyles = StyleSheet.create({
   // should stretch to match instead of shrink-wrapping.
   wideRow: {
     alignSelf: 'stretch',
+  },
+  // No width, like `wrapProbe`/`a11yRow` in FeaturesScreen: for a row that
+  // isn't demonstrating layout, both boxes should just hug their text rather
+  // than resolve `width: '100%'` against two different containing blocks.
+  base: {
+    fontSize: 20,
   },
 });
 
@@ -403,5 +416,10 @@ const styles = StyleSheet.create({
     // not the tint.
     backgroundColor: '#84752620',
     color: COLOR.brass,
+  },
+  // Same alpha as overlayText, applied to PlainText only while the overlay is
+  // showing (see the PlainText style in TextItem).
+  dimmed: {
+    opacity: 0.5,
   },
 });

@@ -584,6 +584,21 @@ function renderItems(kind: Kind, applied: Applied) {
 const SHORT_TEXT = (n: number) => `Text Item ${pad(n)}`;
 const WRAPPING_TEXT = (n: number) =>
   `Text Item ${pad(n)}: a longer string that has to wrap onto more than one line on a phone.`;
+// No index: every row renders the identical string, so this prices content
+// that never changes across the list rather than a per-row computed one.
+const STATIC_TEXT = () => 'ListItem Static';
+// A BMP symbol most text fonts don't cover, so it still forces fallback, but
+// (unlike an emoji) resolves to a scalar/vector glyph rather than color
+// bitmap data. Separates "fallback font resolution" from "color glyph data"
+// as the cause of any memory delta the emoji row shows.
+const SYMBOL_TEXT = (n: number) => `${SHORT_TEXT(n)} ★`;
+// A different emoji per row (cycled, not random, so runs are reproducible), to
+// price color glyph data across many distinct glyphs rather than one repeated
+// one. If that data is a shared, deduplicated cache keyed on the glyph, this
+// should cost about the same per view as a single repeated emoji; if it
+// costs more, that data isn't being shared across views.
+const EMOJIS = ['🎉', '🦊', '🐇', '🐶', '🚀', '🌈', '🍕', '⚽️', '🎈', '🐝'];
+const EMOJI_TEXT = (n: number) => `${SHORT_TEXT(n)} ${EMOJIS[n % EMOJIS.length]}`;
 
 const pad = (n: number) => String(n).padStart(3, '0');
 
@@ -849,6 +864,64 @@ const ATTRIBUTES: AttrDef[] = [
     ],
   },
   {
+    key: 'height',
+    section: 'Layout',
+    fp: 'h',
+    target: 'view',
+    options: [
+      { label: '(none)' },
+      { label: '100', value: 100 },
+      { label: '200', value: 200 },
+      { label: '300', value: 300 },
+    ],
+  },
+  {
+    key: 'width',
+    section: 'Layout',
+    fp: 'w',
+    target: 'view',
+    options: [
+      { label: '(none)' },
+      { label: '50%', value: '50%' },
+      { label: '100%', value: '100%' },
+    ],
+  },
+  {
+    key: 'color',
+    label: 'text color',
+    section: 'Layout',
+    fp: 'c',
+    target: 'text',
+    // Same grey/color, same two alphas as backgroundColor below, so the two
+    // rows can be paired to price compositing a translucent text color over a
+    // translucent background rather than just a flat one.
+    options: [
+      { label: '(none)' },
+      { label: '50% grey', value: `${COLOR.faint}80` },
+      { label: '100% grey', value: COLOR.faint },
+      { label: '50% color', value: `${COLOR.indigo}80` },
+      { label: '100% color', value: COLOR.indigo },
+    ],
+  },
+  {
+    key: 'backgroundColor',
+    label: 'background',
+    section: 'Layout',
+    fp: 'bg',
+    target: 'view',
+    // Grey is the page's own neutral (COLOR.faint); color is the indigo accent
+    // the rest of the sheet already uses. Alpha as an 8-digit hex suffix (80 =
+    // 50%) rather than an rgba() string, so the value is one flat color prop
+    // either way, not a format switch between options.
+    options: [
+      { label: '(none)' },
+      { label: '50% grey', value: `${COLOR.faint}80` },
+      { label: '100% grey', value: COLOR.faint },
+      { label: '50% color', value: `${COLOR.indigo}80` },
+      { label: '100% color', value: COLOR.indigo },
+    ],
+  },
+  {
     key: 'allowFontScaling',
     section: 'Layout',
     fp: 'afs',
@@ -882,6 +955,9 @@ const ATTRIBUTES: AttrDef[] = [
     options: [
       { label: 'short', value: SHORT_TEXT },
       { label: 'wrapping', value: WRAPPING_TEXT },
+      { label: 'static', value: STATIC_TEXT },
+      { label: 'symbol', value: SYMBOL_TEXT },
+      { label: 'emoji', value: EMOJI_TEXT },
     ],
   },
   {
@@ -1012,8 +1088,11 @@ function buildApplied(config: AttrConfig, colorIndex: number, sizeBump: number):
   // accent the Features page draws its border rows in.
   if (viewStyle.borderWidth != null) viewStyle.borderColor = COLOR.indigo;
 
-  // The two update scenarios, applied last so they win over the config.
-  textStyle.color = COLORS[colorIndex];
+  // The two update scenarios, applied last so they win over the config. Color
+  // only overrides once the scenario has actually toggled it away from index
+  // 0: at rest, the config's own `color` row (or the native default) should
+  // reach the text unstomped.
+  if (colorIndex !== 0) textStyle.color = COLORS[colorIndex];
   textStyle.fontSize = (textStyle.fontSize as number) + sizeBump;
 
   return {

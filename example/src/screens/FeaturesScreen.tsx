@@ -35,6 +35,15 @@ export default function FeaturesScreen({ navigation }: Props) {
           </TextItem>
         ))}
       </Section>
+      {/* Emoji glyphs sit outside every text font's own glyph table, so drawing
+          one forces color-emoji fallback regardless of fontFamily. Nothing
+          here to tune, just a line to check nothing drops the glyph or clips
+          its line height. */}
+      <Section title="Emoji">
+        <TextItem label="mixed" showText={showText}>
+          {EMOJI_SPECIMEN}
+        </TextItem>
+      </Section>
       <Section title="Font Family" footer={FONT_FAMILY_RESOLUTION_FOOTER}>
         {FONT_FAMILY_RESOLUTION.map(({ label, style }) => (
           <TextItem key={label} label={label} showText={showText} style={style}>
@@ -604,6 +613,8 @@ const PARAGRAPH_LONG = `${PARAGRAPH} ${PARAGRAPH} ${PARAGRAPH}`;
 // Its own specimen: the Font Variant rows need the ff/ffl ligature pairs and a
 // full run of figures in one string, and the pangram carries neither.
 const FONT_VARIANT_SPECIMEN = 'Waffle office 0123456789';
+
+const EMOJI_SPECIMEN = 'Quick brown 🦊 jumps over the lazy 🐶';
 
 const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
 
