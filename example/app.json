@@ -29,7 +29,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withDebugVariant",
       "./plugins/withFontScaleConfigChanges",
       "expo-status-bar",
       [
