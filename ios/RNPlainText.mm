@@ -58,8 +58,14 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     }
 }
 
-// UILabel vertically centers an overtall frame, but RN <Text> on iOS always top-aligns, so this subclass forces top alignment (textAlignVertical is Android-only).
+// textAlignVertical is Android-only in RN core, so RN's <Text> on iOS always
+// top-aligns. That is a gap in RN rather than a difference to preserve (see
+// docs/agent/workflow.md#when-rn-itself-has-the-platform-gap), and the override
+// UILabel already needs (it would otherwise center an overtall frame) resolves
+// all three values at no extra cost.
 @interface RNPlainTextLabel : UILabel
+// 'auto' maps to Top, matching RN <Text> on iOS.
+@property (nonatomic) RNPlainTextTextAlignVertical verticalAlignment;
 // When lineHeight exceeds the font's line height, TextKit's extra per-line space falls below the glyphs; verticalTextShift moves the whole drawn block (glyphs plus underline/strikethrough) up by half that extra, unlike NSBaselineOffsetAttributeName which shifts only glyphs.
 @property (nonatomic) CGFloat verticalTextShift;
 @end
@@ -67,8 +73,23 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 @implementation RNPlainTextLabel
 - (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
 {
+    // super's rect is top-anchored at bounds.origin.y and never centered, so the
+    // spare room has to come from the height delta.
     CGRect rect = [super textRectForBounds:bounds limitedToNumberOfLines:numberOfLines];
-    rect.origin.y = bounds.origin.y - self.verticalTextShift;
+    CGFloat centerOffset = (bounds.size.height - rect.size.height) / 2.0;
+    switch (self.verticalAlignment) {
+        case RNPlainTextTextAlignVertical::Auto:
+        case RNPlainTextTextAlignVertical::Top:
+            rect.origin.y = bounds.origin.y;
+            break;
+        case RNPlainTextTextAlignVertical::Center:
+            rect.origin.y = bounds.origin.y + centerOffset;
+            break;
+        case RNPlainTextTextAlignVertical::Bottom:
+            rect.origin.y = bounds.origin.y + 2 * centerOffset;
+            break;
+    }
+    rect.origin.y -= self.verticalTextShift;
     return rect;
 }
 
@@ -132,6 +153,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         _label.textAlignment = alignment;
         _label.text = text;
         _label.verticalTextShift = 0;
+        _label.verticalAlignment = props.textAlignVertical;
         return;
     }
 
@@ -168,6 +190,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         }
     }
     _label.verticalTextShift = verticalTextShift;
+    _label.verticalAlignment = props.textAlignVertical;
 
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
     _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
@@ -205,6 +228,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.fontVariant != newViewProps.fontVariant ||
         oldViewProps.fontVariationSettings != newViewProps.fontVariationSettings ||
         oldViewProps.textAlign != newViewProps.textAlign ||
+        oldViewProps.textAlignVertical != newViewProps.textAlignVertical ||
         oldViewProps.color != newViewProps.color ||
         oldViewProps.lineHeight != newViewProps.lineHeight ||
         oldViewProps.letterSpacing != newViewProps.letterSpacing ||

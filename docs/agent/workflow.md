@@ -14,6 +14,28 @@ three of:
   when it is set ([performance.md](performance.md#prop-cost-policy)). Medium and
   heavy get a `Cost:` note beside the prop in the codegen spec.
 
+### When RN itself has the platform gap
+
+Parity means matching RN, not matching RN's own asymmetry. A prop that exists on
+one platform in RN core and not the other is a gap in RN rather than a platform
+difference to preserve, so default to closing it, provided that can be done
+without the cost that presumably stopped RN.
+
+`textAlignVertical` is the first case, Android-only in RN core with no `ios/`
+implementation in Fabric at all. Closing it on iOS cost nothing because a
+`UILabel` subclass was already overriding
+`-textRectForBounds:limitedToNumberOfLines:` for another reason
+(`ios/RNPlainText.mm`). Look for that kind of free ride before anything heavier.
+
+Say so where the prop is declared and applied, so the next reader knows the
+divergence is deliberate.
+
+**Check for JS-level aliases first.** RN's `Text.js` maps `verticalAlign` onto
+`textAlignVertical` in JS (`verticalAlignToTextAlignVerticalMap`), so despite
+the CSS name it was never a second gap.
+`PlainText.native.tsx`'s `resolveTextAlignVertical` mirrors that alias, and
+closing `textAlignVertical` on iOS closed `verticalAlign` with it.
+
 ## Order of work
 
 1. **Add usage/test cases to the Features screen first.**

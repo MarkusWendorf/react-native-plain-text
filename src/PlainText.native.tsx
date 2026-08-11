@@ -22,7 +22,10 @@ export type PlainTextProps = AccessibilityProps & {
   id?: string;
 };
 
-// verticalAlign wins over textAlignVertical when both are set (matches RN
+// Despite the CSS name, `verticalAlign` is Android-only in RN as well: Text.js
+// aliases it onto `textAlignVertical` in JS, before either reaches native.
+// Mirroring that here means closing `textAlignVertical` on iOS closes
+// `verticalAlign` for free. `verticalAlign` wins when both are set (matches RN
 // <Text>), and its 'middle' maps to the native prop's 'center'.
 function resolveTextAlignVertical(
   textAlignVertical: TextStyle['textAlignVertical'],

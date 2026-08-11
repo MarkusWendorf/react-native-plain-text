@@ -411,10 +411,12 @@ export default function FeaturesScreen({ navigation }: Props) {
           </TextItem>
         ))}
       </Section>
-      {/* Vertical alignment is Android-only (matches RN <Text>). On iOS it's a
-          no-op, see VERTICAL_ALIGN_FOOTER. Each box is taller than its text so
-          the position is visible. */}
-      <Section title="Vertical Align (Android)" footer={VERTICAL_ALIGN_FOOTER}>
+      {/* Android-only in RN <Text>, closed on iOS here (see
+          docs/agent/workflow.md#when-rn-itself-has-the-platform-gap). Each box
+          is taller than its text so the position is visible. Rows drive this
+          through `verticalAlign`, which RN aliases onto `textAlignVertical` in
+          JS, so it covers both props. */}
+      <Section title="Vertical Align" footer={VERTICAL_ALIGN_FOOTER}>
         {VERTICAL_ALIGNS.map((verticalAlign) => (
           <TextItem
             key={verticalAlign}
@@ -635,7 +637,7 @@ const FONT_SCALING_FOOTER = Platform.select({
 const VERTICAL_ALIGNS = ['top', 'middle', 'bottom'] as const;
 
 const VERTICAL_ALIGN_FOOTER = Platform.select({
-  ios: 'Android-only in RN <Text>. PlainText matches, so all three rows look the same.',
+  ios: 'Android-only in RN <Text>.',
   default: 'Each box is 72pt tall, so the text has room to move.',
 });
 
