@@ -570,7 +570,7 @@ export default function FeaturesScreen({ navigation }: Props) {
 // up from body size. Those rows are looked at rather than read, and at 18pt the
 // differences between them were too small to judge. Sections whose specimen has to
 // wrap stay at 18: there the point is the paragraph, not the glyph.
-const SHORT_ROW_SIZE = 22;
+const SHORT_ROW_SIZE = 26;
 
 const styles = StyleSheet.create({
   // Every section whose specimen wraps: full width, body size, and no background
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   // about layout should set no width at all instead. See `a11yRow`.
   body: {
     width: '100%',
-    fontSize: 18,
+    fontSize: 20,
   },
   // iOS needs explicit clipping to reproduce the bug (clipsToBounds is off by
   // default); Android's TextView already clips to its bounds.
@@ -860,20 +860,20 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
   ios: [
     // The straightforward ones first: a registered family name, which is the
     // only thing the resolution this section exercises never had trouble with.
-    { label: 'System', style: { fontSize: 18, fontFamily: 'System' } },
-    { label: 'Georgia', style: { fontSize: 18, fontFamily: 'Georgia' } },
-    { label: 'Menlo', style: { fontSize: 18, fontFamily: 'Menlo' } },
-    { label: 'Courier', style: { fontSize: 18, fontFamily: 'Courier' } },
+    { label: 'System', style: { fontSize: 26, fontFamily: 'System' } },
+    { label: 'Georgia', style: { fontSize: 26, fontFamily: 'Georgia' } },
+    { label: 'Menlo', style: { fontSize: 26, fontFamily: 'Menlo' } },
+    { label: 'Courier', style: { fontSize: 26, fontFamily: 'Courier' } },
     {
       // Renders in the Ultra Light cut, not a system font at weight 100.
       label: 'Family and weight',
-      style: { fontSize: 20, fontFamily: 'Avenir Next', fontWeight: '100' },
+      style: { fontSize: 26, fontFamily: 'Avenir Next', fontWeight: '100' },
     },
     {
       // One cut in the family, so the bold has nothing to resolve to and must
       // leave the row in Zapfino rather than fall back.
       label: 'Single-cut family',
-      style: { fontSize: 16, fontFamily: 'Zapfino', fontWeight: 'bold' },
+      style: { fontSize: 26, fontFamily: 'Zapfino', fontWeight: 'bold' },
     },
     {
       // HelveticaNeue-Thin, picked because RCTGetFontWeight reads the name suffix:
@@ -882,14 +882,14 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
       // and Light, and "ultralight" has to be tested before "light" or the
       // UltraLight face would answer to weight 300.
       label: 'Weight with a real cut',
-      style: { fontSize: 20, fontFamily: 'Helvetica Neue', fontWeight: '200' },
+      style: { fontSize: 26, fontFamily: 'Helvetica Neue', fontWeight: '200' },
     },
     {
       // The same cut, asked for by name instead of by weight. Renders identically
       // to the row above, by a different branch: no family matches this string, so
       // it resolves as a face.
       label: 'Weight suffix in the name',
-      style: { fontSize: 20, fontFamily: 'HelveticaNeue-Thin' },
+      style: { fontSize: 26, fontFamily: 'HelveticaNeue-Thin' },
     },
     {
       // Copperplate ships Regular, Light and Bold, and no italic. So the slant
@@ -897,62 +897,62 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
       // on top of it is synthesized. Contrast with the Georgia row, which has a
       // real italic to find.
       label: 'Slant with no cut',
-      style: { fontSize: 24, fontFamily: 'Copperplate', fontStyle: 'italic' },
+      style: { fontSize: 26, fontFamily: 'Copperplate', fontStyle: 'italic' },
     },
     {
       // A face carries its own slant, so fontStyle stays out of this row:
       // nothing in it is synthesized.
       label: 'Face name',
-      style: { fontSize: 20, fontFamily: 'Georgia-BoldItalic' },
+      style: { fontSize: 26, fontFamily: 'Georgia-BoldItalic' },
     },
     {
       // Both Condensed cuts sit in family "Helvetica Neue", but the family path
       // filters condensed faces out, so no weight reaches them there: a face
       // name is the only way in. The two branches are not interchangeable.
       label: 'Condensed face',
-      style: { fontSize: 20, fontFamily: 'HelveticaNeue-CondensedBlack' },
+      style: { fontSize: 26, fontFamily: 'HelveticaNeue-CondensedBlack' },
     },
   ],
   default: [
-    { label: 'System', style: { fontSize: 18, fontFamily: 'System' } },
-    { label: 'serif', style: { fontSize: 18, fontFamily: 'serif' } },
-    { label: 'monospace', style: { fontSize: 18, fontFamily: 'monospace' } },
+    { label: 'System', style: { fontSize: 26, fontFamily: 'System' } },
+    { label: 'serif', style: { fontSize: 26, fontFamily: 'serif' } },
+    { label: 'monospace', style: { fontSize: 26, fontFamily: 'monospace' } },
     {
       label: 'sans-serif-condensed',
-      style: { fontSize: 18, fontFamily: 'sans-serif-condensed' },
+      style: { fontSize: 26, fontFamily: 'sans-serif-condensed' },
     },
     {
       // Renders in the Thin cut.
       label: 'Family and weight',
-      style: { fontSize: 18, fontFamily: 'sans-serif', fontWeight: '100' },
+      style: { fontSize: 26, fontFamily: 'sans-serif', fontWeight: '100' },
     },
     {
       label: 'Single-cut family',
-      style: { fontSize: 18, fontFamily: 'cursive' },
+      style: { fontSize: 26, fontFamily: 'cursive' },
     },
     {
       label: 'Condensed face',
-      style: { fontSize: 18, fontFamily: 'sans-serif-condensed-light' },
+      style: { fontSize: 26, fontFamily: 'sans-serif-condensed-light' },
     },
     {
       // Light rather than Thin, so this pair stays distinguishable from the
       // family-and-weight row above.
       label: 'Weight with a real cut',
-      style: { fontSize: 18, fontFamily: 'sans-serif', fontWeight: '300' },
+      style: { fontSize: 26, fontFamily: 'sans-serif', fontWeight: '300' },
     },
     {
       label: 'Weight suffix in the name',
-      style: { fontSize: 18, fontFamily: 'sans-serif-light' },
+      style: { fontSize: 26, fontFamily: 'sans-serif-light' },
     },
     {
       // Android synthesizes the slant here too, for the same reason: the family
       // carries no italic cut.
       label: 'Slant with no cut',
-      style: { fontSize: 18, fontFamily: 'monospace', fontStyle: 'italic' },
+      style: { fontSize: 26, fontFamily: 'monospace', fontStyle: 'italic' },
     },
     {
       label: 'Named cut',
-      style: { fontSize: 18, fontFamily: 'sans-serif-medium' },
+      style: { fontSize: 26, fontFamily: 'sans-serif-medium' },
     },
   ],
 });
@@ -981,26 +981,26 @@ const PLATFORM_FONT_ROWS: FontFamilyRow[] = Platform.select({
 const CUSTOM_FONT_ROWS: FontFamilyRow[] = [
   {
     label: 'expo-font alias',
-    style: { fontSize: 18, fontFamily: 'Inter_400Regular' },
+    style: { fontSize: 26, fontFamily: 'Inter_400Regular' },
   },
   {
     // Each cut is loaded under its own alias, so weight lives in the name here
     // rather than in fontWeight: one alias is a one-face family, and there is
     // no sibling cut for a weight to match against.
     label: 'expo-font alias, heavier cut',
-    style: { fontSize: 18, fontFamily: 'Inter_600SemiBold' },
+    style: { fontSize: 26, fontFamily: 'Inter_600SemiBold' },
   },
   {
     // Slant in the name too, and for the same reason. Nothing synthesized: the
     // face is already italic, so plainTextFont's italic round-trip is skipped.
     label: 'expo-font alias, light italic',
-    style: { fontSize: 18, fontFamily: 'Inter_300Light_Italic' },
+    style: { fontSize: 26, fontFamily: 'Inter_300Light_Italic' },
   },
 ];
 
 const UNRESOLVABLE_FONT_ROW: FontFamilyRow = {
   label: 'Unresolvable name',
-  style: { fontSize: 18, fontFamily: 'NoSuchFont-Regular' },
+  style: { fontSize: 26, fontFamily: 'NoSuchFont-Regular' },
 };
 
 const FONT_FAMILY_RESOLUTION: FontFamilyRow[] = [
