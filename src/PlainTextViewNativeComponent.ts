@@ -61,6 +61,12 @@ export interface NativeProps extends ViewProps {
   // specific. A platform with no experiment wired up ignores it. Currently
   // read only by Android's measure(). See docs/agent/sync-points.md.
   experiment?: CodegenTypes.WithDefault<boolean, false>;
+  // Internal, not part of PlainText's public props. Driven by
+  // unstable_configureTextCompat (src/compat.ts), forwarded on every render
+  // rather than only when it changes. iOS-only concern: when true, reverts
+  // applyContentFromProps's lineHeight vertical shift to RN <Text>'s current
+  // ascent-clipping bug instead of PlainText's fix. No-op on Android.
+  lineHeightClippingIos?: CodegenTypes.WithDefault<boolean, false>;
 }
 
 export default codegenNativeComponent<NativeProps>('RNPlainText');

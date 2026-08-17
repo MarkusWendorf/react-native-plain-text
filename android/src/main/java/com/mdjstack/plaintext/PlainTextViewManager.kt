@@ -157,6 +157,13 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
   override fun setExperiment(view: PlainTextView?, experiment: Boolean) {
   }
 
+  // iOS-only concern (see PlainTextViewNativeComponent.ts). No-op here, same as
+  // `hasLetterSpacing`: Android's TextView never had the ascent-clipping bug
+  // this reverts to on iOS.
+  @ReactProp(name = "lineHeightClippingIos", defaultBoolean = false)
+  override fun setLineHeightClippingIos(view: PlainTextView?, lineHeightClippingIos: Boolean) {
+  }
+
   // Called from C++ (PlainTextMeasurementsManager, via FabricUIManager.measure) on the
   // Fabric layout thread. This is where text is actually measured, since Fabric never
   // runs Android's normal onMeasure for our view. `props` carries the size-affecting

@@ -76,6 +76,21 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 @end
 
 @implementation RNPlainTextLabel
+// UILabel only redraws when a property it recognizes as content (attributedText,
+// text, font, ...) actually changes; toggling lineHeightClippingIos with every
+// other prop unchanged reapplies an attributedText that is `isEqual:` to the one
+// already set (verticalTextShift isn't part of it), so UILabel skips the redraw
+// and drawTextInRect: never reruns. Setting this property directly must ask for
+// one itself.
+- (void)setVerticalTextShift:(CGFloat)verticalTextShift
+{
+    if (_verticalTextShift == verticalTextShift) {
+        return;
+    }
+    _verticalTextShift = verticalTextShift;
+    [self setNeedsDisplay];
+}
+
 - (CGRect)textRectForBounds:(CGRect)bounds limitedToNumberOfLines:(NSInteger)numberOfLines
 {
     // super's rect is top-anchored at bounds.origin.y and never centered, so the
@@ -191,10 +206,13 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         paragraphStyle.maximumLineHeight = lineHeight;
         // Below font.lineHeight, TextKit clips ascent only (RN#29507); shift by
         // half the deficit against the glyphs' real extent to clip evenly
-        // instead (RN#46884's algorithm).
+        // instead (RN#46884's algorithm). lineHeightClippingIos reverts to
+        // RN's current (unfixed) behavior: no shift, so TextKit's own
+        // ascent-only clip stands, for apps migrating from <Text> that rely
+        // on that exact rendering (see unstable_configureTextCompat).
         if (lineHeight >= font.lineHeight) {
             verticalTextShift = (lineHeight - font.lineHeight) / 2.0;
-        } else {
+        } else if (!props.lineHeightClippingIos) {
             CGFloat textHeight = font.ascender + fabs(font.descender);
             verticalTextShift = (lineHeight - textHeight) / 2.0;
         }
@@ -245,7 +263,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.textDecorationLine != newViewProps.textDecorationLine ||
         oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode ||
         oldViewProps.allowFontScaling != newViewProps.allowFontScaling ||
-        oldViewProps.maxFontSizeMultiplier != newViewProps.maxFontSizeMultiplier) {
+        oldViewProps.maxFontSizeMultiplier != newViewProps.maxFontSizeMultiplier ||
+        oldViewProps.lineHeightClippingIos != newViewProps.lineHeightClippingIos) {
         [self applyContentFromProps:newViewProps];
     }
 

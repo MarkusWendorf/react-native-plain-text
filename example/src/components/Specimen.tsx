@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { PlainText, type PlainTextStyle } from 'react-native-plain-text';
+import { useCompatOn } from './CompareText';
 import { COLOR } from '../theme';
 
 // The specimen-book furniture both screens are set in: the title page, the
@@ -115,6 +116,8 @@ export function TextItem({
   accessibilityProps?: AccessibilityProps & { testID?: string };
   children: string;
 }) {
+  const compatOn = useCompatOn();
+
   return (
     <View style={styles.rowContainer}>
       {label != null && <PlainText style={styles.rowLabel}>{label.toUpperCase()}</PlainText>}
@@ -137,6 +140,7 @@ export function TextItem({
             ellipsizeMode={ellipsizeMode}
             allowFontScaling={allowFontScaling}
             maxFontSizeMultiplier={maxFontSizeMultiplier}
+            unstable_lineHeightClippingIos={compatOn}
             {...accessibilityProps}
           >
             {children}

@@ -1,4 +1,5 @@
 import { StyleSheet, type AccessibilityProps, type StyleProp, type TextStyle } from 'react-native';
+import { getTextCompatConfig } from './compat';
 import PlainTextViewNativeComponent from './PlainTextViewNativeComponent';
 
 // RN's TextStyle plus the one text style it has no entry for.
@@ -17,6 +18,9 @@ export type PlainTextProps = AccessibilityProps & {
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
+  // Per-instance override for unstable_configureTextCompat's lineHeightClippingIos.
+  // Unset defers to the global config. Set here, it wins regardless of it.
+  unstable_lineHeightClippingIos?: boolean;
   testID?: string;
   nativeID?: string;
   id?: string;
@@ -59,6 +63,7 @@ export function PlainText({
   ellipsizeMode,
   allowFontScaling,
   maxFontSizeMultiplier,
+  unstable_lineHeightClippingIos,
   ...accessibilityProps
 }: PlainTextProps) {
   // Text-style props don't flow through the native ViewProps, so pull them
@@ -99,6 +104,9 @@ export function PlainText({
       ellipsizeMode={ellipsizeMode}
       allowFontScaling={allowFontScaling}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
+      lineHeightClippingIos={
+        unstable_lineHeightClippingIos ?? getTextCompatConfig().lineHeightClippingIos
+      }
       style={viewStyle}
       {...accessibilityProps}
     />
