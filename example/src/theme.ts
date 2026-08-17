@@ -50,20 +50,21 @@ export const COLOR = {
   ochreWash: '#f9f2e3',
   plum: '#77399f',
   plumWash: '#f3edf8',
-  // The "Vs <Text>" overlay, and deliberately not one of the accents above. Aged
-  // brass says both halves of what the overlay is: RN's own <Text> is the reference
-  // every specimen is measured against, and it is also the older of the two ways to
-  // draw a string. Red said only "error".
+  // The "Vs <Text>" pair, and deliberately not among the accents above: those are
+  // what the specimens demo `color` with, and an overlay that could be any row's
+  // own text color is not a comparison.
   //
-  // It sits in the accents' lightness band, between moss and ochre, so it reads as
-  // part of the same printed page. It is kept out of the accent set because the
-  // accents are what the specimens demo `color` with, and an overlay that could be
-  // any row's own text color is not a comparison. Hue is pushed olive of ochre's, far
-  // enough that the two never read as one pigment. Chroma is the one place it can't
-  // match: at this lightness sRGB has no more saturated gold, so it runs a shade
-  // quieter than the five, which for a translucent overlay is the right direction
-  // anyway.
-  brass: '#847526',
+  // PlainText runs cobalt, full strength, and the overlay runs scarlet with
+  // `mixBlendMode: 'multiply'` (see `overlay` in Specimen.tsx). Multiply
+  // genuinely darkens rather than picking a winner, so wherever the two
+  // glyphs coincide, the common case, the result lands on a near-black
+  // neutral rather than a tint of whichever is on top. Wherever only one
+  // covers a pixel it stays that color almost unchanged, since multiplying
+  // against the near-white page barely moves it. So a mismatch reads as a
+  // fringe of plain cobalt or plain scarlet breaking out of the dark field,
+  // rather than as a blur to squint at.
+  cobalt: '#1656e9',
+  scarlet: '#e0212b',
 } as const;
 
 // Font family names aren't portable across platforms, so the rows that need a

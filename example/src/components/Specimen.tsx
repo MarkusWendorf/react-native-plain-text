@@ -129,10 +129,10 @@ export function TextItem({
             // `base` first so a row that sets its own fontSize (most of them)
             // overrides it, and one that doesn't (like a row demonstrating a
             // prop unrelated to size) still gets a real body size instead of
-            // PlainText's bare default. Dimmed to match the overlay's own
-            // opacity while it's showing, so neither box reads as "the real
-            // one" drawn under a faint guide.
-            style={[screenStyles.base, style, showText && styles.dimmed]}
+            // PlainText's bare default. `compareText` last, so it overrides a
+            // `color`-prop demo row the same way the RN Text overlay already
+            // overrides that row's own style. See COLOR.cobalt/scarlet.
+            style={[screenStyles.base, style, showText && styles.compareText]}
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
             allowFontScaling={allowFontScaling}
@@ -146,7 +146,7 @@ export function TextItem({
           // `alignItems: flex-start` leaves the Text a normal flex child, so it
           // shrink-wraps to its own measured width but still wraps at the same
           // available width PlainText was measured against, which is what makes
-          // the brass box edge comparable to the grey one.
+          // the scarlet box edge comparable to the grey one.
           <View style={styles.overlay}>
             <Text
               // Cast back to what RN accepts. A fontVariationSettings in there is
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   // Pinned to all three edges so the Text is *offered* the container's full
   // width (the same width PlainText was measured against) while
   // `alignItems: flex-start` keeps the Text itself a shrink-wrapping child of
-  // this box rather than stretched to it. That combination is what makes the brass
+  // this box rather than stretched to it. That combination is what makes the scarlet
   // edge the overlay's own measured width instead of the container's, which is
   // the whole comparison. A demo whose style sets an explicit width (the align
   // and multiline rows) still gets it from `style`, applied before this.
@@ -401,6 +401,13 @@ const styles = StyleSheet.create({
   // No `bottom` and no `height`, deliberately: height is the other half of the
   // comparison, so the Text has to be free to measure taller than the PlainText
   // under it and show it. `specimen`'s bottom padding is where that goes.
+  // `multiply` rather than opacity: opacity picks a winner (whichever layer is
+  // on top dominates the blend), so a perfectly aligned pair still read as a
+  // tint of the overlay's own color. Multiply is order-independent and
+  // genuinely darkens, so cobalt-under-scarlet lands on a near-black neutral
+  // wherever the two glyphs coincide, and stays plain scarlet wherever only
+  // the overlay covers a pixel, since multiplying against the near-white page
+  // barely moves it. See COLOR.cobalt/scarlet.
   overlay: {
     position: 'absolute',
     top: 0,
@@ -408,18 +415,37 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'flex-start',
     pointerEvents: 'none',
+    mixBlendMode: 'multiply',
   },
   overlayText: {
-    opacity: 0.5,
-    // Transparent so the PlainText underneath stays visible for comparison. Brass at
-    // the same alpha the red fill used, since the point of the fill is the box edge,
-    // not the tint.
-    backgroundColor: '#84752620',
-    color: COLOR.brass,
+    // Same grey as the row, not a tint of scarlet: any real hue here reads as
+    // colored whether or not the boxes actually differ, since white and this
+    // wash are so close in lightness to begin with. Matching the row means an
+    // aligned box multiplies to plain grey (`multiply` on `overlay` still
+    // darkens it a shade, which is fine, it's still neutral) and the signal
+    // for a size mismatch is what it always was: this box's own edge showing
+    // past the row's, grey against the white page rather than a color.
+    backgroundColor: COLOR.wash,
+    color: COLOR.scarlet,
+    // Overrides whatever borderColor a Border/Use Cases row demoed, same as
+    // `color` does, so a row's own border becomes part of the comparison too:
+    // scarlet here, cobalt in `compareText`, multiplying to the same dark
+    // neutral edge as the glyphs wherever the two boxes' borders coincide.
+    borderColor: COLOR.scarlet,
   },
-  // Same alpha as overlayText, applied to PlainText only while the overlay is
-  // showing (see the PlainText style in TextItem).
-  dimmed: {
-    opacity: 0.5,
+  // Applied to PlainText only while the overlay is showing (see the PlainText
+  // style in TextItem). Left at full opacity, deliberately: `overlay`'s
+  // multiply needs a fully-saturated cobalt to land on near-black where the
+  // two glyphs coincide, not a lightened tint of it.
+  //
+  // `backgroundColor` is here too, matching `row`'s own wash, so a row that set
+  // its own background (the inverse row, the badge/card use cases) still ends
+  // up on the same neutral both boxes already agree on: the comparison is
+  // `color`/`borderColor`, and a leftover custom background would read as a
+  // third disagreement that was never part of it.
+  compareText: {
+    color: COLOR.cobalt,
+    backgroundColor: COLOR.wash,
+    borderColor: COLOR.cobalt,
   },
 });

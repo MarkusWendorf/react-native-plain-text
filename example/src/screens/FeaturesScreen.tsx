@@ -341,7 +341,7 @@ export default function FeaturesScreen({ navigation }: Props) {
           looks like its baseline is usually a missing feature, not a broken
           prop.
 
-          The brass <Text> overlay is the less capable of the two here, for two
+          The scarlet <Text> overlay is the less capable of the two here, for two
           reasons in RN core. Its New Architecture props layer has no room for the
           ligature and contextual values at all (the C++ FontVariant bitmask
           covers only small-caps, the figure styles and ss01-ss20), so those rows
@@ -406,7 +406,7 @@ export default function FeaturesScreen({ navigation }: Props) {
       {/* Three things about this section:
 
           - It is the one with nothing to compare against. RN <Text> has no
-            fontVariationSettings on either platform, so the brass overlay sits at
+            fontVariationSettings on either platform, so the scarlet overlay sits at
             the font's default instance on every row while the grey box moves.
             Two PRs tried to add it to core and both went stale unmerged
             (facebook/react-native#44685 for iOS, #44667 for Android). See
@@ -456,9 +456,9 @@ export default function FeaturesScreen({ navigation }: Props) {
         tight widest-line width for text that didn't, so what to look at is the
         grey box edge, not the glyphs. None of these rows sets a width: the row
         shrink-wraps to whatever the text measured, and "Compare Text" overlays
-        RN's own answer in brass on top.
+        RN's own answer in scarlet on top.
 
-        Two things to check, in order: PlainText against the brass Text overlay on
+        Two things to check, in order: PlainText against the scarlet Text overlay on
         one platform, then iOS against Android.
 
         Rows 2 and 3 are the interesting case: hard breaks that all fit, so
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   // layout at all, so both boxes should just hug their text. A `width: '100%'`
   // here resolved against two different containing blocks (the shrink-wrapping
   // row under the PlainText, the full-width overlay box over it) and showed a
-  // brass box running to the margin over a grey one hugging the glyphs, which is
+  // scarlet box running to the margin over a grey one hugging the glyphs, which is
   // a difference in the harness rather than in anything either component
   // measured.
   a11yRow: {
@@ -716,7 +716,7 @@ const TEXT_DECORATION_LINES = [
 // these rows carry.
 const FONT_VARIANT_FEATURE_FAMILY = Platform.select({ ios: 'Baskerville', default: undefined });
 
-// `fontStyle: 'normal'` is not cosmetic: it is what makes the brass <Text> overlay
+// `fontStyle: 'normal'` is not cosmetic: it is what makes the scarlet <Text> overlay
 // show any of this on Android. RN only attaches the span that carries
 // fontFeatureSettings when fontStyle, fontWeight or fontFamily is set too, so
 // fontVariant on its own renders unchanged there (see
@@ -844,7 +844,7 @@ const FONT_WEIGHTS = ['normal', 'bold', '100', '300', '500', '700', '900'] as co
 // registered family name and nothing else, so a face name silently produced the
 // system font, the very thing an unresolvable name produces, which is what made
 // the bug hard to see: a loaded custom font and a typo rendered identically.
-// They should look different now, and both should match the brass <Text> overlay.
+// They should look different now, and both should match the scarlet <Text> overlay.
 //
 // Android resolves fontFamily through Typeface family names, with no PostScript
 // names and no weight matching to do, so its rows are the nearest analogs rather
