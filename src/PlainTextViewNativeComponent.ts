@@ -35,10 +35,15 @@ export interface NativeProps extends ViewProps {
   //
   // Cost: medium. Forces iOS's attributed-string path and an Android line-height span.
   lineHeight?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
-  // Points, 0 means unset.
+  // Points. "Set or not" is carried separately in hasLetterSpacing, since 0
+  // is both the default and a legitimate value.
   //
   // Cost: medium. Forces iOS's attributed-string path, plus one paint write on Android.
   letterSpacing?: CodegenTypes.WithDefault<CodegenTypes.Float, 0>;
+  // Internal. iOS's kerning attribute treats "unset" and "0" differently
+  // (auto kerning vs. disabled), so this carries that bit explicitly.
+  // Android has no such distinction and ignores it, like `experiment` below.
+  hasLetterSpacing?: CodegenTypes.WithDefault<boolean, false>;
   textAlign?: CodegenTypes.WithDefault<'auto' | 'left' | 'right' | 'center' | 'justify', 'auto'>;
   // Android-only in RN <Text>, but PlainText closes that gap on iOS too (see
   // docs/agent/workflow.md#when-rn-itself-has-the-platform-gap). JS maps the

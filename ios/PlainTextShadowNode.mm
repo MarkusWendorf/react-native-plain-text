@@ -33,7 +33,7 @@ Size PlainTextShadowNode::measureContent(
   NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
   attributes[NSFontAttributeName] = font;
 
-  if (props.letterSpacing != 0) {
+  if (props.hasLetterSpacing) {
     attributes[NSKernAttributeName] = @(props.letterSpacing);
   }
 

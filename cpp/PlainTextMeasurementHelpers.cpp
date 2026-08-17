@@ -13,6 +13,7 @@ bool measurementInputsEqual(
       a.fontVariationSettings == b.fontVariationSettings &&
       a.lineHeight == b.lineHeight &&
       a.letterSpacing == b.letterSpacing &&
+      a.hasLetterSpacing == b.hasLetterSpacing &&
       a.numberOfLines == b.numberOfLines &&
       a.allowFontScaling == b.allowFontScaling &&
       a.maxFontSizeMultiplier == b.maxFontSizeMultiplier;

@@ -100,6 +100,7 @@ export function PlainText({
       textDecorationLine={textDecorationLine}
       lineHeight={lineHeight}
       letterSpacing={letterSpacing}
+      hasLetterSpacing={letterSpacing !== undefined}
       numberOfLines={numberOfLines}
       ellipsizeMode={ellipsizeMode}
       allowFontScaling={allowFontScaling}

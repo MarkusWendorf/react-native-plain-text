@@ -160,7 +160,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     NSString *text = [NSString stringWithUTF8String:props.text.c_str()] ?: @"";
 
     BOOL hasLineHeight = props.lineHeight > 0;
-    BOOL hasLetterSpacing = props.letterSpacing != 0;
+    BOOL hasLetterSpacing = props.hasLetterSpacing;
     BOOL hasUnderline = RNPlainTextHasUnderline(props.textDecorationLine);
     BOOL hasLineThrough = RNPlainTextHasLineThrough(props.textDecorationLine);
     BOOL hasTextDecoration = hasUnderline || hasLineThrough;
@@ -260,6 +260,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         oldViewProps.color != newViewProps.color ||
         oldViewProps.lineHeight != newViewProps.lineHeight ||
         oldViewProps.letterSpacing != newViewProps.letterSpacing ||
+        oldViewProps.hasLetterSpacing != newViewProps.hasLetterSpacing ||
         oldViewProps.textDecorationLine != newViewProps.textDecorationLine ||
         oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode ||
         oldViewProps.allowFontScaling != newViewProps.allowFontScaling ||

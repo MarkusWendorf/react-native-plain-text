@@ -130,6 +130,11 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     view?.setLetterSpacingDip(letterSpacing)
   }
 
+  // iOS-only concern (see PlainTextViewNativeComponent.ts). No-op here, same as `experiment`.
+  @ReactProp(name = "hasLetterSpacing", defaultBoolean = false)
+  override fun setHasLetterSpacing(view: PlainTextView?, hasLetterSpacing: Boolean) {
+  }
+
   @ReactProp(name = "numberOfLines")
   override fun setNumberOfLines(view: PlainTextView?, numberOfLines: Int) {
     view?.setNumberOfLines(numberOfLines)
