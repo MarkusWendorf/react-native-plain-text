@@ -9,41 +9,22 @@ using namespace facebook::jni;
 
 namespace facebook::react {
 
-Size PlainTextMeasurementsManager::measure(
-    SurfaceId surfaceId,
-    const RNPlainTextProps &props,
-    LayoutConstraints layoutConstraints) const {
-  static auto measure =
-      jni::findClassStatic("com/facebook/react/fabric/FabricUIManager")
-          ->getMethod<jlong(
-              jint,
-              jstring,
-              ReadableMap::javaobject,
-              ReadableMap::javaobject,
-              ReadableMap::javaobject,
-              jfloat,
-              jfloat,
-              jfloat,
-              jfloat)>("measure");
+namespace {
 
-  // Held as a global ref rather than built per call: make_jstring allocates a Java
-  // String, and this one is the same for every node.
-  static const auto componentName = make_global(make_jstring("RNPlainText"));
-
-  auto minimumSize = layoutConstraints.minimumSize;
-  auto maximumSize = layoutConstraints.maximumSize;
-
-  // The generic FabricUIManager.measure path takes props as a ReadableMap, which
-  // RNPlainTextManager.measure reads back to size an off-screen TextView.
-  // (AndroidSwitch passes null here because its size is prop-independent. Ours isn't.)
-  //
-  // Only non-default props are serialized, since each entry costs a folly::dynamic
-  // insert and a JNI-visible map slot per node.
-  //
-  // SYNC: that makes the defaults a three-way contract: the value in each
-  // condition below, the default in the generated Props.h, and the fallback in
-  // RNPlainTextManager.measure() for the same key. A mismatch silently measures at
-  // the wrong size, since an omitted key means "default", not "not set".
+// SYNC: every prop either platform's `measureContent` reads. Missing one here
+// keeps a stale size after an update: correct on first render, wrong later.
+// Shared by `measure()` and `baseline()` below: both size the same off-screen
+// TextView through the same props, so serializing them once keeps the two in
+// step by construction instead of by two copies staying manually in sync.
+//
+// Only non-default props are serialized, since each entry costs a
+// folly::dynamic insert and a JNI-visible map slot per node.
+//
+// SYNC: that makes the defaults a three-way contract: the value in each
+// condition below, the default in the generated Props.h, and the fallback in
+// RNPlainTextManager.measure() for the same key. A mismatch silently measures
+// at the wrong size, since an omitted key means "default", not "not set".
+folly::dynamic serializeProps(const RNPlainTextProps &props) {
   folly::dynamic serializedProps = folly::dynamic::object;
   if (!props.text.empty()) {
     serializedProps["text"] = props.text;
@@ -89,11 +70,48 @@ Size PlainTextMeasurementsManager::measure(
   if (props.experiment) {
     serializedProps["experiment"] = true;
   }
+  return serializedProps;
+}
 
+local_ref<ReadableMap::javaobject> toReadableMap(
+    const folly::dynamic &serializedProps) {
   local_ref<ReadableNativeMap::javaobject> propsRNM =
       ReadableNativeMap::newObjectCxxArgs(serializedProps);
-  local_ref<ReadableMap::javaobject> propsRM = make_local(
+  return make_local(
       reinterpret_cast<ReadableMap::javaobject>(propsRNM.get()));
+}
+
+} // namespace
+
+Size PlainTextMeasurementsManager::measure(
+    SurfaceId surfaceId,
+    const RNPlainTextProps &props,
+    LayoutConstraints layoutConstraints) const {
+  static auto measure =
+      jni::findClassStatic("com/facebook/react/fabric/FabricUIManager")
+          ->getMethod<jlong(
+              jint,
+              jstring,
+              ReadableMap::javaobject,
+              ReadableMap::javaobject,
+              ReadableMap::javaobject,
+              jfloat,
+              jfloat,
+              jfloat,
+              jfloat)>("measure");
+
+  // Held as a global ref rather than built per call: make_jstring allocates a Java
+  // String, and this one is the same for every node.
+  static const auto componentName = make_global(make_jstring("RNPlainText"));
+
+  auto minimumSize = layoutConstraints.minimumSize;
+  auto maximumSize = layoutConstraints.maximumSize;
+
+  // The generic FabricUIManager.measure path takes props as a ReadableMap, which
+  // RNPlainTextManager.measure reads back to size an off-screen TextView.
+  // (AndroidSwitch passes null here because its size is prop-independent. Ours isn't.)
+  local_ref<ReadableMap::javaobject> propsRM =
+      toReadableMap(serializeProps(props));
 
   return yogaMeassureToSize(measure(
       fabricUIManager_,
@@ -106,6 +124,57 @@ Size PlainTextMeasurementsManager::measure(
       maximumSize.width,
       minimumSize.height,
       maximumSize.height));
+}
+
+Float PlainTextMeasurementsManager::baseline(
+    SurfaceId surfaceId,
+    const RNPlainTextProps &props,
+    Size size) const {
+  // Same JNI method as `measure()` above: FabricUIManager.measure is the only
+  // bridge C++ has into a Java ViewManager's sizing logic (see the class doc
+  // comment). Passing `size` as both the min and max constraint makes
+  // RNPlainTextManager.measure lay the off-screen TextView out at exactly
+  // that size (both dimensions resolve to Yoga's EXACTLY mode), rather than
+  // re-deriving a size.
+  static auto measure =
+      jni::findClassStatic("com/facebook/react/fabric/FabricUIManager")
+          ->getMethod<jlong(
+              jint,
+              jstring,
+              ReadableMap::javaobject,
+              ReadableMap::javaobject,
+              ReadableMap::javaobject,
+              jfloat,
+              jfloat,
+              jfloat,
+              jfloat)>("measure");
+
+  static const auto componentName = make_global(make_jstring("RNPlainText"));
+
+  folly::dynamic serializedProps = serializeProps(props);
+  // SYNC: matches BASELINE_QUERY_PROP in PlainTextViewManager.kt. Never a
+  // real prop, just a marker telling `measure()` on the Java side to pack
+  // `TextView.getBaseline()` into the return value instead of the measured
+  // size.
+  serializedProps["__baseline"] = true;
+
+  local_ref<ReadableMap::javaobject> propsRM =
+      toReadableMap(serializedProps);
+
+  // The `.height` slot carries the baseline (see PlainTextViewManager.kt);
+  // `.width` is unused for this call.
+  Size decoded = yogaMeassureToSize(measure(
+      fabricUIManager_,
+      surfaceId,
+      componentName.get(),
+      nullptr,
+      propsRM.get(),
+      nullptr,
+      size.width,
+      size.width,
+      size.height,
+      size.height));
+  return decoded.height;
 }
 
 } // namespace facebook::react

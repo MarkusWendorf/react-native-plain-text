@@ -17,4 +17,10 @@ Size PlainTextShadowNode::measureContent(
       getSurfaceId(), getConcreteProps(), layoutConstraints);
 }
 
+Float PlainTextShadowNode::baseline(
+    const LayoutContext & /*layoutContext*/,
+    Size size) const {
+  return measurementsManager_->baseline(getSurfaceId(), getConcreteProps(), size);
+}
+
 } // namespace facebook::react

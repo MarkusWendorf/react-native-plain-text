@@ -1,8 +1,9 @@
-import { ScrollView, StyleSheet, type TextStyle } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import type { ParamListBase } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { PlainText } from 'react-native-plain-text';
 import { useCompareText } from '../components/CompareText';
-import { Cover, Section, TextItem, screenStyles } from '../components/Specimen';
+import { CompareBox, Cover, Section, TextItem, screenStyles } from '../components/Specimen';
 import { COLOR, MONO, SERIF } from '../theme';
 
 type Props = NativeStackScreenProps<ParamListBase>;
@@ -27,9 +28,13 @@ export default function UseCasesScreen({ navigation }: Props) {
           ones) instead of at thirty unrelated specimens. */}
       {USE_CASE_GROUPS.map(({ title, items }) => (
         <Section key={title} title={title}>
-          {items.map((item) => (
-            <UseCaseRow key={item.label} showText={showText} {...item} />
-          ))}
+          {items.map((item) =>
+            item.kind === 'baseline' ? (
+              <UseCaseBaselineRow key={item.label} showText={showText} {...item} />
+            ) : (
+              <UseCaseRow key={item.label} showText={showText} {...item} />
+            )
+          )}
         </Section>
       ))}
       <Section title="Random Combinations">
@@ -76,9 +81,27 @@ const useCaseStyles = StyleSheet.create({
   base: {
     color: COLOR.ink,
   },
+  baselineRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  // Same treatment Specimen.tsx's own `overlayText`/`compareText` give a
+  // single-string TextItem, reproduced here because a baseline row's overlay
+  // is several sibling `<Text>`s rather than one, so it can't go through
+  // TextItem at all.
+  baselineOverlayText: {
+    backgroundColor: COLOR.wash,
+    color: COLOR.scarlet,
+  },
+  baselineCompareText: {
+    color: COLOR.cobalt,
+  },
 });
 
+// A row that varies several props stacked in one style, the way UseCaseRow
+// renders it: one PlainText, one string.
 type Combination = {
+  kind?: undefined;
   label: string;
   text: string;
   style: TextStyle;
@@ -88,12 +111,58 @@ type Combination = {
   maxFontSizeMultiplier?: number;
 };
 
+// A row that is several PlainTexts sharing one `alignItems: "baseline"` line,
+// the shape a Combination's single string/style can't express: a price beside
+// its VAT note, a heading beside its badge. `label` still names the row, but
+// there is no single `style`/`text` to spread onto one PlainText.
+type BaselineCombination = {
+  kind: 'baseline';
+  label: string;
+  parts: { text: string; style: TextStyle }[];
+};
+
+type UseCaseItem = Combination | BaselineCombination;
+
 // A group is one section on the screen: a handful of rows that would appear in the
 // same part of a real UI, and that therefore fail in the same way when they fail.
 type UseCaseGroup = {
   title: string;
-  items: Combination[];
+  items: UseCaseItem[];
 };
+
+// Renders a BaselineCombination: several PlainText siblings on one
+// `alignItems: "baseline"` row, with the same siblings as real RN `<Text>`s
+// overlaid in scarlet, since RN's `<Text>` has always gotten baseline
+// alignment right and is exactly what PlainText's own baseline function
+// (`BaselineYogaNode`, both shadow nodes) now has to match.
+function UseCaseBaselineRow({
+  showText,
+  label,
+  parts,
+}: BaselineCombination & { showText: boolean }) {
+  return (
+    <CompareBox
+      label={label}
+      showText={showText}
+      containerStyle={[useCaseStyles.baselineRow, screenStyles.wideRow]}
+      overlay={
+        <View style={useCaseStyles.baselineRow}>
+          {parts.map((part, index) => (
+            <Text key={index} style={[part.style, useCaseStyles.baselineOverlayText]}>
+              {part.text}
+            </Text>
+          ))}
+        </View>
+      }
+    >
+      {parts.map((part, index) => (
+        <PlainText key={index} style={[part.style, showText && useCaseStyles.baselineCompareText]}>
+          {part.text}
+        </PlainText>
+      ))}
+    </CompareBox>
+  );
+}
 
 // Fixed, hand-written lists (never generated, never shuffled) so two runs of
 // the app render byte-identical rows and screenshots diff cleanly.
@@ -351,6 +420,53 @@ const USE_CASE_GROUPS: UseCaseGroup[] = [
         text: '98.4%',
         style: { fontSize: 40, fontWeight: '300', color: COLOR.ink, letterSpacing: -1.5 },
       },
+      // A price and its tax note sharing one line, set at different sizes:
+      // needs `alignItems: "baseline"` on the row to sit together the way a
+      // real price tag does, rather than lining up on the row's own edges.
+      {
+        kind: 'baseline',
+        label: 'price-with-vat-note',
+        parts: [
+          { text: '€169.90', style: { fontSize: 32, fontWeight: '800', color: COLOR.ink } },
+          { text: ' incl. VAT', style: { fontSize: 13, color: COLOR.muted, marginLeft: 6 } },
+        ],
+      },
+      // Three siblings, not two: baseline alignment is a property of the
+      // whole row, not just a pair, so a fix that only special-cases the
+      // first/last child would still show a gap here.
+      {
+        kind: 'baseline',
+        label: 'stat-with-unit-and-delta',
+        parts: [
+          { text: '98.4', style: { fontSize: 40, fontWeight: '300', color: COLOR.ink } },
+          { text: '%', style: { fontSize: 20, color: COLOR.muted, marginLeft: 2 } },
+          { text: ' +2.1 today', style: { fontSize: 13, color: COLOR.moss, marginLeft: 8 } },
+        ],
+      },
+      // Same font size on both sides, so a size-only fix could pass the two
+      // rows above and still fail this one: the first span pins a lineHeight
+      // far taller than its own font, which only shifts where its baseline
+      // lands if the extra leading above it is accounted for too.
+      {
+        kind: 'baseline',
+        label: 'total-with-pinned-line-height',
+        parts: [
+          {
+            text: 'Total',
+            style: {
+              fontSize: 16,
+              lineHeight: 44,
+              color: COLOR.ink,
+              backgroundColor: COLOR.indigoWash,
+              paddingHorizontal: 6,
+            },
+          },
+          {
+            text: '€42.00',
+            style: { fontSize: 16, fontWeight: '600', color: COLOR.ink, marginLeft: 8 },
+          },
+        ],
+      },
     ],
   },
   // Short strings inside a shape: the padding and the radius are doing as much work
@@ -401,6 +517,32 @@ const USE_CASE_GROUPS: UseCaseGroup[] = [
           lineHeight: 44,
           borderRadius: 22,
         },
+      },
+      // A heading beside a badge: different size and weight, plus a badge
+      // with its own padding and border radius. Yoga folds a baseline
+      // child's own padding into where its box sits before aligning, so this
+      // also exercises that the offset survives padding, not just a bare
+      // span of text.
+      {
+        kind: 'baseline',
+        label: 'heading-with-badge',
+        parts: [
+          { text: 'New Season', style: { fontSize: 24, fontWeight: '700', color: COLOR.ink } },
+          {
+            text: 'SALE',
+            style: {
+              fontSize: 11,
+              fontWeight: '700',
+              color: COLOR.paper,
+              backgroundColor: COLOR.oxblood,
+              letterSpacing: 1,
+              paddingHorizontal: 6,
+              paddingVertical: 3,
+              borderRadius: 4,
+              marginLeft: 8,
+            },
+          },
+        ],
       },
     ],
   },

@@ -173,6 +173,36 @@ export function TextItem({
   );
 }
 
+// The same row/specimen/overlay furniture as TextItem, generalized for a
+// specimen that isn't one PlainText/Text pair: a baseline row of several
+// PlainText siblings, compared against the same siblings as real RN
+// `<Text>`s. `children`/`overlay` carry the two trees directly instead of
+// TextItem's single `text`/`style`, since there is no one style to spread
+// across every sibling.
+export function CompareBox({
+  label,
+  containerStyle,
+  showText,
+  overlay,
+  children,
+}: {
+  label?: string;
+  containerStyle?: StyleProp<ViewStyle>;
+  showText: boolean;
+  overlay: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <View style={styles.rowContainer}>
+      {label != null && <PlainText style={styles.rowLabel}>{label.toUpperCase()}</PlainText>}
+      <View style={styles.specimen}>
+        <View style={[styles.row, containerStyle]}>{children}</View>
+        {showText && <View style={styles.overlay}>{overlay}</View>}
+      </View>
+    </View>
+  );
+}
+
 // White paper kept under every specimen for a taller-than-PlainText overlay to run
 // off into (see `specimen`). It is inside the specimen box, so it counts as part of
 // whatever gap follows a row, which means everything that sits below a specimen has

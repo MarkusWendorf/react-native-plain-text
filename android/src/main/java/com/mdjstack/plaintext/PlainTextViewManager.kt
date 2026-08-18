@@ -224,6 +224,17 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
       toMeasureSpec(height, heightMode)
     )
 
+    // SYNC: matches the "__baseline" marker PlainTextMeasurementsManager.cpp's
+    // baseline() sets. Not a real prop: it tells this call, made with `width`/
+    // `height` pinned to the node's final layout size, to report where the
+    // first line's baseline falls instead of the measured size, so
+    // `alignItems: "baseline"` can align on it (Yoga's baseline fn calls
+    // through to here via PlainTextShadowNode::baseline). Packed into the
+    // height slot since a baseline query never needs the width back.
+    if (props?.hasKey(BASELINE_QUERY_PROP) == true) {
+      return YogaMeasureOutput.make(0f, PixelUtil.toDIPFromPixel(view.baseline.toFloat()))
+    }
+
     return YogaMeasureOutput.make(
       PixelUtil.toDIPFromPixel(view.measuredWidth.toFloat()),
       PixelUtil.toDIPFromPixel(view.measuredHeight.toFloat())
@@ -282,5 +293,8 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
 
   companion object {
     const val NAME = "RNPlainText"
+
+    // SYNC: matches the literal in PlainTextMeasurementsManager.cpp's baseline().
+    private const val BASELINE_QUERY_PROP = "__baseline"
   }
 }

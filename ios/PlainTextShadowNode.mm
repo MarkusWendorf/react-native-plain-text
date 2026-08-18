@@ -98,4 +98,32 @@ Size PlainTextShadowNode::measureContent(
   return layoutConstraints.clamp(size);
 }
 
+// Distance from the top of the box to the first line's baseline, for
+// `alignItems: "baseline"`. Only depends on the font and lineHeight, not on
+// `text` or the final `size`: wrapping changes how many lines there are, but
+// never where the first one sits.
+//
+// Matches Android's CustomLineHeightSpan (PlainTextView.kt): extra leading
+// from a pinned lineHeight is split evenly above and below the natural
+// ascent/descent, rounding the top half up, so the two platforms agree on
+// where the baseline lands for the same props.
+Float PlainTextShadowNode::baseline(
+    const LayoutContext &layoutContext,
+    Size /*size*/) const {
+  const auto &props = getConcreteProps();
+
+  CGFloat fontSizeMultiplier = plainTextFontSizeMultiplier(props, layoutContext.fontSizeMultiplier);
+  UIFont *font = plainTextFont(props, fontSizeMultiplier);
+
+  CGFloat ascender = font.ascender;
+
+  if (props.lineHeight > 0) {
+    CGFloat lineHeight = props.lineHeight * fontSizeMultiplier;
+    CGFloat leading = lineHeight - font.lineHeight;
+    ascender += std::ceil(leading / 2.0);
+  }
+
+  return static_cast<Float>(ascender);
+}
+
 } // namespace facebook::react

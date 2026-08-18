@@ -32,6 +32,20 @@ class PlainTextMeasurementsManager {
       const RNPlainTextProps &props,
       LayoutConstraints layoutConstraints) const;
 
+  /*
+   * Distance from the top of `size` to the first line's baseline, for
+   * `alignItems: "baseline"`. Reuses the same `FabricUIManager.measure` JNI
+   * hop as `measure()` above (Android has no thread-safe pure-C++ text
+   * measurement, so this can't be computed here either): `size` is passed as
+   * both the min and max constraint so `RNPlainTextManager.measure` lays out
+   * the off-screen TextView at exactly that size, and a `__baseline` marker
+   * prop (SYNC: matches `BASELINE_QUERY_PROP` in `PlainTextViewManager.kt`)
+   * tells it to pack `TextView.getBaseline()` into the returned value instead
+   * of the measured size.
+   */
+  Float baseline(SurfaceId surfaceId, const RNPlainTextProps &props, Size size)
+      const;
+
  private:
   const jni::global_ref<jobject> fabricUIManager_;
 };

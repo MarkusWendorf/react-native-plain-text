@@ -1,9 +1,9 @@
-import { Platform, ScrollView, StyleSheet, type TextStyle } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import type { ParamListBase } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { PlainTextStyle } from 'react-native-plain-text';
+import { PlainText, type PlainTextStyle } from 'react-native-plain-text';
 import { useCompareText } from '../components/CompareText';
-import { Cover, Section, TextItem, screenStyles } from '../components/Specimen';
+import { CompareBox, Cover, Section, TextItem, screenStyles } from '../components/Specimen';
 import { COLOR, VARIABLE } from '../theme';
 
 type Props = NativeStackScreenProps<ParamListBase>;
@@ -116,6 +116,66 @@ export default function FeaturesScreen({ navigation }: Props) {
             {textAlign === 'justify' ? PARAGRAPH_LONG : PARAGRAPH}
           </TextItem>
         ))}
+      </Section>
+      {/* Three sizes, nothing else: no color, background or padding to explain
+          away a misalignment as some other prop's doing. `alignItems: "baseline"`
+          on the row asks each sibling where its own text baseline sits instead
+          of lining them up on the row's cross-axis edges, and PlainText only
+          has an answer for that because it registers a Yoga baseline function
+          (`BaselineYogaNode`, both shadow nodes) instead of leaving Yoga to
+          fall back to each node's bottom edge.
+
+          The three glyphs are chosen for what they do at the baseline, not
+          for being a word: "H" is flat-bottomed and sits exactly on it, "g"
+          has a bowl that also sits on it but a tail that drops below, and "x"
+          is an x-height letter with nothing above or below the line at all.
+          A ruler makes that line itself visible rather than asking the eye to
+          find it: a plain `View`, not a `PlainText`, so it has no baseline
+          function of its own. Yoga's fallback for that
+          (`calculateBaseline` in yoga/algorithm/Baseline.cpp) is to report a
+          childless node's own height as its baseline, which means a hairline
+          view's *bottom edge* is what the baseline layout lines up here, for
+          free, on every child that opts out of having a real one. "H" and
+          "x" should look planted on it, and only "g"'s tail should cross it.
+
+          The overlay is the same three glyphs as real RN `<Text>`s in the
+          same row, since RN's `<Text>` has always gotten this right and is
+          exactly what PlainText now has to match. It carries no ruler of its
+          own: the ruler is a fixed reference for the eye, not part of the
+          PlainText/RN comparison. Realistic shapes built on top of this (a
+          price beside its VAT note, a heading beside its badge) live on the
+          Use Cases screen. */}
+      <Section title="Baseline alignment">
+        <CompareBox
+          label="H / g / x, ruled at the baseline"
+          showText={showText}
+          containerStyle={styles.baselineRow}
+          overlay={
+            <View style={styles.baselineRow}>
+              {BASELINE_ALIGNMENT_GLYPHS.map(({ text, fontSize }, index) => (
+                <Text
+                  key={text}
+                  style={[{ fontSize, marginLeft: index === 0 ? 0 : 10 }, styles.overlayInline]}
+                >
+                  {text}
+                </Text>
+              ))}
+            </View>
+          }
+        >
+          {BASELINE_ALIGNMENT_GLYPHS.map(({ text, fontSize }, index) => (
+            <PlainText
+              key={text}
+              style={[
+                { fontSize, marginLeft: index === 0 ? 0 : 10 },
+                showText && styles.compareTextInline,
+              ]}
+            >
+              {text}
+            </PlainText>
+          ))}
+          <View style={styles.baselineRuler} />
+        </CompareBox>
       </Section>
       <Section title="Multiline">
         <TextItem
@@ -573,6 +633,33 @@ export default function FeaturesScreen({ navigation }: Props) {
 const SHORT_ROW_SIZE = 26;
 
 const styles = StyleSheet.create({
+  // Same treatment CompareBox's own overlayText gets (see Specimen.tsx): grey
+  // background matching the row, scarlet ink, multiplied against the PlainText
+  // layer underneath so this one-off composite overlay reads as part of the
+  // same comparison as every TextItem row.
+  overlayInline: {
+    backgroundColor: COLOR.wash,
+    color: COLOR.scarlet,
+  },
+  // Mirrors `compareText` in Specimen.tsx: full-opacity cobalt, applied to the
+  // PlainText side while the overlay is showing.
+  compareTextInline: {
+    color: COLOR.cobalt,
+  },
+  baselineRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  // A plain View, not a PlainText: it has no baseline function of its own, so
+  // Yoga's fallback (a childless node's baseline is its own height) puts this
+  // view's bottom edge exactly on the row's shared baseline. That makes it a
+  // ruler for the eye rather than another thing under comparison.
+  baselineRuler: {
+    width: 28,
+    height: 2,
+    marginLeft: 10,
+    backgroundColor: COLOR.indigo,
+  },
   // Every section whose specimen wraps: full width, body size, and no background
   // of its own, because the row's grey is the control. What each of those sections
   // demonstrates (the alignment, the padding, the border geometry, the clamp) is
@@ -686,6 +773,18 @@ const VERTICAL_ALIGN_FOOTER = Platform.select({
   ios: 'Android-only in RN <Text>.',
   default: 'Each box is 72pt tall, so the text has room to move.',
 });
+
+// Three letterforms picked for their shape at the baseline, not for spelling
+// anything, at three sizes chosen to stress the ascent math the most:
+// flat-bottomed "H", "g" with a descending tail, and the x-height-only "x".
+// Nothing here but font size, so a misaligned baseline has nowhere else to
+// hide. Realistic shapes stacking baseline alignment with other props (a
+// badge's padding, a pinned lineHeight) live on the Use Cases screen instead.
+const BASELINE_ALIGNMENT_GLYPHS: { text: string; fontSize: number }[] = [
+  { text: 'H', fontSize: 56 },
+  { text: 'g', fontSize: 32 },
+  { text: 'x', fontSize: 18 },
+];
 
 const LETTER_SPACINGS = [-2, 0, 2, 6];
 

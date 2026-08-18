@@ -382,3 +382,22 @@ implemented.
 files with the same traits and overrides. A change to one usually belongs in the
 other. Only the invalidation logic is genuinely shared, in
 `cpp/PlainTextMeasurementHelpers.{h,cpp}`.
+
+## The `__baseline` marker prop (Android)
+
+`alignItems: "baseline"` works by both shadow nodes setting the
+`BaselineYogaNode` trait and overriding `baseline()`, mirroring RN's own
+`ParagraphShadowNode`. iOS computes it in pure C++ from the font's ascender
+(`ios/PlainTextShadowNode.mm`), no JNI hop needed. Android has no thread-safe
+pure-C++ text measurement (same reason `measure()` exists at all), so
+`PlainTextShadowNode::baseline()` reuses the same `FabricUIManager.measure`
+JNI bridge, with the node's final layout `size` passed as both the min and
+max constraint (forcing Yoga's EXACTLY mode on both dimensions) and a
+`"__baseline"` marker stuffed into the serialized props.
+
+That string must match in exactly two places, and nothing checks it:
+`PlainTextMeasurementsManager.cpp`'s `baseline()` (where it's set) and
+`PlainTextViewManager.kt`'s `measure()` (`BASELINE_QUERY_PROP`, where it's
+read). A mismatch doesn't fail loudly: `measure()` just never takes the
+baseline branch, and `baseline()` silently gets back the measured height
+packed into the wrong slot instead of `TextView.getBaseline()`.
