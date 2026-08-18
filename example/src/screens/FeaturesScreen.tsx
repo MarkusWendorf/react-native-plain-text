@@ -311,8 +311,8 @@ export default function FeaturesScreen({ navigation }: Props) {
       </Section>
       {/* Repro for RN issue #29507: tight lineHeight clipped by the row's box, across a few font families. */}
       <Section
-        title="Line Height Clipping (Real-World)"
-        footer="Line height clipping on iOS is broken. See RN issue #29507."
+        title="Line Height Clipping"
+        footer="RN Text has broken line height clipping on iOS. See RN issue #29507."
       >
         {REALWORLD_FONTS.map((font, index) => {
           const fontSize = REALWORLD_FONT_SIZES[index]!;
@@ -641,10 +641,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR.wash,
     color: COLOR.scarlet,
   },
-  // Mirrors `compareText` in Specimen.tsx: full-opacity cobalt, applied to the
-  // PlainText side while the overlay is showing.
+  // Mirrors `compareText` in Specimen.tsx: full-opacity cobalt plus the same
+  // wash `overlayInline` carries, since `row` no longer supplies one.
   compareTextInline: {
     color: COLOR.cobalt,
+    backgroundColor: COLOR.wash,
   },
   baselineRow: {
     flexDirection: 'row',
@@ -770,8 +771,7 @@ const FONT_SCALING_FOOTER = Platform.select({
 const VERTICAL_ALIGNS = ['top', 'middle', 'bottom'] as const;
 
 const VERTICAL_ALIGN_FOOTER = Platform.select({
-  ios: 'Android-only in RN <Text>.',
-  default: 'Each box is 72pt tall, so the text has room to move.',
+  ios: 'RN Text: Android-only ',
 });
 
 // Three letterforms picked for their shape at the baseline, not for spelling
@@ -905,10 +905,8 @@ const FONT_VARIATION_SETTINGS: { label: string; fontVariationSettings?: string }
 ];
 
 const FONT_VARIATION_FOOTER = Platform.select({
-  ios: 'RN <Text> has no fontVariationSettings, so the overlay never moves.',
-  default:
-    'RN <Text> has no fontVariationSettings, so the overlay never moves. Variable ' +
-    'fonts need API 26+.',
+  android: 'RN <Text> has no fontVariationSettings. Variable fonts need API 26+.',
+  default: 'RN <Text> has no fontVariationSettings style.',
 });
 
 // The section only has to show that `color` is honored, so these are the screen's

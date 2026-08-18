@@ -93,8 +93,10 @@ const useCaseStyles = StyleSheet.create({
     backgroundColor: COLOR.wash,
     color: COLOR.scarlet,
   },
+  // Mirrors `baselineOverlayText`'s wash, since `row` no longer supplies one.
   baselineCompareText: {
     color: COLOR.cobalt,
+    backgroundColor: COLOR.wash,
   },
 });
 

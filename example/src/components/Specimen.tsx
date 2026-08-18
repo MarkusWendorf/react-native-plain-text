@@ -241,6 +241,18 @@ export const screenStyles = StyleSheet.create({
   // than resolve `width: '100%'` against two different containing blocks.
   base: {
     fontSize: 20,
+    // On PlainText's own style rather than the shared `row` container: a
+    // container's box can differ from the text's (`wideRow`), so a wash on
+    // `row` would bleed past the text it's meant to outline. Here it's
+    // guaranteed to match PlainText's own measured box. `style` is applied
+    // after `base`, so a row with its own backgroundColor still overrides it.
+    backgroundColor: COLOR.wash,
+    // Reserved and invisible, so switching on the compare border
+    // (`compareText`/`overlayText` below) only recolors it instead of adding
+    // it and shifting the box. A row demoing a real border sets its own
+    // `borderWidth` in `style`, which overrides this the same way.
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
 });
 
@@ -416,13 +428,11 @@ const styles = StyleSheet.create({
   row: {
     // Sized to the PlainText. The overlay shares this box's top-left origin but
     // not its width. See the specimen view in TextItem.
+    //
+    // No background here, deliberately: see `screenStyles.base`'s wash for why
+    // it lives on the text itself instead.
     alignSelf: 'flex-start',
     alignItems: 'flex-start',
-    // As light as it can go and still hold an edge against the white page: that
-    // edge is the measured width, so it has to stay findable, but the type in
-    // front of it is what the screen is for. Anything above ~#f4 stops reading as
-    // a box on a phone in daylight.
-    backgroundColor: COLOR.wash,
   },
   // Pinned to all three edges so the Text is *offered* the container's full
   // width (the same width PlainText was measured against) while
