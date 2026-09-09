@@ -24,7 +24,14 @@ import { Section, screenStyles } from '../components/Specimen';
 import { useSessionState } from '../useSessionState';
 import { COLOR, MONO, SERIF, VARIABLE } from '../theme';
 
-const COUNT = 1000;
+// Matches the Text Count row's default option below, see COUNT_ATTR.
+const DEFAULT_COUNT = 5000;
+
+// Per-mount offset added to item indices, so labels differ across mounts and a
+// cached attributed string can't make a later mount look cheaper than the first.
+// Fixed above COUNT_ATTR's largest option rather than derived, so ranges never
+// overlap; bump if that option grows past 10000.
+const MOUNT_TEXT_STRIDE = 10_000;
 
 // Native allocations (CoreText layout, CALayer backing stores, JS heap growth)
 // are deferred past the React commit, so sampling immediately undercounts. Every
@@ -95,6 +102,9 @@ type RunStats = {
   // subtraction against the same baseline and the column reads as one running
   // total. On the mount run itself this is the same sample as memBefore.
   mountBaseline: number;
+  // Captured, not read live: after unmount the Text Count row is editable
+  // again, but perView must divide by the count this run actually used.
+  count: number;
 };
 
 // The two re-render windows are in the headline rather than reported separately
@@ -170,6 +180,10 @@ export default function PerformanceScreen({ navigation }: Props) {
   // scenario worth a number.
   const [mounted, setMounted] = useState<Kind | null>(null);
 
+  // Mounts this session, incl. current. Shifts label indices by
+  // MOUNT_TEXT_STRIDE so no mount re-renders another's exact text.
+  const [mountCount, setMountCount] = useState(0);
+
   // One entry per scenario, each rendered under the button that produced it and
   // kept there until the next mount clears the board. Only a re-run of the same
   // scenario overwrites its own entry, so the five numbers of one session stay
@@ -201,6 +215,11 @@ export default function PerformanceScreen({ navigation }: Props) {
   // much never came back rather than only how much was freed.
   const mountBaseline = useRef<number | null>(null);
 
+  // Text Count this mount used, captured like mountBaseline: a live read at
+  // stats-build time could pick up a value this run never measured against.
+  // See RunStats.count.
+  const mountedCount = useRef<number>(DEFAULT_COUNT);
+
   // Event Timing arrives after mount, later than the effect that clears
   // `pending`, so the press timestamp it matches against has to outlive it. Read
   // when the settle timer fires, by which point every entry for that press has
@@ -208,10 +227,13 @@ export default function PerformanceScreen({ navigation }: Props) {
   const interactionMs = useRef<number | null>(null);
   const runStartTime = useRef<number | null>(null);
 
-  // Not memoized: every render rebuilds all COUNT elements anyway, so a stable
+  // Not memoized: every render rebuilds all count elements anyway, so a stable
   // object here would save nothing.
   const applied = buildApplied(config, colorIndex, sizeBump);
+  // 0, MOUNT_TEXT_STRIDE, 2×... per mount; only read once something's mounted.
+  const textOffset = (mountCount - 1) * MOUNT_TEXT_STRIDE;
   const settleDelayMs = settleMsFor(config);
+  const count = countFor(config);
   const fingerprint = formatFingerprint(config);
   // What the next mount would run.
   const live = `${labelFor(variant)} · ${fingerprint}`;
@@ -307,13 +329,15 @@ export default function PerformanceScreen({ navigation }: Props) {
   const runMount = useCallback(
     (kind: Kind) => {
       mountBaseline.current = beginRun('mount');
+      mountedCount.current = count;
       // Every number on screen belongs to the previous mount, which may have
       // used a different variant or config.
       setStats({});
       setCaptured(`${labelFor(kind)} · ${fingerprint}`);
+      setMountCount((n) => n + 1);
       setMounted(kind);
     },
-    [beginRun, fingerprint]
+    [beginRun, count, fingerprint]
   );
 
   const runUnmount = useCallback(() => {
@@ -375,7 +399,7 @@ export default function PerformanceScreen({ navigation }: Props) {
     const commitMs = performance.measure(`${START_MARK}:${run.scenario}`, START_MARK).duration;
 
     // Mount and unmount only: those are the two scenarios whose memory number
-    // is supposed to reflect COUNT views' worth of allocation, so a run's own
+    // is supposed to reflect count views' worth of allocation, so a run's own
     // garbage shouldn't count toward it. Both timings are already latched by
     // now, so a GC pause in here can't skew either.
     const sample = () => {
@@ -408,11 +432,12 @@ export default function PerformanceScreen({ navigation }: Props) {
             memFirstTouch: null,
             memFinal: null,
             mountBaseline: mountBaseline.current ?? run.memBefore,
+            count: mountedCount.current,
           },
         }));
 
         // That setStats is itself the second window's event: the readout lives
-        // in the same content container as the COUNT mounted items, so
+        // in the same content container as the mounted items, so
         // displaying these numbers commits the tree change runParentRerender
         // exists to price. The `patch` below is the third window's event, which
         // is how three windows come from two writes.
@@ -512,7 +537,7 @@ export default function PerformanceScreen({ navigation }: Props) {
           */}
           <Section title="Scenarios" spacedRows>
             <Action
-              title={`Mount ${COUNT} Instances`}
+              title={`Mount ${count} Instances`}
               scenario="mount"
               stats={stats}
               running={running}
@@ -557,7 +582,7 @@ export default function PerformanceScreen({ navigation }: Props) {
 
         {/* The items are physically mounted, last, inside the same content
             container as the controls above. */}
-        {mounted != null && renderItems(mounted, applied)}
+        {mounted != null && renderItems(mounted, applied, textOffset, mountedCount.current)}
       </ScrollView>
 
       <PropsSheet
@@ -574,9 +599,11 @@ export default function PerformanceScreen({ navigation }: Props) {
 // Items
 // ---------------------------------------------------------------------------
 
-function renderItems(kind: Kind, applied: Applied) {
+function renderItems(kind: Kind, applied: Applied, offset: number, count: number) {
   const { textStyle, viewStyle, props, text } = applied;
   const extra = props as object;
+  // Per-mount index shift, see MOUNT_TEXT_STRIDE.
+  const label = (n: number) => text(n + offset);
 
   if (kind === 'nativePlain') {
     // Same rendered result as the PlainText branch, but with props already in
@@ -594,10 +621,10 @@ function renderItems(kind: Kind, applied: Applied) {
       (nativeTextStyle as Record<string, unknown>).textShadowOffsetWidth = textShadowOffset.width;
       (nativeTextStyle as Record<string, unknown>).textShadowOffsetHeight = textShadowOffset.height;
     }
-    return Array.from({ length: COUNT }, (_, n) => (
+    return Array.from({ length: count }, (_, n) => (
       <NativePlainText
         key={n}
-        text={text(n)}
+        text={label(n)}
         style={[styles.listItem, viewStyle]}
         {...(nativeTextStyle as object)}
         {...extra}
@@ -612,33 +639,36 @@ function renderItems(kind: Kind, applied: Applied) {
   const rnStyle = style as StyleProp<TextStyle>;
 
   if (kind === 'plain') {
-    return Array.from({ length: COUNT }, (_, n) => (
+    return Array.from({ length: count }, (_, n) => (
       <PlainText key={n} style={style} {...extra}>
-        {text(n)}
+        {label(n)}
       </PlainText>
     ));
   }
 
   if (kind === 'text') {
-    return Array.from({ length: COUNT }, (_, n) => (
+    return Array.from({ length: count }, (_, n) => (
       <Text key={n} style={rnStyle} {...extra}>
-        {text(n)}
+        {label(n)}
       </Text>
     ));
   }
 
-  return Array.from({ length: COUNT }, (_, n) => (
+  return Array.from({ length: count }, (_, n) => (
     // Bare RCTText host component, bypassing the <Text> JS wrapper.
     <NativeText key={n} style={rnStyle} {...extra}>
-      {text(n)}
+      {label(n)}
     </NativeText>
   ));
 }
 
-// Zero-based and padded to three digits, so every label is the same character
-// count (000 through 999) and the grey boxes are uniform in size. An unpadded
-// counter makes the box width jump at 10, 100 and 1000, which reads as a layout
-// bug and makes the measured-area comparison harder than it needs to be.
+// Zero-based and padded to five digits, so every label is the same character
+// count (00000 through 09999 for a 10000-item mount) and the grey boxes are
+// uniform in size. An unpadded counter makes the box width jump at 1000 and
+// 10000, which reads as a layout bug and makes the measured-area comparison
+// harder than it needs to be. The width also has to clear the per-mount
+// index shift (see MOUNT_TEXT_STRIDE): the nth mount renders "Text Item
+// 10000" upward.
 const SHORT_TEXT = (n: number) => `Text Item ${pad(n)}`;
 const WRAPPING_TEXT = (n: number) =>
   `Text Item ${pad(n)}: a longer string that has to wrap onto more than one line on a phone.`;
@@ -658,7 +688,7 @@ const SYMBOL_TEXT = (n: number) => `${SHORT_TEXT(n)} ★`;
 const EMOJIS = ['🎉', '🦊', '🐇', '🐶', '🚀', '🌈', '🍕', '⚽️', '🎈', '🐝'];
 const EMOJI_TEXT = (n: number) => `${SHORT_TEXT(n)} ${EMOJIS[n % EMOJIS.length]}`;
 
-const pad = (n: number) => String(n).padStart(3, '0');
+const pad = (n: number) => String(n).padStart(5, '0');
 
 // ---------------------------------------------------------------------------
 // Tunable props
@@ -671,9 +701,9 @@ const pad = (n: number) => String(n).padStart(3, '0');
 // on NativePlainText, style entries everywhere else), `view` values are view
 // styles Yoga lays out around the self-measured text, `prop` values are
 // component props, `content` picks the string.
-// 'settle' isn't rendered onto anything. It's read separately, see
-// settleMsFor below.
-type Target = 'text' | 'view' | 'prop' | 'content' | 'settle';
+// 'settle' and 'count' aren't rendered onto anything. They're read
+// separately, see settleMsFor and countFor below.
+type Target = 'text' | 'view' | 'prop' | 'content' | 'settle' | 'count';
 
 type AttrOption = {
   label: string;
@@ -1125,6 +1155,24 @@ const ATTRIBUTES: AttrDef[] = [
     ],
     alwaysInFingerprint: true,
   },
+  {
+    // Item count. Always in the fingerprint: other figures (bytes/view, commit
+    // time) scale by it, so differently-scaled runs would otherwise look
+    // comparable. See countFor and RunStats.count.
+    key: 'count',
+    label: 'Text Count',
+    section: 'Params',
+    fp: 'n',
+    target: 'count',
+    defaultIndex: 0,
+    options: [
+      { label: '5000', value: 5000 },
+      { label: '1000', value: 1000 },
+      { label: '2000', value: 2000 },
+      { label: '10000', value: 10_000 },
+    ],
+    alwaysInFingerprint: true,
+  },
 ];
 
 // Derived, so adding an attribute above is the only edit: a hardcoded list is one
@@ -1164,14 +1212,27 @@ type Preset = {
 };
 
 const PRESETS: Preset[] = [
-  { name: 'Label', values: { fontSize: 20, fontFamily: VARIABLE, color: COLOR.faint } },
-  { name: 'Header', values: { fontSize: 56, fontFamily: VARIABLE, color: COLOR.indigo } },
+  {
+    name: 'Label',
+    values: { fontSize: 20, fontFamily: VARIABLE, color: COLOR.faint },
+  },
+  {
+    name: 'Header',
+    values: {
+      fontSize: 56,
+      fontWeight: 'bold',
+      fontFamily: VARIABLE,
+      color: COLOR.indigo,
+      letterSpacing: -1,
+    },
+  },
   {
     name: 'Body',
     values: {
       fontSize: 20,
       fontFamily: VARIABLE,
       color: COLOR.faint,
+      lineHeight: 24,
       // The one preset that also says how much text there is: a body is where
       // wrapping, and so the measure pass, is the whole cost.
       content: WRAPPING_TEXT,
@@ -1211,6 +1272,13 @@ const SETTLE_ATTR = ATTRIBUTES.find((attr) => attr.key === 'settleMs');
 function settleMsFor(config: AttrConfig): number {
   if (SETTLE_ATTR == null) return DEFAULT_SETTLE_MS;
   return selectedOption(config, SETTLE_ATTR).value as number;
+}
+
+const COUNT_ATTR = ATTRIBUTES.find((attr) => attr.key === 'count');
+
+function countFor(config: AttrConfig): number {
+  if (COUNT_ATTR == null) return DEFAULT_COUNT;
+  return selectedOption(config, COUNT_ATTR).value as number;
 }
 
 // What the header badge counts. Rows that always name themselves in the
@@ -1261,8 +1329,8 @@ function buildApplied(config: AttrConfig, colorIndex: number, sizeBump: number):
     if (attr.target === 'text') textStyle[attr.key] = option.value;
     else if (attr.target === 'view') viewStyle[attr.key] = option.value;
     else if (attr.target === 'prop') props[attr.key] = option.value;
-    else if (attr.target === 'settle')
-      continue; // read separately, see settleMsFor
+    else if (attr.target === 'settle' || attr.target === 'count')
+      continue; // read separately, see settleMsFor / countFor
     else text = option.value as TextBuilder;
   }
 
@@ -1312,7 +1380,7 @@ function PropsSheet({
         <ScrollView contentContainerStyle={styles.sheetBody}>
           <Section title="Presets" spacedRows>
             <View style={styles.attrRow}>
-              <PlainText style={styles.attrLabel}>preset</PlainText>
+              <PlainText style={styles.attrLabel}>Preset</PlainText>
               <View style={styles.attrOptions}>
                 {PRESETS.map((preset) => (
                   <Chip
@@ -1432,7 +1500,7 @@ function Action({
         One readout instance per action, mounted for the life of the screen:
         placeholder, profiling line and numbers are the same node with a
         different string in it. This View sits in the same content container as
-        the COUNT mounted items, so a node added or removed inside it would be
+        the mounted items, so a node added or removed inside it would be
         tree churn charged to the run being measured.
       */}
       <PlainText
@@ -1471,8 +1539,8 @@ function formatProfiling(phase: number) {
 // optimizing their own app multiplies by their node count. The `incl.` term
 // breaks out the run's own commit, leaving the two re-renders as the remainder.
 function formatHeadline(stats: RunStats, memFinal: number, scenario: Scenario) {
-  const own = perView(stats.memAfter - stats.memBefore);
-  const total = perView(memFinal - stats.memBefore);
+  const own = perView(stats.memAfter - stats.memBefore, stats.count);
+  const total = perView(memFinal - stats.memBefore, stats.count);
   return `${total} KB/view headline (${own} KB/view ${SCENARIO_TERMS[scenario]})`;
 }
 
@@ -1483,9 +1551,10 @@ function formatChain(stats: RunStats, memFinal: number) {
   return `${formatMB(stats.memBefore)} MB → ${formatMB(memFinal)} MB (retained ${retained})`;
 }
 
-// Unitless: the headline carries the one unit for the whole row.
-function perView(bytes: number) {
-  return `${bytes >= 0 ? '+' : '−'}${Math.abs(bytes / COUNT / 1024).toFixed(1)}`;
+// Unitless: the headline carries the one unit for the whole row. `count` is
+// the run's own, not the live Text Count selection, see RunStats.count.
+function perView(bytes: number, count: number) {
+  return `${bytes >= 0 ? '+' : '−'}${Math.abs(bytes / count / 1024).toFixed(1)}`;
 }
 
 function formatMB(bytes: number) {
