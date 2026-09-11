@@ -24,9 +24,9 @@ RN doesn't merge PRs through GitHub's own Merge button. `facebook-github-bot`
 imports each PR into Meta's internal Phabricator, it lands there, and the PR
 is then **closed** on GitHub — so the REST API reports `state: closed`,
 `merged: false` even for PRs that genuinely shipped. The only reliable tell is
-a bot comment on the PR itself: *"This pull request was successfully merged by
-@X in `<sha>`"* (or the older *"This pull request has been merged in
-`<sha>`"*). `merge_commit_sha` on the PR object is not reliable either — GitHub
+a bot comment on the PR itself: _"This pull request was successfully merged by
+@X in `<sha>`"_ (or the older _"This pull request has been merged in
+`<sha>`"_). `merge_commit_sha` on the PR object is not reliable either — GitHub
 populates it with a speculative test-merge commit for many closed/open PRs
 regardless of outcome, and that commit is often unreachable/GC'd
 (`404` when fetched directly). Every "unmerged" / "merged" tag below was

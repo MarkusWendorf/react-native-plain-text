@@ -14,6 +14,7 @@ export default defineConfig({
   description: 'Faster, lighter React Native <Text> for single-style text',
   route: {
     exclude: [
+      'components/**',
       'contributing/**',
       'doc_build/**',
       'node_modules/**',

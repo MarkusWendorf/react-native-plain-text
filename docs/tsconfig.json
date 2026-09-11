@@ -10,5 +10,5 @@
     "noEmit": true,
     "jsx": "preserve"
   },
-  "include": ["rspress.config.ts", "*.ts", "*.tsx"]
+  "include": ["rspress.config.ts", "*.ts", "*.tsx", "components/**/*.ts", "components/**/*.tsx"]
 }
