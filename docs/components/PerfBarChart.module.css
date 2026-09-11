@@ -125,3 +125,20 @@
     transition: none;
   }
 }
+
+@media (max-width: 480px) {
+  .lane {
+    gap: 2px;
+  }
+
+  .laneName {
+    flex-basis: 5rem;
+  }
+
+  /* No room next to the bar: drop the pill to its own line, right-aligned
+     across the full row width instead of stacking under the bar's column. */
+  .pill {
+    flex: 1 0 100%;
+    text-align: right;
+  }
+}

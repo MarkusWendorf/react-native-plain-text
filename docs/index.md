@@ -14,10 +14,10 @@ hero:
 
 features:
   - title: Faster
-    details: 10–30% faster to mount than RN <Text>
+    details: 20–40% faster to mount than RN <Text>
     icon: ⚡️
   - title: Lighter
-    details: 15–35% less memory per mounted view
+    details: Up to 40% less memory per mounted view
     icon: 🪶
   - title: Compatible
     details: API-compatible with RN <Text> for supported features

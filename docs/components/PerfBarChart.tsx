@@ -51,9 +51,8 @@ const PLATFORM_LABEL: Record<Platform, string> = {
 };
 
 const CAPTION: Record<Platform, string> = {
-  ios: 'Tested on iPhone 16 · release build · "Label" preset · 5000 mounted views · % is vs RN Text',
-  android:
-    'Tested on Pixel 6 · release build · "Label" preset · 5000 mounted views · % is vs RN Text',
+  ios: 'iPhone 16, release build, 5000 unique views, "Label" preset (% is vs RN Text)',
+  android: 'Pixel 6, release build, 5000 unique views, "Label" preset (% is vs RN Text)',
 };
 
 /** Small headroom past the longest bar so its in-bar value label isn't flush with the edge. */
