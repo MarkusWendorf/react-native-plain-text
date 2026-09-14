@@ -44,6 +44,13 @@ RN `<Text>` compatibility: ✅ fully compatible · 🟡 partially compatible · 
 
 RN `<Text>` compatibility: ✅ fully compatible · ⬆️ added in Plain Text
 
+## Notes
+
+- **`textDecorationLine: 'underline'` position on iOS**: PlainText's
+  `UILabel` draws the underline at the font's `underlinePosition`.
+  RN `<Text>` draws it a bit too high, shifted up about one
+  `underlineThickness` above its natural position.
+
 ## Improvements over RN Text
 
 Things Plain Text does that RN `<Text>` does not:
