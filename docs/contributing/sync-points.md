@@ -44,8 +44,8 @@ most props only touch a few.
 - `ellipsizeMode`
 - `allowFontScaling`
 - `maxFontSizeMultiplier`
-- `lineHeightClippingIos` (`unstable_lineHeightClippingIos` at the JS boundary — see
-  [Set 13](#set-13--lineheightclippingios-one-prop-renamed-at-the-js-boundary))
+- `lineHeightClippingCompat` (`unstable_lineHeightClippingCompat` at the JS boundary — see
+  [Set 13](#set-13--lineheightclippingcompat-one-prop-renamed-at-the-js-boundary))
 - `includeFontPadding`
 - `experiment` (internal-only)
 
@@ -85,7 +85,7 @@ most props only touch a few.
 - `includeFontPadding`
 - `experiment` (internal-only)
 
-Notably *excluded* — all draw-only, none affect the box:
+Notably _excluded_ — all draw-only, none affect the box:
 
 - `color`
 - `textAlign`
@@ -93,7 +93,7 @@ Notably *excluded* — all draw-only, none affect the box:
 - `verticalAlign`
 - `textDecorationLine`
 - `textShadowColor`, `textShadowOffsetWidth`, `textShadowOffsetHeight`, `textShadowRadius`
-- `lineHeightClippingIos`
+- `lineHeightClippingCompat`
 
 Applying one of the props above has to happen identically in five places, or the box and the rendered text disagree — a
 stale or wrong size, not a crash.
@@ -329,7 +329,7 @@ developing.
 ## Set 9 — Both platforms' shadow node headers
 
 **Props:** every prop in [Set 2](#set-2--a-prop-that-affects-measured-size)'s list, indirectly — this set is about the
-shared *traits/overrides* the two headers declare to support measurement, not individual prop plumbing.
+shared _traits/overrides_ the two headers declare to support measurement, not individual prop plumbing.
 
 **Files:**
 
@@ -383,7 +383,7 @@ separate seeding. Two earlier, rejected versions of this fix show why that's the
 - An earlier version re-armed `_forceApplyProps` in `-prepareForRecycle`, modeled on `RCTViewComponentView`'s own
   diff-blind safety net for its `_props`-diffed properties (`-updateLayoutMetrics` sets `_needsInvalidateLayer = YES`
   unconditionally, rebuilding background/border layers every layout pass no matter what the diff concluded). It was
-  removed: the recycling bug this was meant to fix actually occurred *with* that re-arm in place (the logs show
+  removed: the recycling bug this was meant to fix actually occurred _with_ that re-arm in place (the logs show
   `_forceApplyProps` forcing `applyContentFromProps` to run), and the real cause was inside `applyContentFromProps`
   itself (the `attributedText` issue below) — so the re-arm was never doing anything for that failure, and speculative
   insurance against an undemonstrated one isn't worth the extra state.
@@ -404,8 +404,8 @@ Android likely doesn't share this specific hazard: `PlainTextView.applyText()` h
 `setText()` entry point, so there's no second backing store for a stale span to hide in. It has no recycling reset of
 any kind either: `PlainTextView`/`PlainTextViewManager` reset nothing on reuse, where RN's own `ReactTextViewManager`
 overrides `prepareToRecycleView` and calls `ReactTextView.recycleView()` from there, resetting at unmount on the way
-*into* the pool. Reset at that end, not the other: `ViewManager.recycleView(reactContext, view)` is a differently-scoped
-hook with a confusingly identical name, called from `createViewInstance` on the way back *out* of the pool, and RN's
+_into_ the pool. Reset at that end, not the other: `ViewManager.recycleView(reactContext, view)` is a differently-scoped
+hook with a confusingly identical name, called from `createViewInstance` on the way back _out_ of the pool, and RN's
 text manager leaves it alone. Either way the reset costs nothing while `setupViewRecycling()` goes uncalled, and it is
 the first thing opting in has to bring: **a pooled view would arrive carrying the previous instance's text, font and
 color, and `init`'s seeding only runs for a genuinely new one.**
@@ -464,20 +464,20 @@ position on iOS than on Android — visually wrong, nothing throws.
 
 ---
 
-## Set 13 — `lineHeightClippingIos`: one prop, renamed at the JS boundary
+## Set 13 — `lineHeightClippingCompat`: one prop, renamed at the JS boundary
 
 **Props:** one `PlainText` public prop, named differently per layer:
 
-- `PlainText.tsx` — `unstable_lineHeightClippingIos` (the `unstable_` marks that shape/default may change without a
+- `PlainText.tsx` — `unstable_lineHeightClippingCompat` (the `unstable_` marks that shape/default may change without a
   major bump)
-- `src/PlainTextViewNativeComponent.ts`, `Props.h`, both native implementations — bare `lineHeightClippingIos`; codegen
+- `src/PlainTextViewNativeComponent.ts`, `Props.h`, both native implementations — bare `lineHeightClippingCompat`; codegen
   output and native code aren't the unstable surface, the JS entry point is
 
-**Contract:** `mapPlainTextProps` forwards `props.unstable_lineHeightClippingIos` straight through as
-`lineHeightClippingIos`; unset stays `undefined` and the codegen `WithDefault<boolean, false>` supplies the default. It
+**Contract:** `mapPlainTextProps` forwards `props.unstable_lineHeightClippingCompat` straight through as
+`lineHeightClippingCompat`; unset stays `undefined` and the codegen `WithDefault<boolean, false>` supplies the default. It
 does **not** affect `measureContent`/`measure()` (the shift it gates is draw-only, the line-height box size is identical
 either way), so it's excluded from [Set 2](#set-2--a-prop-that-affects-measured-size) and
-[Set 3](#set-3--the-three-way-default-contract). Android no-ops it (`PlainTextViewManager.setLineHeightClippingIos`):
+[Set 3](#set-3--the-three-way-default-contract). Android no-ops it (`PlainTextViewManager.setLineHeightClippingCompat`):
 the TextKit bug it reverts (RN#29507) has no Android counterpart.
 
 ---
@@ -486,7 +486,7 @@ the TextKit bug it reverts (RN#29507) has no Android counterpart.
 
 **Not part of `NativeProps`.** Padding and border width are ordinary Yoga style/layout inputs, resolved by Yoga itself,
 not `PlainText` props — there is no `padding` or `borderWidth` entry in `src/PlainTextViewNativeComponent.ts` to keep in
-sync. What has to stay in sync instead is how each platform insets the *rendered text* once Yoga has resolved them,
+sync. What has to stay in sync instead is how each platform insets the _rendered text_ once Yoga has resolved them,
 since neither value ever reaches a prop setter: Yoga folds them into the shadow view's `contentInsets`, and each
 platform inflates the view's frame by them, so the box grows whether or not anything insets the text inside it. The
 failure mode is that the size is right and only the glyphs are in the wrong place.
@@ -540,5 +540,5 @@ silently gets back the measured height packed into the wrong slot instead of `Te
 
 If you add a `// SYNC:` comment anywhere in `src`, `cpp`, `ios` or `android`, add or extend a set above in the same
 change: name the props it applies to, the files involved, the contract between them, and the silent failure mode. A
-`SYNC:` comment with no entry here is only half the guardrail — the comment tells the next editor *that* something else
-must change, this file is what tells them *what*, *where*, and for which props.
+`SYNC:` comment with no entry here is only half the guardrail — the comment tells the next editor _that_ something else
+must change, this file is what tells them _what_, _where_, and for which props.

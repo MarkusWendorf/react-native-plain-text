@@ -140,7 +140,7 @@ export function TextItem({
             ellipsizeMode={ellipsizeMode}
             allowFontScaling={allowFontScaling}
             maxFontSizeMultiplier={maxFontSizeMultiplier}
-            unstable_lineHeightClippingIos={compatOn}
+            unstable_lineHeightClippingCompat={compatOn}
             {...accessibilityProps}
           >
             {children}

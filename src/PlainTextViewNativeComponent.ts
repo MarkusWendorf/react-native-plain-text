@@ -71,7 +71,7 @@ export interface NativeProps extends ViewProps {
 
   // Internal prop used for experiments. No-op in public releases.
   experiment?: CodegenTypes.WithDefault<boolean, false>;
-  lineHeightClippingIos?: CodegenTypes.WithDefault<boolean, false>;
+  lineHeightClippingCompat?: CodegenTypes.WithDefault<boolean, false>;
   includeFontPadding?: CodegenTypes.WithDefault<boolean, true>;
 }
 

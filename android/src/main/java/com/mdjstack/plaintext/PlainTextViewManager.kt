@@ -215,8 +215,8 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
 
   // iOS-only concern (see PlainTextViewNativeComponent.ts). Android's TextView
   // never had the ascent-clipping bug this reverts to on iOS.
-  @ReactProp(name = "lineHeightClippingIos", defaultBoolean = false)
-  override fun setLineHeightClippingIos(view: PlainTextView?, lineHeightClippingIos: Boolean) {
+  @ReactProp(name = "lineHeightClippingCompat", defaultBoolean = false)
+  override fun setLineHeightClippingCompat(view: PlainTextView?, lineHeightClippingCompat: Boolean) {
   }
 
   private fun ReadableMap?.getBooleanOr(name: String, default: Boolean): Boolean =
