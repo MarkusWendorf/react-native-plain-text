@@ -268,9 +268,11 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     // Transforms the measured string itself (case changes can change width), so it
     // must be applied before setPlainText below.
     view.setTextTransform(props?.getString("textTransform"))
-    // numberOfLines caps the measured height. ellipsizeMode only changes where the
-    // ellipsis lands, so it isn't serialized for measure.
+    // numberOfLines caps the measured height. ellipsizeMode also affects it: a real
+    // (non-"clip") mode caps the Layout's own line count, which getLineBottom() below
+    // relies on to tell an ellipsized line apart from clip's leaked hidden lines.
     view.setNumberOfLines(props.getIntOr("numberOfLines", 0))
+    view.setEllipsizeMode(props?.getString("ellipsizeMode"))
     // Adds extra ascent/descent padding per line, so it affects the measured height.
     view.includeFontPadding = props.getBooleanOr("includeFontPadding", true)
     view.setPlainText(props?.getString("text") ?: "")
@@ -317,9 +319,21 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
         view.measuredWidth
       }
 
+    // With ellipsizeMode "clip", Android leaves extra wrapped lines in the Layout
+    // beyond numberOfLines (only clipping them at draw time) and leaks part of their
+    // height into TextView.measuredHeight. RN's TextLayoutManager.calculateHeight
+    // avoids this by reading getLineBottom() off the Layout instead; do the same here.
+    val layout = view.layout
+    val measuredHeight =
+      if (layout != null && view.maxLines < layout.lineCount) {
+        layout.getLineBottom(view.maxLines - 1)
+      } else {
+        view.measuredHeight
+      }
+
     return YogaMeasureOutput.make(
       PixelUtil.toDIPFromPixel(measuredWidth.toFloat()),
-      PixelUtil.toDIPFromPixel(view.measuredHeight.toFloat())
+      PixelUtil.toDIPFromPixel(measuredHeight.toFloat())
     )
   }
 
