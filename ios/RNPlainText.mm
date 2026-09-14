@@ -7,82 +7,11 @@
 
 #import "PlainTextComponentDescriptor.h"
 #import "PlainTextFont.h"
-#import "PlainTextTextTransform.h"
+#import "PlainTextProps.h"
 #import "RCTFabricComponentsPlugins.h"
 
 using namespace facebook::react;
-
-// Mirrors RN's RCTEffectiveFontSizeMultiplierFromTextAttributes, reading RCTFontSizeMultiplier() directly since this runs on the main thread.
-static CGFloat RNPlainTextFontSizeMultiplier(const RNPlainTextProps &props)
-{
-    return plainTextFontSizeMultiplier(props, RCTFontSizeMultiplier());
-}
-
-static NSTextAlignment RNPlainTextAlignmentFromProp(RNPlainTextTextAlign textAlign)
-{
-    switch (textAlign) {
-        case RNPlainTextTextAlign::Left:
-            return NSTextAlignmentLeft;
-        case RNPlainTextTextAlign::Right:
-            return NSTextAlignmentRight;
-        case RNPlainTextTextAlign::Center:
-            return NSTextAlignmentCenter;
-        case RNPlainTextTextAlign::Justify:
-            return NSTextAlignmentJustified;
-        case RNPlainTextTextAlign::Auto:
-            return NSTextAlignmentNatural;
-    }
-}
-
-// textDecorationLine is a space-joined set of "underline"/"line-through"; substring presence toggles each independently, mirroring RN <Text>.
-static BOOL RNPlainTextHasUnderline(const std::string &textDecorationLine)
-{
-    return textDecorationLine.find("underline") != std::string::npos;
-}
-
-static BOOL RNPlainTextHasLineThrough(const std::string &textDecorationLine)
-{
-    return textDecorationLine.find("line-through") != std::string::npos;
-}
-
-// verticalAlign (the cross-platform CSS style) wins over textAlignVertical when set
-// (matches RN <Text>'s Text.js), and its 'middle' maps to textAlignVertical's 'center'.
-// This merge used to run in JS (PlainText.tsx's resolveTextAlignVertical); moved here
-// per docs/contributing/performance.md#prop-cost-policy.
-// SYNC: PlainTextView.kt's applyVerticalAlignGravity must resolve identically.
-static RNPlainTextTextAlignVertical RNPlainTextResolveVerticalAlign(RNPlainTextTextAlignVertical textAlignVertical, const std::optional<std::string> &verticalAlign)
-{
-    if (!verticalAlign.has_value()) {
-        return textAlignVertical;
-    }
-    if (verticalAlign.value() == "middle") {
-        return RNPlainTextTextAlignVertical::Center;
-    }
-    if (verticalAlign.value() == "top") {
-        return RNPlainTextTextAlignVertical::Top;
-    }
-    if (verticalAlign.value() == "bottom") {
-        return RNPlainTextTextAlignVertical::Bottom;
-    }
-    if (verticalAlign.value() == "auto") {
-        return RNPlainTextTextAlignVertical::Auto;
-    }
-    return textAlignVertical;
-}
-
-static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode ellipsizeMode)
-{
-    switch (ellipsizeMode) {
-        case RNPlainTextEllipsizeMode::Head:
-            return NSLineBreakByTruncatingHead;
-        case RNPlainTextEllipsizeMode::Middle:
-            return NSLineBreakByTruncatingMiddle;
-        case RNPlainTextEllipsizeMode::Tail:
-            return NSLineBreakByTruncatingTail;
-        case RNPlainTextEllipsizeMode::Clip:
-            return NSLineBreakByClipping;
-    }
-}
+using namespace plaintext;
 
 // textAlignVertical is Android-only in RN core, so RN's <Text> on iOS always
 // top-aligns. That is a gap in RN rather than a difference to preserve (see
@@ -176,15 +105,18 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 }
 
 // Once lineHeight or letterSpacing is set, text/font/color/alignment must go through an NSAttributedString since UILabel has no plain properties for them.
-// SYNC: PlainTextShadowNode::measureContent must mirror every attribute set here (font excepted, both go through plainTextFont) or measured size won't match drawn text.
+// SYNC: PlainTextShadowNode::measureContent must mirror every attribute set here (font excepted, both go through resolveFont) or measured size won't match drawn text.
+// See docs/contributing/sync-points.md#set-2--a-prop-that-affects-measured-size
+// and docs/contributing/sync-points.md#set-10--recycled-view-state-ios.
 - (void)applyContentFromProps:(const RNPlainTextProps &)props
 {
-    CGFloat fontSizeMultiplier = RNPlainTextFontSizeMultiplier(props);
-    UIFont *font = plainTextFont(props, fontSizeMultiplier);
+    // Mirrors RN's RCTEffectiveFontSizeMultiplierFromTextAttributes, reading RCTFontSizeMultiplier() directly since this runs on the main thread.
+    CGFloat fontSizeMultiplier = resolveFontSizeMultiplier(props, RCTFontSizeMultiplier());
+    UIFont *font = resolveFont(props, fontSizeMultiplier);
     UIColor *color = props.color.has_value() ? RCTUIColorFromSharedColor(props.color.value()) : [UIColor blackColor];
-    NSTextAlignment alignment = RNPlainTextAlignmentFromProp(props.textAlign);
+    NSTextAlignment alignment = textAlignmentFromProp(props.textAlign);
     NSString *text = props.text.has_value() ? ([NSString stringWithUTF8String:props.text.value().c_str()] ?: @"") : @"";
-    text = plainTextApplyTextTransform(text, props.textTransform);
+    text = applyTextTransform(text, props.textTransform);
 
     BOOL hasLineHeight = props.lineHeight > 0;
     BOOL hasLetterSpacing = props.letterSpacing.has_value();
@@ -192,8 +124,8 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     BOOL hasLineThrough = NO;
     if (props.textDecorationLine.has_value()) {
         const std::string &textDecorationLine = props.textDecorationLine.value();
-        hasUnderline = RNPlainTextHasUnderline(textDecorationLine);
-        hasLineThrough = RNPlainTextHasLineThrough(textDecorationLine);
+        hasUnderline = textDecorationHasUnderline(textDecorationLine);
+        hasLineThrough = textDecorationHasLineThrough(textDecorationLine);
     }
     BOOL hasTextDecoration = hasUnderline || hasLineThrough;
     BOOL hasTextShadow = props.textShadowOffsetWidth.has_value() || props.textShadowOffsetHeight.has_value();
@@ -206,7 +138,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         _label.textAlignment = alignment;
         _label.text = text;
         _label.verticalTextShift = 0;
-        _label.verticalAlignment = RNPlainTextResolveVerticalAlign(props.textAlignVertical, props.verticalAlign);
+        _label.verticalAlignment = resolveVerticalAlign(props.textAlignVertical, props.verticalAlign);
         return;
     }
 
@@ -243,7 +175,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     NSMutableParagraphStyle *paragraphStyle = [NSMutableParagraphStyle new];
     paragraphStyle.alignment = alignment;
     // A paragraph style overrides the label's own lineBreakMode, so carry ellipsizeMode into it too.
-    paragraphStyle.lineBreakMode = RNPlainTextLineBreakModeFromProp(props.ellipsizeMode);
+    paragraphStyle.lineBreakMode = lineBreakModeFromProp(props.ellipsizeMode);
 
     CGFloat verticalTextShift = 0;
     if (hasLineHeight) {
@@ -264,7 +196,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
         }
     }
     _label.verticalTextShift = verticalTextShift;
-    _label.verticalAlignment = RNPlainTextResolveVerticalAlign(props.textAlignVertical, props.verticalAlign);
+    _label.verticalAlignment = resolveVerticalAlign(props.textAlignVertical, props.verticalAlign);
 
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
     _label.attributedText = [[NSAttributedString alloc] initWithString:text attributes:attributes];
@@ -272,6 +204,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
 
 // A Dynamic Type change alone touches no prop, so updateProps's diff never fires; re-derive content here since UIKit calls this independent of Fabric.
 // SYNC: PlainTextView.onConfigurationChanged is the Android counterpart and must cover the same set of scaled values.
+// See docs/contributing/sync-points.md#set-8--anything-derived-from-the-os-text-size-setting.
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection
 {
     [super traitCollectionDidChange:previousTraitCollection];
@@ -325,7 +258,7 @@ static NSLineBreakMode RNPlainTextLineBreakModeFromProp(RNPlainTextEllipsizeMode
     }
 
     if (_forceApplyProps || oldViewProps.ellipsizeMode != newViewProps.ellipsizeMode) {
-        _label.lineBreakMode = RNPlainTextLineBreakModeFromProp(newViewProps.ellipsizeMode);
+        _label.lineBreakMode = lineBreakModeFromProp(newViewProps.ellipsizeMode);
     }
 
     _forceApplyProps = NO;

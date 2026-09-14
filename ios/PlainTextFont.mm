@@ -2,9 +2,9 @@
 
 #import "PlainTextFontCache.h"
 #import "PlainTextFontCacheKey.h"
-#import "PlainTextFontLookupTables.h"
 #import "PlainTextFontSizing.h"
 #import "PlainTextFontVariations.h"
+#import "PlainTextProps.h"
 
 #import <CoreText/CoreText.h>
 #import <React/RCTFont.h>
@@ -14,7 +14,7 @@
 #import <string>
 #import <vector>
 
-namespace facebook::react {
+namespace facebook::react::plaintext {
 
 namespace {
 constinit const std::string kEmptyString;
@@ -193,6 +193,7 @@ static NSString *computeFaceName(
 
 // Cached separately from the font since face resolution doesn't depend on fontSize, so a new size costs one instantiation, not another family scan.
 // SYNC: `faceKey` (PlainTextFontCacheKey.h) must cover every input this and computeFaceName read.
+// See docs/contributing/sync-points.md#set-7--the-ios-font-cache-key.
 static NSString *resolvedFaceName(
     const std::string &fontFamily,
     const std::string &faceKey,
@@ -213,13 +214,13 @@ static NSString *resolvedFaceName(
                                  }];
 }
 
-CGFloat plainTextFontSizeMultiplier(const RNPlainTextProps &props, CGFloat baseMultiplier)
+CGFloat resolveFontSizeMultiplier(const RNPlainTextProps &props, CGFloat baseMultiplier)
 {
   return clampFontSizeMultiplier(props.allowFontScaling, props.maxFontSizeMultiplier, baseMultiplier);
 }
 
-// The resolution plainTextFont's cache wraps, for an already-scaled fontSize and faceKey.
-static UIFont *resolvedFont(const RNPlainTextProps &props, const std::string &faceKey, CGFloat fontSize, bool italic)
+// The resolution resolveFont()'s cache wraps, for an already-scaled fontSize and faceKey.
+static UIFont *computeFont(const RNPlainTextProps &props, const std::string &faceKey, CGFloat fontSize, bool italic)
 {
   const std::string &fontFamily = stringPropOrEmpty(props.fontFamily);
   const std::string &fontWeight = stringPropOrEmpty(props.fontWeight);
@@ -278,8 +279,9 @@ static UIFont *resolvedFont(const RNPlainTextProps &props, const std::string &fa
   return font;
 }
 
-// SYNC: `fontCacheKey` (PlainTextFontCacheKey.h) must cover every input this and resolvedFont read.
-UIFont *plainTextFont(const RNPlainTextProps &props, CGFloat fontSizeMultiplier)
+// SYNC: `fontCacheKey` (PlainTextFontCacheKey.h) must cover every input this and computeFont read.
+// See docs/contributing/sync-points.md#set-7--the-ios-font-cache-key.
+UIFont *resolveFont(const RNPlainTextProps &props, CGFloat fontSizeMultiplier)
 {
   static PlainTextFontCache<NSString *, UIFont *> *resolvedFontsCache =
       [[PlainTextFontCache alloc] initWithCountLimit:kFontCacheCountLimit];
@@ -298,8 +300,8 @@ UIFont *plainTextFont(const RNPlainTextProps &props, CGFloat fontSizeMultiplier)
 
   return [resolvedFontsCache objectForKey:key
                                      orSet:^UIFont * {
-                                       return resolvedFont(props, faceKey, fontSize, italic);
+                                       return computeFont(props, faceKey, fontSize, italic);
                                      }];
 }
 
-} // namespace facebook::react
+} // namespace facebook::react::plaintext

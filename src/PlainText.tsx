@@ -1,63 +1,29 @@
 import { StyleSheet, type AccessibilityProps, type StyleProp, type TextStyle } from 'react-native';
 import type { ComponentRef, Ref } from 'react';
 import PlainTextViewNativeComponent, { type NativeProps } from './PlainTextViewNativeComponent';
+import { normalizeFontVariant } from './utils';
 
-// RN's TextStyle plus the one text style it has no entry for.
-// `fontVariationSettings` is a style rather than a prop because two upstream
-// attempts to add it (react/react-native#44685, #44667) never merged, so
-// the type is widened here instead. Widened, not replaced, so a plain
-// TextStyle stays assignable and this can be dropped if RN adds the key.
 export type PlainTextStyle = TextStyle & { fontVariationSettings?: string };
 
-// Accessibility, testID, and nativeID/id are ViewProps that the native view
-// already applies; `...accessibilityProps` just forwards them through.
 export type PlainTextProps = AccessibilityProps & {
   children?: string;
-  // Use instead of `children` when driving text from
-  // `Animated.createAnimatedComponent` (RN core or Reanimated): both push
-  // per-frame updates straight onto the host ref via a prop name, bypassing
-  // PlainText's render entirely, so animating `children` is silently
-  // dropped. Wins over `children` when both are set.
+  /// Alias to `children`, to be used for animating text with Animated/Reanimated
   text?: string;
   style?: StyleProp<PlainTextStyle>;
   numberOfLines?: number;
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
-  // When true, reverts iOS's lineHeight vertical centering to RN <Text>'s
-  // ascent-clipping behavior (RN#29507) for this instance. Unset uses
-  // PlainText's fix. `unstable_` marks that its shape/default may change
-  // without a major version bump. No-op on Android.
-  unstable_lineHeightClippingIos?: boolean;
   testID?: string;
   nativeID?: string;
   id?: string;
+
+  /// When true, reverts iOS's lineHeight vertical centering to RN <Text>'s
+  /// ascent-clipping behavior (RN#29507) for this instance.
+  // SYNC: renamed to the bare lineHeightClippingIos past this file — see
+  // docs/contributing/sync-points.md#set-13--lineheightclippingios-one-prop-renamed-at-the-js-boundary.
+  unstable_lineHeightClippingIos?: boolean;
 };
-
-const FONT_VARIANT_SEPARATORS = /[\s,]+/;
-
-const warnedOnceKeys = new Set<string>();
-
-function warnOnce(key: string, message: string): void {
-  if (warnedOnceKeys.has(key)) {
-    return;
-  }
-  warnedOnceKeys.add(key);
-  console.warn(message);
-}
-
-// RN accepts fontVariant as either an array or a CSS-style string; the native
-// prop only takes the array, so the string form is split here. The array form
-// is returned as-is (not copied) to avoid allocating in the common case.
-function resolveFontVariant(fontVariant: TextStyle['fontVariant']): readonly string[] | undefined {
-  if (typeof fontVariant !== 'string') {
-    return fontVariant;
-  }
-  const variants = fontVariant
-    .split(FONT_VARIANT_SEPARATORS)
-    .filter((variant) => variant.length > 0);
-  return variants.length > 0 ? variants : undefined;
-}
 
 export function mapPlainTextProps({
   children,
@@ -70,15 +36,6 @@ export function mapPlainTextProps({
   unstable_lineHeightClippingIos,
   ...accessibilityProps
 }: PlainTextProps): NativeProps {
-  if (__DEV__ && text != null && children != null) {
-    warnOnce(
-      'plain-text-text-and-children',
-      'PlainText: both `text` and `children` were set; `text` takes precedence. Pass only one.'
-    );
-  }
-
-  // Text-style props don't flow through the native ViewProps, so pull them
-  // out of the flattened style and pass them explicitly.
   const {
     color,
     fontSize,
@@ -109,7 +66,7 @@ export function mapPlainTextProps({
     fontFamily,
     fontWeight: fontWeight != null ? String(fontWeight) : undefined,
     fontStyle,
-    fontVariant: resolveFontVariant(fontVariant),
+    fontVariant: normalizeFontVariant(fontVariant),
     fontVariationSettings,
     textAlign,
     textAlignVertical,
@@ -134,8 +91,6 @@ export function mapPlainTextProps({
 
 type PlainTextRef = ComponentRef<typeof PlainTextViewNativeComponent>;
 
-// React 19: `ref` is a plain prop, no `forwardRef` needed. Kept off
-// `PlainTextProps` so it never reaches `mapPlainTextProps`.
 export function PlainText({ ref, ...props }: PlainTextProps & { ref?: Ref<PlainTextRef> }) {
   const nativeProps = mapPlainTextProps(props);
   return <PlainTextViewNativeComponent {...nativeProps} ref={ref} />;
