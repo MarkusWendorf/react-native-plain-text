@@ -192,6 +192,11 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     view?.setEllipsizeMode(ellipsizeMode)
   }
 
+  // iOS-only; Android's line breaker has no equivalent knob.
+  @ReactProp(name = "lineBreakStrategyIOS")
+  override fun setLineBreakStrategyIOS(view: PlainTextView?, lineBreakStrategyIOS: String?) {
+  }
+
   @ReactProp(name = "allowFontScaling", defaultBoolean = true)
   override fun setAllowFontScaling(view: PlainTextView?, allowFontScaling: Boolean) {
     view?.setAllowFontScaling(allowFontScaling)

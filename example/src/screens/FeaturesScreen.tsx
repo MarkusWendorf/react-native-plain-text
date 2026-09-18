@@ -434,6 +434,32 @@ export default function FeaturesScreen({ navigation }: Props) {
           </TextItem>
         ))}
       </Section>
+      {Platform.OS === 'ios' && (
+        <Section title="Line Break Strategy (iOS-only)">
+          {(['none', 'push-out', 'standard'] as const).map((s) => (
+            <TextItem
+              key={s}
+              label={s}
+              showText={showText}
+              lineBreakStrategyIOS={s}
+              style={[styles.body, { width: 300 }]}
+            >
+              {ORPHAN_SPECIMEN}
+            </TextItem>
+          ))}
+          {(['none', 'hangul-word'] as const).map((s) => (
+            <TextItem
+              key={s}
+              label={s}
+              showText={showText}
+              lineBreakStrategyIOS={s}
+              style={[styles.body, { width: 220 }]}
+            >
+              {KOREAN_WORD_WRAP_SPECIMEN}
+            </TextItem>
+          ))}
+        </Section>
+      )}
       <Section title="Text Decoration Line">
         {TEXT_DECORATION_LINES.map((textDecorationLine) => (
           <TextItem
@@ -774,24 +800,26 @@ export default function FeaturesScreen({ navigation }: Props) {
         </TextItem>
       </Section>
       {/* Paired with padding since that's where the effect is visible. */}
-      <Section title="Font Padding (Android-only)" footer={FONT_PADDING_FOOTER}>
-        <TextItem
-          label="default, padding 4"
-          showText={showText}
-          style={[styles.body, { padding: 4 }]}
-          containerStyle={screenStyles.wideRow}
-        >
-          {PARAGRAPH}
-        </TextItem>
-        <TextItem
-          label="includeFontPadding false, padding 4"
-          showText={showText}
-          style={[styles.body, { padding: 4, includeFontPadding: false }]}
-          containerStyle={screenStyles.wideRow}
-        >
-          {PARAGRAPH}
-        </TextItem>
-      </Section>
+      {Platform.OS === 'android' && (
+        <Section title="Font Padding (Android-only)" footer={FONT_PADDING_FOOTER}>
+          <TextItem
+            label="default, padding 4"
+            showText={showText}
+            style={[styles.body, { padding: 4 }]}
+            containerStyle={screenStyles.wideRow}
+          >
+            {PARAGRAPH}
+          </TextItem>
+          <TextItem
+            label="includeFontPadding false, padding 4"
+            showText={showText}
+            style={[styles.body, { padding: 4, includeFontPadding: false }]}
+            containerStyle={screenStyles.wideRow}
+          >
+            {PARAGRAPH}
+          </TextItem>
+        </Section>
+      )}
       <Section title="Animating text" footer={ANIMATING_TEXT_FOOTER} spacedRows>
         <View style={styles.animatingRow}>
           <Text style={styles.animatingLabel}>ANIMATED (RN CORE)</Text>
@@ -948,6 +976,9 @@ const FONT_SIZES = [48, 40, 32, 26, 20, 16, 13, 10];
 const TEXT_ALIGNS = ['left', 'center', 'right', 'justify'] as const;
 
 const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
+
+const ORPHAN_SPECIMEN = 'The last word of this text does not fit.';
+const KOREAN_WORD_WRAP_SPECIMEN = '한글개행 한글개행 한글개행 한글개행 한글개행';
 
 const LINE_HEIGHTS = [18, 26, 36];
 
@@ -1369,7 +1400,5 @@ const FONT_FAMILY_RESOLUTION_FOOTER = Platform.select({
 const ANIMATING_TEXT_FOOTER =
   'PlainText wrapped in createAnimatedComponent from Animated RN API and RN Reanimated package.';
 
-const FONT_PADDING_FOOTER = Platform.select({
-  ios: 'Both rows should look identical here.',
-  default: 'The second row should sit noticeably tighter against the padding edge than the first.',
-});
+const FONT_PADDING_FOOTER =
+  'The second row should sit noticeably tighter against the padding edge than the first.';
