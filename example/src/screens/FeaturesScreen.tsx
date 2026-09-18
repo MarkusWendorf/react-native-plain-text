@@ -460,6 +460,21 @@ export default function FeaturesScreen({ navigation }: Props) {
           ))}
         </Section>
       )}
+      {Platform.OS === 'android' && (
+        <Section title="Text Break Strategy (Android-only)">
+          {TEXT_BREAK_STRATEGIES.map((textBreakStrategy) => (
+            <TextItem
+              key={textBreakStrategy}
+              label={textBreakStrategy}
+              showText={showText}
+              textBreakStrategy={textBreakStrategy}
+              style={[styles.body, { width: 300 }]}
+            >
+              {TEXT_BREAK_STRATEGY_SPECIMEN}
+            </TextItem>
+          ))}
+        </Section>
+      )}
       <Section title="Text Decoration Line">
         {TEXT_DECORATION_LINES.map((textDecorationLine) => (
           <TextItem
@@ -979,6 +994,13 @@ const ELLIPSIZE_MODES = ['head', 'middle', 'tail', 'clip'] as const;
 
 const ORPHAN_SPECIMEN = 'The last word of this text does not fit.';
 const KOREAN_WORD_WRAP_SPECIMEN = '한글개행 한글개행 한글개행 한글개행 한글개행';
+
+const TEXT_BREAK_STRATEGIES = ['simple', 'highQuality', 'balanced'] as const;
+
+// Irregular word lengths, not the pangram used elsewhere: the three strategies only
+// visibly disagree on text like this.
+const TEXT_BREAK_STRATEGY_SPECIMEN =
+  'Extraordinarily meticulous engineers occasionally debug astonishingly trivial issues quite carefully today, especially near release day, right before shipping.';
 
 const LINE_HEIGHTS = [18, 26, 36];
 

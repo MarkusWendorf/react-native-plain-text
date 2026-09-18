@@ -88,6 +88,7 @@ export function TextItem({
   numberOfLines,
   ellipsizeMode,
   lineBreakStrategyIOS,
+  textBreakStrategy,
   allowFontScaling,
   maxFontSizeMultiplier,
   accessibilityProps,
@@ -111,6 +112,7 @@ export function TextItem({
   numberOfLines?: number;
   ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
   lineBreakStrategyIOS?: 'none' | 'standard' | 'hangul-word' | 'push-out';
+  textBreakStrategy?: 'simple' | 'highQuality' | 'balanced';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
   // Forwarded to both PlainText and the comparison Text so the two expose the
@@ -141,6 +143,7 @@ export function TextItem({
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
             lineBreakStrategyIOS={lineBreakStrategyIOS}
+            textBreakStrategy={textBreakStrategy}
             allowFontScaling={allowFontScaling}
             maxFontSizeMultiplier={maxFontSizeMultiplier}
             unstable_lineHeightClippingCompat={compatOn}
@@ -160,6 +163,7 @@ export function TextItem({
               numberOfLines={numberOfLines}
               ellipsizeMode={ellipsizeMode}
               lineBreakStrategyIOS={lineBreakStrategyIOS}
+              textBreakStrategy={textBreakStrategy}
               allowFontScaling={allowFontScaling}
               maxFontSizeMultiplier={maxFontSizeMultiplier}
               {...accessibilityProps}

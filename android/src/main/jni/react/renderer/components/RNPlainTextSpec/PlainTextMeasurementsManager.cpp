@@ -84,6 +84,9 @@ folly::dynamic serializeProps(const RNPlainTextProps &props) {
   if (!props.includeFontPadding) {
     serializedProps["includeFontPadding"] = false;
   }
+  if (props.textBreakStrategy != RNPlainTextTextBreakStrategy::HighQuality) {
+    serializedProps["textBreakStrategy"] = toString(props.textBreakStrategy);
+  }
   return serializedProps;
 }
 
