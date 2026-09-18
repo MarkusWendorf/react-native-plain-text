@@ -1,7 +1,10 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import {
+  Platform,
+  Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type AccessibilityProps,
   type StyleProp,
@@ -12,19 +15,6 @@ import { PlainText, type PlainTextStyle } from 'react-native-plain-text';
 import { useCompatOn } from './CompareText';
 import { COLOR } from '../theme';
 
-// The specimen-book furniture both screens are set in: the title page, the
-// section headings and the row that puts one PlainText against the RN <Text>
-// overlay. Nothing here decides what to demonstrate: the screens do that.
-
-// Sets the register before the first section: optionally the largest glyphs on
-// the screen and the page's name, then one line on what the page holds.
-//
-// `lockup` is a pair rather than two props because the two halves are one mark
-// (see the styles at the bottom), and it is optional because it is worth its
-// space only on a page it says something about: the glyph is a specimen of the
-// type itself, which is the Features screen's subject rather than any other's,
-// and the title is the library's name set as a wordmark, so it belongs on that
-// same page and nowhere the nav bar already names.
 export function Cover({
   lockup,
   blurb,
@@ -34,9 +24,6 @@ export function Cover({
 }) {
   return (
     <View style={styles.cover}>
-      {/* The two of them set side by side: a specimen book's "Aa" and the name of
-          the type it is showing belong together, and stacked they read as a
-          heading with a caption under it instead. */}
       {lockup != null && (
         <View style={styles.lockup}>
           <PlainText style={styles.coverGlyph}>{lockup.glyph}</PlainText>
@@ -44,6 +31,45 @@ export function Cover({
         </View>
       )}
       <PlainText style={styles.coverBlurb}>{blurb}</PlainText>
+    </View>
+  );
+}
+
+const SectionSearchContext = createContext('');
+
+export function SectionSearchProvider({ query, children }: { query: string; children: ReactNode }) {
+  return <SectionSearchContext.Provider value={query}>{children}</SectionSearchContext.Provider>;
+}
+
+export function SearchField({
+  value,
+  onChangeText,
+  placeholder,
+}: {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <View style={styles.searchBarRow}>
+      <View style={styles.searchField}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={COLOR.faint}
+          style={styles.searchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+        {Platform.OS === 'android' && value !== '' && (
+          <Pressable onPress={() => onChangeText('')} hitSlop={8}>
+            <Text style={styles.searchClear}>×</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -64,6 +90,11 @@ export function Section({
   spacedRows?: boolean;
   children: ReactNode;
 }) {
+  const searchQuery = useContext(SectionSearchContext);
+  if (searchQuery !== '' && !title.toLowerCase().includes(searchQuery.toLowerCase())) {
+    return null;
+  }
+
   return (
     <View style={[styles.section, spacedRows === true && styles.spacedSection]}>
       {/* Tracked caps with a rule running out to the margin. Caps rather than a
@@ -223,7 +254,7 @@ export const screenStyles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    paddingTop: 28,
+    paddingTop: 0,
     paddingBottom: 48,
     paddingHorizontal: 18,
     // Sections need to read as separate sheets of a specimen book, so the gap
@@ -296,6 +327,32 @@ const styles = StyleSheet.create({
     // and has to bring it. Without this the first heading rides 16 closer to the
     // blurb than every other heading does to what precedes it.
     paddingBottom: 4 + RUN_OFF,
+  },
+  // Opaque: once this row sticks, it must fully hide scrolled-under content.
+  searchBarRow: {
+    backgroundColor: COLOR.paper,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLOR.line,
+  },
+  searchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLOR.wash,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: COLOR.ink,
+  },
+  searchClear: {
+    fontSize: 18,
+    color: COLOR.faint,
+    paddingHorizontal: 4,
   },
   lockup: {
     flexDirection: 'row',
