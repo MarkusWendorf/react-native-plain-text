@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
+import android.os.LocaleList
 import android.text.Layout
 import android.text.Spannable
 import android.text.SpannableString
@@ -105,6 +106,12 @@ class PlainTextView : AppCompatTextView {
   // onConfigurationChanged (API 31+) without invalidating this field, silently
   // resetting a variable font's axes, benign, self-heals on the next font/axis change.
   private var appliedBaseTypeface: Typeface? = baseTypeface
+
+  private var appliedLang: String? = null
+
+  // Combined by applyHyphenationFrequency regardless of which setter ran last.
+  private var hyphens: String? = null
+  private var androidHyphenationFrequency: String? = null
 
   // Reused by PlainTextViewManager for measurement. Never attached to a window, so
   // posting measureAndLayout would queue forever.
@@ -564,6 +571,39 @@ class PlainTextView : AppCompatTextView {
     gravity = (gravity and Gravity.VERTICAL_GRAVITY_MASK.inv()) or vertical
   }
 
+  // Null/empty restores the default locale.
+  fun setLang(lang: String?) {
+    val normalized = if (lang.isNullOrEmpty()) null else lang
+    if (normalized == appliedLang) return
+    appliedLang = normalized
+
+    textLocales = if (normalized == null) {
+      LocaleList.getAdjustedDefault()
+    } else {
+      LocaleList(Locale.forLanguageTag(normalized))
+    }
+  }
+
+  // 'none'/'auto'/'manual' all override android_hyphenationFrequency.
+  //
+  // Android has no "break only at an embedded U+00AD" mode: Minikin's
+  // Hyphenator only ever consults a soft hyphen from inside
+  // tryLineBreakWithHyphenation(), which is skipped whenever
+  // hyphenationFrequency is NONE. So 'manual' maps to NORMAL rather than
+  // NONE, trading one gap for a smaller one — a word that contains a soft
+  // hyphen bypasses the dictionary entirely and breaks exactly there
+  // (alphabetLookup() has no entry for U+00AD, so hyphenate() falls through
+  // to hyphenateWithNoPatterns(), whose only job is to honor that mark) but
+  // any other word, having no soft hyphen to trip that fallback, still goes
+  // through the ordinary dictionary path and can pick up an automatic break
+  // 'manual' didn't ask for. NONE would avoid that unwanted break but silently
+  // drop every soft hyphen instead, which is worse for text that relies on
+  // them. See docs/guide/props-and-styles.md for the trade-off written out.
+  fun setHyphens(value: String?) {
+    hyphens = value
+    applyHyphenationFrequency()
+  }
+
   // 0 means unlimited, matching <Text>. It also bounds the off-screen measure pass.
   fun setNumberOfLines(numberOfLines: Int) {
     maxLines = if (numberOfLines <= 0) Integer.MAX_VALUE else numberOfLines
@@ -588,17 +628,34 @@ class PlainTextView : AppCompatTextView {
     }
   }
 
-  // Mirrors <Text>: "normal"/"full" prefer the *_FAST variants on API 33+ (perf-only).
-  fun setAndroidHyphenationFrequency(androidHyphenationFrequency: String?) {
-    hyphenationFrequency = when (androidHyphenationFrequency) {
-      "normal" ->
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Layout.HYPHENATION_FREQUENCY_NORMAL_FAST
-        else Layout.HYPHENATION_FREQUENCY_NORMAL
+  // RN <Text> compat; overridden by hyphens 'none'/'auto'/'manual' above.
+  fun setAndroidHyphenationFrequency(value: String?) {
+    androidHyphenationFrequency = value
+    applyHyphenationFrequency()
+  }
+
+  // "full" prefers FULL_FAST on API 33+: perf-only, not a prop value.
+  private fun applyHyphenationFrequency() {
+    val frequency = when (hyphens) {
+      "auto" -> "full"
+      "none" -> "none"
+      "manual" -> "normal"
+      else -> androidHyphenationFrequency
+    }
+    val value = when (frequency) {
+      null, "none" -> Layout.HYPHENATION_FREQUENCY_NONE
+      "normal" -> Layout.HYPHENATION_FREQUENCY_NORMAL
       "full" ->
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Layout.HYPHENATION_FREQUENCY_FULL_FAST
         else Layout.HYPHENATION_FREQUENCY_FULL
-      else -> Layout.HYPHENATION_FREQUENCY_NONE
+      else -> {
+        FLog.w(ReactConstants.TAG, "Invalid android_hyphenationFrequency: $frequency")
+        Layout.HYPHENATION_FREQUENCY_NONE
+      }
     }
+
+    if (hyphenationFrequency == value) return
+    hyphenationFrequency = value
   }
 
   // A text-size change touches no prop, so Fabric's diff never fires and

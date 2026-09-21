@@ -68,6 +68,24 @@ export interface NativeProps extends ViewProps {
     'none'
   >;
 
+  // CSS's `hyphens`, pulled out of `style` by PlainText.tsx. iOS: 'none' strips
+  // soft hyphens (U+00AD), 'auto' sets usesDefaultHyphenation. Android: 'none'/
+  // 'auto'/'manual' all resolve into android_hyphenationFrequency
+  // (PlainTextView.kt) rather than deferring to it. 'manual' maps to NORMAL:
+  // Android has no "only break at an embedded soft hyphen" mode, and NORMAL is
+  // the closest approximation — a word with a soft hyphen breaks exactly there
+  // (bypassing the dictionary), but a word without one can still pick up an
+  // automatic break 'manual' didn't ask for.
+  //
+  // Cost: medium. 'auto' forces iOS's attributed-string path; 'none' allocates a
+  // stripped copy of the text; 'manual' turns on Android's dictionary hyphenator.
+  hyphens?: CodegenTypes.WithDefault<'none' | 'manual' | 'auto', 'manual'>;
+  // BCP-47 language tag (e.g. 'de') for hyphenation/line-breaking. Empty means unset.
+  //
+  // Cost: medium. Forces iOS's attributed-string path.
+  lang?: string;
+
+  // 0 means unlimited. Caps rendered lines and the shadow node's measured intrinsic height.
   numberOfLines?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;
   ellipsizeMode?: CodegenTypes.WithDefault<'head' | 'middle' | 'tail' | 'clip', 'tail'>;
 

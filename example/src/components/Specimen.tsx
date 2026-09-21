@@ -106,14 +106,15 @@ export function TextItem({
   android_hyphenationFrequency,
   allowFontScaling,
   maxFontSizeMultiplier,
+  lang,
   accessibilityProps,
   children,
 }: {
   // Caption above the specimen. Omitted by composite use-case rows, which have
   // no single value to show here.
   label?: string;
-  // PlainTextStyle, not TextStyle: Font Variation Settings rows carry
-  // fontVariationSettings, which RN's TextStyle has no key for.
+  // PlainTextStyle, not TextStyle: the fontVariationSettings / hyphens rows use
+  // keys RN has no style entry for. The overlay below casts them away.
   style?: StyleProp<PlainTextStyle>;
   containerStyle?: StyleProp<ViewStyle>;
   showText: boolean;
@@ -124,8 +125,9 @@ export function TextItem({
   android_hyphenationFrequency?: 'none' | 'normal' | 'full';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
-  // Forwarded to both PlainText and the comparison Text so both expose the same
-  // accessibility surface.
+  lang?: string;
+  // Forwarded to both PlainText and the comparison Text so the two expose the
+  // same accessibility surface (testID, role, label, ...) to the native tree.
   accessibilityProps?: AccessibilityProps & { testID?: string };
   children: string;
 }) {
@@ -151,6 +153,7 @@ export function TextItem({
             allowFontScaling={allowFontScaling}
             maxFontSizeMultiplier={maxFontSizeMultiplier}
             unstable_lineHeightClippingCompat={compatOn}
+            lang={lang}
             {...accessibilityProps}
           >
             {children}

@@ -3,7 +3,17 @@ import type { ComponentRef, Ref } from 'react';
 import PlainTextViewNativeComponent, { type NativeProps } from './PlainTextViewNativeComponent';
 import { normalizeFontVariant } from './utils';
 
-export type PlainTextStyle = TextStyle & { fontVariationSettings?: string };
+// RN's TextStyle plus two keys it has no entry for. Widened, not replaced, so a
+// plain TextStyle stays assignable.
+export type PlainTextStyle = TextStyle & {
+  // Upstream attempts to add it (react/react-native#44685, #44667) never merged.
+  fontVariationSettings?: string;
+  // CSS's `hyphens`. 'none'/'auto'/'manual' all beat the android_hyphenationFrequency
+  // prop on Android. 'manual' only honors an inserted soft hyphen exactly as CSS
+  // intends on iOS; on Android it also enables the automatic dictionary
+  // hyphenator, since Android has no "soft hyphens only" mode.
+  hyphens?: 'none' | 'manual' | 'auto';
+};
 
 export type PlainTextProps = AccessibilityProps & {
   children?: string;
@@ -15,10 +25,14 @@ export type PlainTextProps = AccessibilityProps & {
   lineBreakStrategyIOS?: 'none' | 'standard' | 'hangul-word' | 'push-out';
   /// Android-only, like RN <Text>.
   textBreakStrategy?: 'simple' | 'highQuality' | 'balanced';
-  /// Android-only, like RN <Text>.
+  /// Android-only, like RN <Text>'s prop of the same name. iOS ignores it; the
+  /// `hyphens` style's 'none'/'auto' override it.
   android_hyphenationFrequency?: 'none' | 'normal' | 'full';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
+  /// BCP-47 language tag (e.g. 'de'); picks the hyphenation dictionary and
+  /// locale-sensitive line breaking.
+  lang?: string;
   testID?: string;
   nativeID?: string;
   id?: string;
@@ -41,6 +55,7 @@ export function mapPlainTextProps({
   android_hyphenationFrequency,
   allowFontScaling,
   maxFontSizeMultiplier,
+  lang,
   unstable_lineHeightClippingCompat,
   ...accessibilityProps
 }: PlainTextProps): NativeProps {
@@ -58,6 +73,7 @@ export function mapPlainTextProps({
     writingDirection,
     textDecorationLine,
     textTransform,
+    hyphens,
     lineHeight,
     letterSpacing,
     includeFontPadding,
@@ -96,6 +112,8 @@ export function mapPlainTextProps({
     android_hyphenationFrequency,
     allowFontScaling,
     maxFontSizeMultiplier,
+    hyphens,
+    lang,
     includeFontPadding,
     lineHeightClippingCompat: unstable_lineHeightClippingCompat,
     style: viewStyle,
