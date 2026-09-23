@@ -78,7 +78,7 @@ Things Plain Text does that RN `<Text>` does not:
   hyphen (`­`). `'auto'` turns on dictionary-based hyphenation:
   iOS's `usesDefaultHyphenation` (pair with `lang` to pick the dictionary),
   and Android's `Layout.HYPHENATION_FREQUENCY_FULL`
-  ([`PlainTextView.kt`](../../android/src/main/java/com/mdjstack/plaintext/PlainTextView.kt)).
+  ([`PlainTextView.kt`](https://github.com/mdjastrzebski/react-native-plain-text/blob/main/android/src/main/java/com/mdjstack/plaintext/PlainTextView.kt)).
   On Android, `hyphens` takes priority over `android_hyphenationFrequency`
   whenever the app sets it at all — including `'none'` — and
   `android_hyphenationFrequency` only applies
