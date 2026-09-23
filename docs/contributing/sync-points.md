@@ -42,6 +42,8 @@ most props only touch a few.
 - `textShadowOffsetHeight`
 - `textShadowRadius`
 - `textTransform`
+- `hyphens`
+- `lang`
 - `numberOfLines`
 - `ellipsizeMode`
 - `lineBreakStrategyIOS` (iOS-only — no Android setter body, no Android entry in
@@ -53,6 +55,8 @@ most props only touch a few.
 - `includeFontPadding` (Android-only — no `ios/PlainTextProps.mm` entry, no iOS entry in
   [Set 2](#set-2--a-prop-that-affects-measured-size)'s measurement plumbing)
 - `textBreakStrategy` (Android-only — no `ios/PlainTextProps.mm` entry, no iOS entry in
+  [Set 2](#set-2--a-prop-that-affects-measured-size)'s measurement plumbing)
+- `android_hyphenationFrequency` (Android-only — no `ios/PlainTextProps.mm` entry, no iOS entry in
   [Set 2](#set-2--a-prop-that-affects-measured-size)'s measurement plumbing)
 - `experiment` (internal-only)
 
@@ -89,6 +93,8 @@ Common: touch all five files below.
 - `lineHeight`
 - `letterSpacing`
 - `textTransform`
+- `hyphens`
+- `lang`
 - `numberOfLines`
 - `allowFontScaling`
 - `maxFontSizeMultiplier`
@@ -103,6 +109,7 @@ Android-only: touches `measurementInputsEqual`, `PlainTextMeasurementsManager.cp
 
 - `includeFontPadding`
 - `textBreakStrategy`
+- `android_hyphenationFrequency`
 
 `experiment` (internal-only, both platforms): scoped to both platforms, unlike the two groups above. It's a generic
 on/off switch for whatever's currently being benchmarked (see
@@ -127,7 +134,7 @@ Notably _excluded_ — all draw-only, none affect the box:
 
 Applying one of the common props above has to happen identically in five places, or the box and the rendered text
 disagree. That's a stale or wrong size, not a crash. The groups above already say which of the five apply to
-`lineBreakStrategyIOS`, `includeFontPadding`, `textBreakStrategy`, and `experiment`.
+`lineBreakStrategyIOS`, `includeFontPadding`, `textBreakStrategy`, `android_hyphenationFrequency`, and `experiment`.
 
 **Files:**
 
@@ -154,9 +161,9 @@ an already-scaled size, so `scaledFontSize`'s unrounded `fontSize * fontSizeMult
 callers instead (also unrounded, matching RN), so it stays a sync point between `measureContent` and `RNPlainText.mm`.
 
 `measurementInputsEqual` is shared C++, so every prop above runs through it on both platforms, even the ones a
-platform never reads. `lineBreakStrategyIOS` and `textBreakStrategy` stay in there permanently on the platform that
-can't measure them. `experiment` stays in there even while no benchmark has plugged it into either platform. Drop an
-entry and the platform that does read the prop compares stale without knowing it.
+platform never reads. `lineBreakStrategyIOS`, `textBreakStrategy` and `android_hyphenationFrequency` stay in there
+permanently on the platform that can't measure them. `experiment` stays in there even while no benchmark has plugged
+it into either platform. Drop an entry and the platform that does read the prop compares stale without knowing it.
 
 **`lineBreakStrategyIOS` and `experiment` currently have an empty Android `@ReactProp` setter.** Codegen's interface has
 no per-platform prop list, so `PlainTextViewManager.kt` has to implement every setter regardless.
@@ -179,11 +186,13 @@ agree on. Two flavors, both three-way:
   - `fontSize` (`14.0`)
   - `lineHeight` (`0.0`)
   - `textTransform` (`None`)
+  - `hyphens` (`None`)
   - `numberOfLines` (`0`)
   - `allowFontScaling` (`true`)
   - `maxFontSizeMultiplier` (`0.0`)
   - `includeFontPadding` (`true`)
   - `textBreakStrategy` (`HighQuality`)
+  - `android_hyphenationFrequency` (`None`)
   - `experiment` (`false`)
 - Optional (`std::optional`, via `generateOptionalProperties`) — an omitted serialized key means "unset," and the Kotlin
   fallback has to reproduce whatever "unset" resolves to:
@@ -194,6 +203,7 @@ agree on. Two flavors, both three-way:
   - `fontVariant`
   - `fontVariationSettings`
   - `letterSpacing`
+  - `lang`
 
 **Files, per prop above, all three must agree on what "absent" resolves to:**
 
@@ -395,9 +405,10 @@ Only the invalidation logic is genuinely shared, in `cpp/PlainTextMeasurementHel
 **Props:** every prop `applyContentFromProps` applies to `_label` — text (`text`, `textTransform`), font (`fontFamily`,
 `fontSize`, `fontWeight`, `fontStyle`, `fontVariant`, `fontVariationSettings`, `allowFontScaling`,
 `maxFontSizeMultiplier`), color (`color`), alignment (`textAlign`, `textAlignVertical`, `verticalAlign`,
-`writingDirection`), `letterSpacing`, `lineHeight`, `textDecorationLine`, `numberOfLines`, `ellipsizeMode`,
-`lineBreakStrategyIOS`, plus the shadow props (`textShadowColor`, `textShadowOffsetWidth`, `textShadowOffsetHeight`,
-`textShadowRadius`) — i.e. Set 2's list plus every draw-only prop from [Set 1](#set-1--any-prop-the-four-layer-flow).
+`writingDirection`), `letterSpacing`, `lineHeight`, `textDecorationLine`, `hyphens`, `lang`, `numberOfLines`,
+`ellipsizeMode`, `lineBreakStrategyIOS`, plus the shadow props (`textShadowColor`, `textShadowOffsetWidth`,
+`textShadowOffsetHeight`, `textShadowRadius`) — i.e. Set 2's list plus every draw-only prop from
+[Set 1](#set-1--any-prop-the-four-layer-flow).
 
 Fabric recycles component views by type. iOS does it unconditionally through `RCTComponentViewRegistry`; Android only if
 a view manager opts in via `setupViewRecycling()`, which `PlainTextViewManager` never calls — so this set is iOS-only

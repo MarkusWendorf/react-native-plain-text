@@ -115,7 +115,6 @@ using namespace plaintext;
     NSTextAlignment alignment = textAlignmentFromProp(props.textAlign);
     NSString *text = props.text.has_value() ? ([NSString stringWithUTF8String:props.text.value().c_str()] ?: @"") : @"";
     text = applyTextTransform(text, props.textTransform);
-    text = applyHyphens(text, props.hyphens);
 
     BOOL hasLineHeight = props.lineHeight > 0;
     BOOL hasLetterSpacing = props.letterSpacing.has_value();
@@ -129,9 +128,9 @@ using namespace plaintext;
     BOOL hasTextDecoration = hasUnderline || hasLineThrough;
     BOOL hasTextShadow = props.textShadowOffsetWidth.has_value() || props.textShadowOffsetHeight.has_value();
     BOOL hasWritingDirection = props.writingDirection != RNPlainTextWritingDirection::Auto;
-    // Only "auto" needs a paragraph style; "none"/"manual" match the default.
+    // Only "auto" needs a paragraph style; "none" (the default) is a no-op.
     BOOL hasHyphenation = props.hyphens == RNPlainTextHyphens::Auto;
-    BOOL hasLang = !props.lang.empty();
+    BOOL hasLang = props.lang.has_value();
 
     if (!hasLineHeight && !hasLetterSpacing && !hasTextDecoration && !hasTextShadow && !hasWritingDirection && !hasHyphenation && !hasLang) {
         // Explicitly nil attributedText: a view recycled from an attributed instance kept the old kerning/spacing even after .text and every prop were correct, so setting .text alone isn't enough.
@@ -176,7 +175,7 @@ using namespace plaintext;
     }
 
     if (hasLang) {
-        NSString *lang = [NSString stringWithUTF8String:props.lang.c_str()];
+        NSString *lang = [NSString stringWithUTF8String:props.lang.value().c_str()];
         if (lang != nil) {
             attributes[NSLanguageIdentifierAttributeName] = lang;
         }

@@ -5,9 +5,10 @@
 | Prop                           | RN `<Text>` compatible | Notes                                                                              |
 | ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------- |
 | `allowFontScaling`             | ✅                     |                                                                                    |
-| `android_hyphenationFrequency` | ✅                     | Android-only, like RN `<Text>`. Prefer the `hyphens` style.                        |
+| `android_hyphenationFrequency` | ✅                     | Android-only, like RN `<Text>`. Only a fallback for when `hyphens` is unset.       |
 | `children`                     | 🟡                     | `string` only                                                                      |
 | `ellipsizeMode`                | ✅                     |                                                                                    |
+| `hyphens`                      | ⬆️                     | Not in RN `<Text>`. `'none' \| 'auto'`, default `'none'`. See below.               |
 | `lang`                         | ⬆️                     | Not in RN `<Text>`. BCP-47 tag (e.g. `'de'`) for hyphenation and line breaking.    |
 | `lineBreakStrategyIOS`         | ✅                     | iOS-only, like RN `<Text>`. No-op on Android.                                      |
 | `maxFontSizeMultiplier`        | ✅                     |                                                                                    |
@@ -24,29 +25,28 @@ RN `<Text>` compatibility: ✅ fully compatible · 🟡 partially compatible · 
 
 ## Supported styles
 
-| Style                        | RN `<Text>` compatible | Notes                                                                                                                         |
-| ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `color`                      | ✅                     |                                                                                                                               |
-| `fontFamily`                 | ✅                     |                                                                                                                               |
-| `fontSize`                   | ✅                     |                                                                                                                               |
-| `fontStyle`                  | ✅                     |                                                                                                                               |
-| `fontVariant`                | ✅                     |                                                                                                                               |
-| `fontVariationSettings`      | ⬆️                     | Not in RN `<Text>`. Variable-font axes in CSS syntax, e.g. `'"wght" 700, "wdth" 87.5'`.                                       |
-| `fontWeight`                 | ✅                     |                                                                                                                               |
-| `hyphens`                    | ⬆️                     | Not in RN `<Text>`. `'none' \| 'manual' \| 'auto'`, default `'manual'` (faithful on iOS; approximated on Android, see below). |
-| `includeFontPadding`         | ✅                     | Android-only, like RN `<Text>`                                                                                                |
-| `letterSpacing`              | ✅                     |                                                                                                                               |
-| `lineHeight`                 | ✅                     |                                                                                                                               |
-| `textAlign`                  | ✅                     |                                                                                                                               |
-| `textAlignVertical`          | ✅ ⬆️                  | Android-only in RN Text. Implemented for both iOS & Android here.                                                             |
-| `textDecorationLine`         | ✅                     |                                                                                                                               |
-| `textShadowColor`            | ✅                     |                                                                                                                               |
-| `textShadowOffset`           | ✅                     |                                                                                                                               |
-| `textShadowRadius`           | ✅                     |                                                                                                                               |
-| `textTransform`              | ✅                     |                                                                                                                               |
-| `verticalAlign`              | ✅ ⬆️                  | Android-only in RN Text. Implemented for both iOS & Android                                                                   |
-| `writingDirection`           | ✅                     | iOS-only, like RN `<Text>`. No-op on Android.                                                                                 |
-| Every other `ViewStyle` prop | ✅                     | `width`, `margin`, `padding`, `backgroundColor`, `opacity`, etc                                                               |
+| Style                        | RN `<Text>` compatible | Notes                                                                                   |
+| ---------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| `color`                      | ✅                     |                                                                                         |
+| `fontFamily`                 | ✅                     |                                                                                         |
+| `fontSize`                   | ✅                     |                                                                                         |
+| `fontStyle`                  | ✅                     |                                                                                         |
+| `fontVariant`                | ✅                     |                                                                                         |
+| `fontVariationSettings`      | ⬆️                     | Not in RN `<Text>`. Variable-font axes in CSS syntax, e.g. `'"wght" 700, "wdth" 87.5'`. |
+| `fontWeight`                 | ✅                     |                                                                                         |
+| `includeFontPadding`         | ✅                     | Android-only, like RN `<Text>`                                                          |
+| `letterSpacing`              | ✅                     |                                                                                         |
+| `lineHeight`                 | ✅                     |                                                                                         |
+| `textAlign`                  | ✅                     |                                                                                         |
+| `textAlignVertical`          | ✅ ⬆️                  | Android-only in RN Text. Implemented for both iOS & Android here.                       |
+| `textDecorationLine`         | ✅                     |                                                                                         |
+| `textShadowColor`            | ✅                     |                                                                                         |
+| `textShadowOffset`           | ✅                     |                                                                                         |
+| `textShadowRadius`           | ✅                     |                                                                                         |
+| `textTransform`              | ✅                     |                                                                                         |
+| `verticalAlign`              | ✅ ⬆️                  | Android-only in RN Text. Implemented for both iOS & Android                             |
+| `writingDirection`           | ✅                     | iOS-only, like RN `<Text>`. No-op on Android.                                           |
+| Every other `ViewStyle` prop | ✅                     | `width`, `margin`, `padding`, `backgroundColor`, `opacity`, etc                         |
 
 RN `<Text>` compatibility: ✅ fully compatible · ⬆️ added in Plain Text
 
@@ -71,37 +71,25 @@ Things Plain Text does that RN `<Text>` does not:
   ([RN#29507](https://github.com/facebook/react-native/issues/29507)). Plain
   Text corrects the vertical offset at draw time so the text stays centered in
   its line box.
-- **`hyphens` style**: CSS-style hyphenation control. RN `<Text>` has no iOS
-  hyphenation control at all, and no cross-platform one on either platform.
-  `'manual'` (CSS: break only at an inserted soft hyphen, `­`, invent no other
-  breaks) can't be represented faithfully on Android. Android's hyphenator is a
-  single switch, `Layout.hyphenationFrequency` (`NONE`/`NORMAL`/`FULL`), with no
-  "soft hyphens only" mode:
-  - Verified against AOSP's Minikin source
-    ([`Hyphenator.cpp`](https://android.googlesource.com/platform/frameworks/minikin/+/refs/heads/master/libs/minikin/Hyphenator.cpp)):
-    a word containing `­` has no entry in the pattern alphabet, so
-    `alphabetLookup()` returns `DONT_BREAK` and `hyphenate()` falls through to
-    `hyphenateWithNoPatterns()`, whose only job for that word is to break
-    exactly at the author's mark — the dictionary never gets a say for that
-    word. So an embedded soft hyphen genuinely works as CSS intends, once
-    reached.
-  - The catch is reaching it at all: that whole fallback lives inside
-    `tryLineBreakWithHyphenation()` in
-    [`GreedyLineBreaker.cpp`](https://android.googlesource.com/platform/frameworks/minikin/+/refs/heads/master/libs/minikin/GreedyLineBreaker.cpp),
-    gated by `mEnableHyphenation`, which is false whenever
-    `hyphenationFrequency == NONE`. So `hyphens: 'manual'` must pick a
-    non-`NONE` frequency for soft hyphens to work at all — but that frequency
-    applies to the whole `Layout`, not per-word. Any other word, having no
-    soft hyphen to trip the no-patterns fallback, still goes through the
-    ordinary dictionary path and can pick up an automatic break `'manual'`
-    never asked for.
-  - PlainText maps `'manual'` to `NORMAL`
-    ([`PlainTextView.kt`](../../android/src/main/java/com/mdjstack/plaintext/PlainTextView.kt)),
-    trading the old gap (soft hyphens silently ignored) for this smaller one
-    (unrelated words can hyphenate automatically). There's no way to pick just
-    one side of that trade through the public `Layout` API — the no-patterns
-    vs. pattern branch selection is an internal implementation detail of
-    `hyphenate()`, not something `hyphenationFrequency` exposes as a mode.
+- **`hyphens` prop**: hyphenation control. RN `<Text>` has no iOS hyphenation
+  control at all, and no cross-platform one on either platform. `'none'`
+  (default) keeps hyphenation at the platform's own default behavior on both
+  iOS and Android — it never strips or otherwise touches an inserted soft
+  hyphen (`­`). `'auto'` turns on dictionary-based hyphenation:
+  iOS's `usesDefaultHyphenation` (pair with `lang` to pick the dictionary),
+  and Android's `Layout.HYPHENATION_FREQUENCY_FULL`
+  ([`PlainTextView.kt`](../../android/src/main/java/com/mdjstack/plaintext/PlainTextView.kt)).
+  On Android, `hyphens` takes priority over `android_hyphenationFrequency`
+  whenever the app sets it at all — including `'none'` — and
+  `android_hyphenationFrequency` only applies
+  as a fallback when `hyphens` is left unset entirely. **Known gap:** this
+  distinction only exists at the mounted view; the off-screen pass used to
+  measure/wrap the text can't tell "unset" apart from "explicitly `'none'`"
+  (both collapse to the same default before they reach native code), so it
+  always falls back to `android_hyphenationFrequency` regardless. For
+  `hyphens="none"` combined with a non-default `android_hyphenationFrequency`,
+  this means the measured size can assume that frequency while the rendered
+  text uses `NONE`.
 
 ## Planned
 

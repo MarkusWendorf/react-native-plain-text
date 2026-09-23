@@ -1,8 +1,8 @@
 /*
  * Prop-to-platform-value conversions. Most are for <RNPlainText>'s mounted
- * view only; applyTextTransform and applyHyphens are the exception, shared
- * with the shadow node so both transform the same text the same way,
- * otherwise the measured box and the drawn text could disagree.
+ * view only; applyTextTransform is the exception, shared with the shadow
+ * node so both transform the same text the same way, otherwise the measured
+ * box and the drawn text could disagree.
  *
  * fontWeightFromProp, isItalicFromProp and fontVariantDescriptors mirror
  * RCTFont.mm's own prop-name lookup tables, feeding PlainTextFont.mm's font
@@ -29,10 +29,6 @@ namespace facebook::react::plaintext {
  * and Android instead, uppercasing only each word's first character.
  */
 NSString *applyTextTransform(NSString *text, RNPlainTextTextTransform textTransform);
-
-// Strips soft hyphens (U+00AD) when hyphens == None (matching Android/web);
-// returns `text` unchanged otherwise.
-NSString *applyHyphens(NSString *text, RNPlainTextHyphens hyphens);
 
 NSTextAlignment textAlignmentFromProp(RNPlainTextTextAlign textAlign);
 

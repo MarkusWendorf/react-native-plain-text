@@ -68,18 +68,17 @@ export interface NativeProps extends ViewProps {
     'none'
   >;
 
-  // CSS's `hyphens`, pulled out of `style` by PlainText.tsx. iOS: 'none' strips
-  // soft hyphens (U+00AD), 'auto' sets usesDefaultHyphenation. Android: 'none'/
-  // 'auto'/'manual' all resolve into android_hyphenationFrequency
-  // (PlainTextView.kt) rather than deferring to it. 'manual' maps to NORMAL:
-  // Android has no "only break at an embedded soft hyphen" mode, and NORMAL is
-  // the closest approximation — a word with a soft hyphen breaks exactly there
-  // (bypassing the dictionary), but a word without one can still pick up an
-  // automatic break 'manual' didn't ask for.
+  // A plain prop, not part of `style` (PlainText.tsx passes it straight through).
+  // 'none' (default) leaves hyphenation at the platform's default behavior,
+  // touching no soft hyphen (U+00AD) on either platform. 'auto' turns on
+  // dictionary-based hyphenation: iOS's usesDefaultHyphenation, Android's
+  // hyphenationFrequency FULL. On Android, whichever value is set here wins
+  // over android_hyphenationFrequency, which only applies as a fallback when
+  // this prop is left unset (PlainTextView.kt).
   //
-  // Cost: medium. 'auto' forces iOS's attributed-string path; 'none' allocates a
-  // stripped copy of the text; 'manual' turns on Android's dictionary hyphenator.
-  hyphens?: CodegenTypes.WithDefault<'none' | 'manual' | 'auto', 'manual'>;
+  // Cost: medium. 'auto' forces iOS's attributed-string path and turns on
+  // Android's dictionary hyphenator.
+  hyphens?: CodegenTypes.WithDefault<'none' | 'auto', 'none'>;
   // BCP-47 language tag (e.g. 'de') for hyphenation/line-breaking. Empty means unset.
   //
   // Cost: medium. Forces iOS's attributed-string path.

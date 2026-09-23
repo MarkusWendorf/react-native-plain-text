@@ -584,21 +584,8 @@ class PlainTextView : AppCompatTextView {
     }
   }
 
-  // 'none'/'auto'/'manual' all override android_hyphenationFrequency.
-  //
-  // Android has no "break only at an embedded U+00AD" mode: Minikin's
-  // Hyphenator only ever consults a soft hyphen from inside
-  // tryLineBreakWithHyphenation(), which is skipped whenever
-  // hyphenationFrequency is NONE. So 'manual' maps to NORMAL rather than
-  // NONE, trading one gap for a smaller one — a word that contains a soft
-  // hyphen bypasses the dictionary entirely and breaks exactly there
-  // (alphabetLookup() has no entry for U+00AD, so hyphenate() falls through
-  // to hyphenateWithNoPatterns(), whose only job is to honor that mark) but
-  // any other word, having no soft hyphen to trip that fallback, still goes
-  // through the ordinary dictionary path and can pick up an automatic break
-  // 'manual' didn't ask for. NONE would avoid that unwanted break but silently
-  // drop every soft hyphen instead, which is worse for text that relies on
-  // them. See docs/guide/props-and-styles.md for the trade-off written out.
+  // Wins over android_hyphenationFrequency whenever the app sets it at all,
+  // even to 'none'. See applyHyphenationFrequency.
   fun setHyphens(value: String?) {
     hyphens = value
     applyHyphenationFrequency()
@@ -628,23 +615,35 @@ class PlainTextView : AppCompatTextView {
     }
   }
 
-  // RN <Text> compat; overridden by hyphens 'none'/'auto'/'manual' above.
+  // RN <Text> compat; only a fallback for whenever `hyphens` is unset. See
+  // applyHyphenationFrequency.
   fun setAndroidHyphenationFrequency(value: String?) {
     androidHyphenationFrequency = value
     applyHyphenationFrequency()
   }
 
   // "full" prefers FULL_FAST on API 33+: perf-only, not a prop value.
+  // `hyphens == null` means the app never touched the prop (see setHyphens
+  // above), so android_hyphenationFrequency applies unopposed.
+  //
+  // Known gap: the off-screen measuring pass (PlainTextViewManager.measure(),
+  // via PlainTextMeasurementsManager.cpp's serializeProps) can't tell "unset"
+  // apart from "explicitly 'none'" — both resolve to the same default enum
+  // value before they ever reach native code, since hyphens's codegen'd C++
+  // field isn't optional. So for `hyphens="none"` combined with a non-default
+  // `android_hyphenationFrequency`, the measured size can assume that
+  // frequency while the mounted view renders NONE.
   private fun applyHyphenationFrequency() {
-    val frequency = when (hyphens) {
-      "auto" -> "full"
-      "none" -> "none"
-      "manual" -> "normal"
+    val frequency = when {
+      hyphens == "auto" -> "full"
+      hyphens == "none" -> "none"
       else -> androidHyphenationFrequency
     }
     val value = when (frequency) {
       null, "none" -> Layout.HYPHENATION_FREQUENCY_NONE
-      "normal" -> Layout.HYPHENATION_FREQUENCY_NORMAL
+      "normal" ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Layout.HYPHENATION_FREQUENCY_NORMAL_FAST
+        else Layout.HYPHENATION_FREQUENCY_NORMAL
       "full" ->
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Layout.HYPHENATION_FREQUENCY_FULL_FAST
         else Layout.HYPHENATION_FREQUENCY_FULL

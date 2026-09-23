@@ -3,16 +3,11 @@ import type { ComponentRef, Ref } from 'react';
 import PlainTextViewNativeComponent, { type NativeProps } from './PlainTextViewNativeComponent';
 import { normalizeFontVariant } from './utils';
 
-// RN's TextStyle plus two keys it has no entry for. Widened, not replaced, so a
+// RN's TextStyle plus a key it has no entry for. Widened, not replaced, so a
 // plain TextStyle stays assignable.
 export type PlainTextStyle = TextStyle & {
   // Upstream attempts to add it (react/react-native#44685, #44667) never merged.
   fontVariationSettings?: string;
-  // CSS's `hyphens`. 'none'/'auto'/'manual' all beat the android_hyphenationFrequency
-  // prop on Android. 'manual' only honors an inserted soft hyphen exactly as CSS
-  // intends on iOS; on Android it also enables the automatic dictionary
-  // hyphenator, since Android has no "soft hyphens only" mode.
-  hyphens?: 'none' | 'manual' | 'auto';
 };
 
 export type PlainTextProps = AccessibilityProps & {
@@ -25,9 +20,17 @@ export type PlainTextProps = AccessibilityProps & {
   lineBreakStrategyIOS?: 'none' | 'standard' | 'hangul-word' | 'push-out';
   /// Android-only, like RN <Text>.
   textBreakStrategy?: 'simple' | 'highQuality' | 'balanced';
-  /// Android-only, like RN <Text>'s prop of the same name. iOS ignores it; the
-  /// `hyphens` style's 'none'/'auto' override it.
+  /// Android-only, like RN <Text>'s prop of the same name. iOS ignores it.
+  /// Only a fallback on Android, used whenever `hyphens` is left unset.
   android_hyphenationFrequency?: 'none' | 'normal' | 'full';
+  /// Not in RN <Text>. `'none'` (default) keeps the platform's default
+  /// hyphenation behavior; `'auto'` turns on dictionary-based hyphenation.
+  /// On Android, whichever one is set here wins over
+  /// `android_hyphenationFrequency`, even `'none'`; leave `hyphens` unset to
+  /// let `android_hyphenationFrequency` apply instead. `'none'` never strips
+  /// or otherwise touches an inserted soft hyphen (U+00AD) on either
+  /// platform.
+  hyphens?: 'none' | 'auto';
   allowFontScaling?: boolean;
   maxFontSizeMultiplier?: number;
   /// BCP-47 language tag (e.g. 'de'); picks the hyphenation dictionary and
@@ -55,6 +58,7 @@ export function mapPlainTextProps({
   android_hyphenationFrequency,
   allowFontScaling,
   maxFontSizeMultiplier,
+  hyphens,
   lang,
   unstable_lineHeightClippingCompat,
   ...accessibilityProps
@@ -73,7 +77,6 @@ export function mapPlainTextProps({
     writingDirection,
     textDecorationLine,
     textTransform,
-    hyphens,
     lineHeight,
     letterSpacing,
     includeFontPadding,

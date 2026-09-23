@@ -31,7 +31,6 @@ Size PlainTextShadowNode::measureContent(const LayoutContext &layoutContext, con
 
   NSString *text = props.text.has_value() ? ([NSString stringWithUTF8String:props.text.value().c_str()] ?: @"") : @"";
   text = applyTextTransform(text, props.textTransform);
-  text = applyHyphens(text, props.hyphens);
 
   // Base scale comes from the layout context (Fabric seeds it from
   // RCTFontSizeMultiplier, same as the mounted view). Clamping matches the
@@ -47,8 +46,8 @@ Size PlainTextShadowNode::measureContent(const LayoutContext &layoutContext, con
   }
 
   // Language picks the hyphenation dictionary and locale-sensitive breaking.
-  if (!props.lang.empty()) {
-    NSString *lang = [NSString stringWithUTF8String:props.lang.c_str()];
+  if (props.lang.has_value()) {
+    NSString *lang = [NSString stringWithUTF8String:props.lang.value().c_str()];
     if (lang != nil) {
       attributes[NSLanguageIdentifierAttributeName] = lang;
     }
@@ -75,7 +74,7 @@ Size PlainTextShadowNode::measureContent(const LayoutContext &layoutContext, con
     }
   }
 
-  // Only "auto" changes line breaking; "none"/"manual" match the default.
+  // Only "auto" changes line breaking; "none" (the default) is a no-op.
   if (props.hyphens == RNPlainTextHyphens::Auto) {
     if (paragraphStyle == nil) {
       paragraphStyle = [NSMutableParagraphStyle new];

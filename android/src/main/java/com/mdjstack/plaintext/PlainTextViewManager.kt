@@ -299,7 +299,7 @@ class PlainTextViewManager : SimpleViewManager<PlainTextView>(),
     // on them. hyphens feeds the same resolution as android_hyphenationFrequency
     // below (see PlainTextView.kt).
     view.setHyphens(props?.getString("hyphens"))
-    view.setLang(props?.getString("lang")?.ifEmpty { null })
+    view.setLang(props?.getString("lang"))
     // Transforms the measured string itself (case changes can change width), so it
     // must be applied before setPlainText below.
     view.setTextTransform(props?.getString("textTransform"))

@@ -865,15 +865,14 @@ const ATTRIBUTES: AttrDef[] = [
     ],
   },
   {
-    // Style key (PlainTextStyle widens it), hence `target: 'text'`.
+    // A plain prop, not a style key, hence `target: 'prop'`.
     key: 'hyphens',
     section: 'Text',
     fp: 'hy',
-    target: 'text',
+    target: 'prop',
     options: [
       { label: '(none)' },
       { label: 'none', value: 'none' },
-      { label: 'manual', value: 'manual' },
       { label: 'auto', value: 'auto' },
     ],
   },

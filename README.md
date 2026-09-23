@@ -95,17 +95,15 @@ Everything below is API-compatible with RN `<Text>`. Most commonly used:
 
 Beyond RN `<Text>`, PlainText adds hyphenation control:
 
-- `hyphens` **(style)**: `'none' | 'manual' | 'auto'`, matching CSS's `hyphens`.
-  Set it in `style`, like `fontVariationSettings`. `'manual'` (default) breaks
-  only at a soft hyphen (`­`), `'none'` strips them, `'auto'` hyphenates
-  automatically (pair with `lang` on iOS). `'none'`/`'auto'`/`'manual'` all win
-  over `android_hyphenationFrequency`. **Known gap:** on Android, `'manual'`
-  can't be limited to _only_ an inserted soft hyphen the way CSS intends —
-  Android's hyphenator has no such mode, so getting soft hyphens to work at all
-  also turns on its automatic dictionary hyphenation for every other word. See
-  [docs/guide/props-and-styles.md](docs/guide/props-and-styles.md) for why.
+- `hyphens` (prop): `'none' | 'auto'`, default `'none'`. `'none'` keeps the
+  platform's default hyphenation behavior — it never touches an inserted soft
+  hyphen (`­`) on either platform. `'auto'` hyphenates automatically (pair
+  with `lang` on iOS). On Android, `hyphens` wins over
+  `android_hyphenationFrequency` whenever the prop is passed at all; omit it
+  entirely to let `android_hyphenationFrequency` apply instead.
 - `android_hyphenationFrequency` (prop): Android only, like RN `<Text>`:
-  `'none' | 'normal' | 'full'`. Prefer the `hyphens` style.
+  `'none' | 'normal' | 'full'`. Only applies as a fallback when `hyphens` is
+  left unset.
 - `lang` (prop): BCP-47 language tag (e.g. `'de'`), picking the hyphenation
   dictionary and locale-sensitive line breaking.
 
